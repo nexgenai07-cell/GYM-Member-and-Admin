@@ -34,6 +34,8 @@ import AdminStaff from './pages/admin/AdminStaff';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminReports from './pages/admin/AdminReports';
 import AdminCMS from './pages/admin/AdminCMS';
+import AdminRegistrations from './pages/admin/AdminRegistrations';
+import MemberLookup from './pages/admin/MemberLookup';
 import AdminSettings from './pages/admin/AdminSettings';
 
 // Shared
@@ -164,6 +166,8 @@ function App() {
         <Route path="reports" element={<AdminReports />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="cms" element={<AdminCMS />} />
+        <Route path="registrations" element={<AdminRegistrations />} />
+        <Route path="member-lookup" element={<MemberLookup />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>

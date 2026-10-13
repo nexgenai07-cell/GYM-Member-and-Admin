@@ -20,6 +20,13 @@ const navGroups = [
       { path: '/admin/staff', label: 'Staff', icon: 'badge' },
     ],
   },
+    {
+    label: 'Registrations',
+    items: [
+      { path: '/admin/registrations', label: 'Registrations', icon: 'how_to_reg' },
+      { path: '/admin/member-lookup', label: 'Member Lookup', icon: 'person_search' },
+    ],
+  },
   {
     label: 'Facility',
     items: [

@@ -174,8 +174,88 @@ export const adminService = {
     return data;
   },
 
-  async facilityNodes() {
+    async facilityNodes() {
     const { data } = await api.get('/admin/facility-nodes/');
+    return data;
+  },
+
+  // ============================================
+  // REGISTRATIONS (public-site signups)
+  // ============================================
+  async registrations(params = {}) {
+    const { data } = await api.get('/admin/registrations-api/registrations/', { params });
+    return data;
+  },
+
+  async registration(id) {
+    const { data } = await api.get(`/admin/registrations-api/registrations/${id}/`);
+    return data;
+  },
+
+  async registrationStats() {
+    const { data } = await api.get('/admin/registrations-api/registrations/stats/');
+    return data;
+  },
+
+  async approveRegistration(id) {
+    const { data } = await api.post(
+      `/admin/registrations-api/registrations/${id}/approve/`
+    );
+    return data;
+  },
+
+  async rejectRegistration(id, reason = '') {
+    const { data } = await api.post(
+      `/admin/registrations-api/registrations/${id}/reject/`,
+      { reason }
+    );
+    return data;
+  },
+
+  async bulkApproveRegistrations({ ids, onlyToday = false } = {}) {
+    const body = { only_today: onlyToday };
+    if (ids && ids.length) body.ids = ids;
+    const { data } = await api.post(
+      '/admin/registrations-api/registrations/bulk-approve/',
+      body
+    );
+    return data;
+  },
+
+  // ============================================
+  // MEMBER LOOKUP + GYM ENTRY
+  // ============================================
+  async lookupMember(acama) {
+    const { data } = await api.get('/admin/registrations-api/members/lookup/', {
+      params: { acama },
+    });
+    return data;
+  },
+
+  async faceVerify(memberId, { match, confidence }) {
+    const { data } = await api.post(
+      `/admin/registrations-api/members/${memberId}/face-verify/`,
+      { match, confidence }
+    );
+    return data;
+  },
+
+  async checkInMember(memberId, { facility, zone, faceVerified } = {}) {
+    const { data } = await api.post(
+      `/admin/registrations-api/members/${memberId}/check-in/`,
+      {
+        facility: facility || 'Metro Station Core 01',
+        zone: zone || '',
+        face_verified: !!faceVerified,
+      }
+    );
+    return data;
+  },
+
+  async checkOut(checkInId) {
+    const { data } = await api.post(
+      `/admin/registrations-api/check-ins/${checkInId}/check-out/`
+    );
     return data;
   },
 };
