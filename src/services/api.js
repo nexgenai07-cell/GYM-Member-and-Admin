@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://gym-member-and-admin.vercel.app';
-
+const API_URL = import.meta.env.VITE_API_URL || 'https://gym-backend-xi-seven.vercel.app/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: {
