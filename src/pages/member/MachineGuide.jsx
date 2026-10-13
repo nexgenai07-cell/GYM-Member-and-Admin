@@ -1,0 +1,889 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { useApi } from '../../hooks/useApi';
+import { workoutsService } from '../../services/workoutsService';
+
+const EASE = [0.22, 1, 0.36, 1];
+
+const lineUp = {
+  hidden: { opacity: 0, y: 18, filter: 'blur(6px)' },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.6, ease: EASE },
+  },
+};
+
+const gridV = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+export default function MachineGuide() {
+  const [qrInput, setQrInput] = useState('');
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [searching, setSearching] = useState(false);
+
+  const [restSeconds, setRestSeconds] = useState(90);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [totalRest, setTotalRest] = useState(90);
+
+  const { data: exercises, loading } = useApi(
+    () => workoutsService.exercises(),
+    []
+  );
+
+  // Update rest default when exercise changes
+  useEffect(() => {
+    if (selectedExercise?.default_rest_seconds) {
+      setRestSeconds(selectedExercise.default_rest_seconds);
+      setTotalRest(selectedExercise.default_rest_seconds);
+      setTimerRunning(false);
+    }
+  }, [selectedExercise]);
+
+  // Countdown
+  useEffect(() => {
+    if (!timerRunning) return;
+    if (restSeconds <= 0) {
+      setTimerRunning(false);
+      return;
+    }
+    const t = setTimeout(() => setRestSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timerRunning, restSeconds]);
+
+  const resetTimer = () => {
+    const base = selectedExercise?.default_rest_seconds || 90;
+    setRestSeconds(base);
+    setTotalRest(base);
+    setTimerRunning(false);
+  };
+
+  const addTime = (sec) => {
+    setRestSeconds((s) => s + sec);
+    setTotalRest((s) => s + sec);
+  };
+
+  // Called when user logs a set — saves to backend
+  const handleLogSet = async ({ weight, reps }) => {
+    if (!selectedExercise) return;
+    try {
+      const result = await workoutsService.quickLogSet(selectedExercise.id, {
+        weight_kg: parseFloat(weight),
+        reps: parseInt(reps, 10),
+        rpe: 8,
+      });
+
+      if (result.pr_achieved) {
+        toast.success('🏆 NEW PERSONAL RECORD!');
+      } else {
+        toast.success(`Set ${result.set_number} logged`);
+      }
+
+      // Reset timer for rest
+      resetTimer();
+      setTimerRunning(true);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to log set');
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!qrInput.trim()) return;
+    try {
+      setSearching(true);
+      const ex = await workoutsService.exerciseByQR(qrInput.trim());
+      setSelectedExercise(ex);
+      toast.success(`Found: ${ex.name}`);
+    } catch (e) {
+      toast.error('No exercise matches that QR tag');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelect = (ex) => {
+    setSelectedExercise(ex);
+  };
+
+  return (
+    <div className="relative flex flex-col w-full gap-space-xl px-space-xl py-space-xl">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(128,128,128,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(128,128,128,0.05) 1px, transparent 1px)',
+            backgroundSize: '64px 64px',
+            maskImage:
+              'radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 80%)',
+            WebkitMaskImage:
+              'radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 80%)',
+          }}
+        />
+        <motion.div
+          className="absolute -top-40 left-[15%] w-[460px] h-[460px] rounded-full bg-primary-container/10 blur-3xl"
+          animate={{ x: [0, 36, 0], y: [0, 28, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      </div>
+
+      <MachineBanner
+        qrInput={qrInput}
+        setQrInput={setQrInput}
+        onSearch={handleSearch}
+        searching={searching}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-space-lg items-start">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
+          className="flex flex-col gap-space-lg"
+        >
+          {selectedExercise ? (
+            <>
+              <VideoTutorial exercise={selectedExercise} />
+              <ExecutionPhases exercise={selectedExercise} />
+            </>
+          ) : (
+            <NoSelection />
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-space-lg">
+            <div className="md:col-span-7">
+              <TargetBiomechanics exercise={selectedExercise} />
+            </div>
+            <div className="md:col-span-5 flex flex-col gap-space-md">
+              <SeatMemory exercise={selectedExercise} />
+              <AITrainingDirective exercise={selectedExercise} />
+            </div>
+          </div>
+
+          <ExerciseList
+            exercises={exercises}
+            loading={loading}
+            selectedExercise={selectedExercise}
+            onSelect={handleSelect}
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2, ease: EASE }}
+          className="flex flex-col gap-space-md lg:sticky lg:top-space-xl h-fit"
+        >
+          <RestTimer
+            seconds={restSeconds}
+            total={totalRest}
+            running={timerRunning}
+            onToggle={() => setTimerRunning((r) => !r)}
+            onReset={resetTimer}
+            onAdd={(s) => addTime(s)}
+          />
+          <SetLogger
+            onLogSet={handleLogSet}
+            exercise={selectedExercise}
+            recommendedWeight={selectedExercise?.recommended_weight_kg}
+          />
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   MACHINE BANNER
+   ============================================================ */
+function MachineBanner({ qrInput, setQrInput, onSearch, searching }) {
+  return (
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={{
+        hidden: {},
+        show: { transition: { staggerChildren: 0.09 } },
+      }}
+      className="flex flex-col gap-space-md"
+    >
+      <div className="flex flex-col gap-space-xs">
+        <motion.div
+          variants={lineUp}
+          className="flex items-center gap-space-xs text-primary"
+        >
+          <span className="material-symbols-outlined text-[16px]">
+            precision_manufacturing
+          </span>
+          <span className="font-label-md text-label-md uppercase tracking-widest font-bold">
+            Machine QR Guide
+          </span>
+        </motion.div>
+
+        <motion.h1
+          variants={lineUp}
+          className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider leading-none m-0"
+        >
+          Exercise{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
+            Catalog
+          </span>
+        </motion.h1>
+
+        <motion.p
+          variants={lineUp}
+          className="font-body-md text-body-md text-on-surface-variant mt-space-xs max-w-2xl"
+        >
+          Scan a machine's QR code or search to view usage instructions,
+          technique cues, and video tutorials.
+        </motion.p>
+      </div>
+
+      <motion.div
+        variants={lineUp}
+        className="bg-surface-container rounded-xl p-space-lg"
+      >
+        <label className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider block mb-2">
+          Enter QR Tag ID
+        </label>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={qrInput}
+            onChange={(e) => setQrInput(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+            placeholder="e.g. TITAN-MCH-0482"
+            className="flex-1 bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
+          />
+          <motion.button
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onSearch}
+            disabled={searching}
+            className="px-6 py-3 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            type="button"
+          >
+            {searching ? 'Searching...' : 'Lookup'}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   VIDEO TUTORIAL
+   ============================================================ */
+function VideoTutorial({ exercise }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: EASE }}
+      className="relative bg-surface-container rounded-xl overflow-hidden shadow-lg"
+    >
+      <div className="aspect-video bg-gradient-to-br from-surface-container-high to-surface-container-lowest flex items-center justify-center relative">
+        {exercise.image_url && (
+          <img
+            src={exercise.image_url}
+            alt={exercise.name}
+            className="absolute inset-0 w-full h-full object-cover opacity-50"
+          />
+        )}
+        {exercise.video_url ? (
+          <a
+            href={exercise.video_url}
+            target="_blank"
+            rel="noreferrer"
+            className="relative flex flex-col items-center gap-3 text-primary hover:text-secondary-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[64px]">
+              play_circle
+            </span>
+            <span className="font-label-lg text-label-lg uppercase tracking-wider">
+              Watch Tutorial
+            </span>
+          </a>
+        ) : (
+          <div className="relative flex flex-col items-center gap-3 text-on-surface-variant/50">
+            <span className="material-symbols-outlined text-[64px]">
+              videocam_off
+            </span>
+            <span className="font-label-lg uppercase tracking-wider">
+              No Video Available
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="p-space-lg">
+        <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+          {exercise.category}
+        </span>
+        <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
+          {exercise.name}
+        </h2>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   EXECUTION PHASES
+   ============================================================ */
+function ExecutionPhases({ exercise }) {
+  const phases = Array.isArray(exercise?.technique_phases)
+    ? exercise.technique_phases
+    : [];
+
+  // Fallback to technique_cues if no structured phases
+  const cues = Array.isArray(exercise?.technique_cues)
+    ? exercise.technique_cues
+    : [];
+
+  if (phases.length === 0 && cues.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.05, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-lg shadow-md"
+    >
+      <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+        Execution Protocol
+      </span>
+      <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-space-md">
+        Technique Phases
+      </h2>
+
+      <motion.ol
+        initial="hidden"
+        animate="show"
+        variants={gridV}
+        className="grid grid-cols-1 md:grid-cols-3 gap-3"
+      >
+        {phases.length > 0
+          ? phases.map((p, i) => (
+              <motion.li
+                key={i}
+                variants={lineUp}
+                className="bg-surface-container-lowest rounded-xl p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-center justify-between text-primary">
+                  <span className="font-label-md text-[10px] uppercase tracking-wider font-bold">
+                    {p.num || `Phase 0${i + 1}`}
+                  </span>
+                </div>
+                <span className="font-title-md text-title-md text-on-surface uppercase">
+                  {p.title}
+                </span>
+                <p className="font-body-md text-[11px] text-on-surface-variant leading-relaxed">
+                  {p.desc}
+                </p>
+              </motion.li>
+            ))
+          : cues.map((cue, i) => (
+              <motion.li
+                key={i}
+                variants={lineUp}
+                className="flex items-start gap-3 p-3 rounded-lg bg-surface-container-lowest"
+              >
+                <span className="w-6 h-6 rounded-full bg-primary-container/20 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                <span className="font-body-md text-body-md text-on-surface-variant">
+                  {cue}
+                </span>
+              </motion.li>
+            ))}
+      </motion.ol>
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   TARGET BIOMECHANICS (unchanged — but safe for null)
+   ============================================================ */
+function TargetBiomechanics({ exercise }) {
+  if (!exercise) {
+    return (
+      <div className="bg-surface-container rounded-xl p-space-lg shadow-md text-center">
+        <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
+          accessibility_new
+        </span>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-2">
+          Select an exercise to view biomechanics.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-lg shadow-md"
+    >
+      <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+        Biomechanical Target
+      </span>
+      <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-space-md">
+        Muscle Activation
+      </h3>
+
+      <div className="flex flex-col gap-3">
+        <div>
+          <span className="font-label-md text-[9px] text-on-surface-variant uppercase block mb-2">
+            Primary
+          </span>
+          <span className="px-3 py-1 rounded bg-primary-container/20 text-primary text-[11px] font-bold uppercase tracking-wider inline-block">
+            {exercise.primary_muscle || '—'}
+          </span>
+        </div>
+
+        {Array.isArray(exercise.secondary_muscles) && exercise.secondary_muscles.length > 0 && (
+          <div>
+            <span className="font-label-md text-[9px] text-on-surface-variant uppercase block mb-2">
+              Secondary
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {exercise.secondary_muscles.map((m) => (
+                <span
+                  key={m}
+                  className="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant text-[10px] uppercase tracking-wider"
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 pt-2 border-t border-surface-container-high">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              exercise.is_compound ? 'bg-primary-container' : 'bg-on-surface-variant'
+            }`}
+          />
+          <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
+            {exercise.is_compound ? 'Compound Movement' : 'Isolation Movement'}
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   SEAT MEMORY
+   ============================================================ */
+function SeatMemory({ exercise }) {
+  if (!exercise?.qr_tag_id) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.15, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-lg shadow-md"
+    >
+      <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+        Setup Memory
+      </span>
+      <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-2">
+        QR Tag
+      </h3>
+      <div className="p-3 rounded bg-surface-container-lowest">
+        <span className="font-mono text-[12px] text-primary block">
+          {exercise.qr_tag_id}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   AI TRAINING DIRECTIVE — wired to real fields
+   ============================================================ */
+function AITrainingDirective({ exercise }) {
+  if (!exercise) return null;
+
+  const recommendedWeight = exercise.recommended_weight_kg;
+  const intensity = exercise.target_intensity || 'RPE 8.0';
+  const cadence = exercise.cadence || '3-0-1-0';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2, ease: EASE }}
+      className="relative bg-surface-container rounded-xl p-space-lg shadow-md overflow-hidden"
+    >
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
+      <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+        AI Directive
+      </span>
+      <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-2">
+        Training Target
+      </h3>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-surface-container-lowest rounded-lg p-3">
+          <span className="font-label-md text-[9px] text-on-surface-variant uppercase block">
+            Recommended
+          </span>
+          <span className="font-headline-md text-headline-md text-on-surface block mt-1">
+            {recommendedWeight ? `${Number(recommendedWeight).toFixed(1)}` : '—'}{' '}
+            <span className="font-label-md text-[10px] text-primary font-bold">KG</span>
+          </span>
+        </div>
+        <div className="bg-surface-container-lowest rounded-lg p-3">
+          <span className="font-label-md text-[9px] text-on-surface-variant uppercase block">
+            Intensity
+          </span>
+          <span className="font-title-md text-title-md text-primary block mt-1">
+            {intensity}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-3 mt-3 border-t border-surface-container-high flex-wrap gap-2">
+        <span className="flex items-center gap-1 font-label-md text-[10px] text-on-surface-variant uppercase">
+          <span className="material-symbols-outlined text-primary text-sm">
+            bolt
+          </span>
+          Cadence: {cadence}
+        </span>
+        {exercise.equipment_type && (
+          <span className="font-label-md text-[10px] text-primary uppercase font-bold">
+            {exercise.equipment_type}
+          </span>
+        )}
+      </div>
+
+      {exercise.description && (
+        <p className="font-body-md text-body-md text-on-surface-variant mt-3 pt-3 border-t border-surface-container-high">
+          {exercise.description}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   REST TIMER — same design, but respects exercise default
+   ============================================================ */
+function RestTimer({ seconds, total, running, onToggle, onReset, onAdd }) {
+  const pct = total > 0 ? Math.max(0, Math.min(100, (seconds / total) * 100)) : 0;
+  const mins = Math.floor(Math.max(0, seconds) / 60);
+  const secs = Math.max(0, seconds) % 60;
+
+  const R = 54;
+  const C = 2 * Math.PI * R;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-lg shadow-md flex flex-col items-center gap-space-md relative overflow-hidden"
+    >
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
+
+      <div>
+        <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+          Recovery Protocol
+        </span>
+        <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
+          Rest Timer
+        </h3>
+      </div>
+
+      <div className="relative w-[140px] h-[140px]">
+        <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+          <circle
+            cx="60"
+            cy="60"
+            r={R}
+            fill="none"
+            strokeWidth="8"
+            className="stroke-surface-container-high"
+          />
+          <motion.circle
+            cx="60"
+            cy="60"
+            r={R}
+            fill="none"
+            strokeWidth="8"
+            strokeLinecap="round"
+            className="stroke-primary-container"
+            strokeDasharray={C}
+            animate={{ strokeDashoffset: C - (C * pct) / 100 }}
+            transition={{ duration: 0.4, ease: EASE }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-headline-lg text-headline-lg text-on-surface leading-none">
+            {mins}:{secs.toString().padStart(2, '0')}
+          </span>
+          <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider mt-1">
+            {running ? 'Active' : 'Paused'}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex gap-2 w-full">
+        <motion.button
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onToggle}
+          className="flex-1 py-2.5 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[16px]">
+            {running ? 'pause' : 'play_arrow'}
+          </span>
+          {running ? 'Pause' : 'Start'}
+        </motion.button>
+        <motion.button
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onReset}
+          className="px-3 py-2.5 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface-variant text-[10px] font-bold uppercase tracking-wider transition-all"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[16px]">
+            restart_alt
+          </span>
+        </motion.button>
+      </div>
+
+      <div className="flex gap-2 w-full">
+        {[30, 60, 90].map((s) => (
+          <button
+            key={s}
+            onClick={() => onAdd(s)}
+            className="flex-1 py-1.5 rounded bg-surface-container-lowest hover:bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider transition-colors"
+            type="button"
+          >
+            +{s}s
+          </button>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   SET LOGGER — now saves to backend
+   ============================================================ */
+function SetLogger({ onLogSet, exercise, recommendedWeight }) {
+  const [weight, setWeight] = useState(
+    recommendedWeight ? String(recommendedWeight) : ''
+  );
+  const [reps, setReps] = useState('8');
+  const [loading, setLoading] = useState(false);
+
+  // Sync weight when exercise changes
+  useEffect(() => {
+    if (recommendedWeight) {
+      setWeight(String(recommendedWeight));
+    } else {
+      setWeight('');
+    }
+  }, [recommendedWeight]);
+
+  const handleSubmit = async () => {
+    if (!weight || !reps || !exercise) return;
+    setLoading(true);
+    try {
+      await onLogSet({ weight, reps });
+      setReps('8');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.05, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-lg shadow-md relative overflow-hidden"
+    >
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
+
+      <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
+        Session Log
+      </span>
+      <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-space-md">
+        Log a Set
+      </h3>
+
+      {!exercise ? (
+        <div className="text-center py-4">
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Select an exercise to log sets.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="font-label-md text-[10px] text-on-surface-variant uppercase block mb-1">
+                Weight (kg)
+              </label>
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="0"
+                className="w-full bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
+              />
+            </div>
+            <div>
+              <label className="font-label-md text-[10px] text-on-surface-variant uppercase block mb-1">
+                Reps
+              </label>
+              <input
+                type="number"
+                value={reps}
+                onChange={(e) => setReps(e.target.value)}
+                placeholder="0"
+                className="w-full bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
+              />
+            </div>
+          </div>
+
+          <motion.button
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleSubmit}
+            disabled={!weight || !reps || loading}
+            className="w-full py-3 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              {loading ? 'sync' : 'check_circle'}
+            </span>
+            {loading ? 'Logging...' : 'Log Set & Start Rest'}
+          </motion.button>
+        </>
+      )}
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   EXERCISE LIST
+   ============================================================ */
+function ExerciseList({ exercises, loading, selectedExercise, onSelect }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25, duration: 0.5, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-lg shadow-md"
+    >
+      <h2 className="font-headline-md text-headline-md text-on-surface uppercase mb-space-md">
+        All Exercises ({exercises?.length || 0})
+      </h2>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-24 bg-surface-container-low rounded animate-pulse"
+            />
+          ))}
+        </div>
+      ) : !exercises || exercises.length === 0 ? (
+        <div className="text-center py-12 bg-surface-container-low rounded-lg">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
+            fitness_center
+          </span>
+          <p className="font-title-md text-title-md text-on-surface mt-3">
+            No exercises yet
+          </p>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Add exercises via the admin panel.
+          </p>
+        </div>
+      ) : (
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={gridV}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto"
+        >
+          {exercises.map((ex) => (
+            <motion.button
+              key={ex.id}
+              variants={lineUp}
+              onClick={() => onSelect(ex)}
+              className={`text-left p-4 rounded-lg border transition-all ${
+                selectedExercise?.id === ex.id
+                  ? 'bg-primary-container/15 border-primary-container'
+                  : 'bg-surface-container-lowest border-surface-container-high hover:border-primary/50'
+              }`}
+              type="button"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="font-label-md text-[10px] text-primary uppercase tracking-wider font-bold">
+                    {ex.category}
+                  </span>
+                  <h3 className="font-title-md text-title-md text-on-surface mt-1">
+                    {ex.name}
+                  </h3>
+                  <span className="font-label-md text-[10px] text-on-surface-variant uppercase">
+                    {ex.primary_muscle}
+                  </span>
+                </div>
+                {ex.qr_tag_id && (
+                  <span className="material-symbols-outlined text-primary text-[16px]">
+                    qr_code_2
+                  </span>
+                )}
+              </div>
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ============================================================
+   NO SELECTION
+   ============================================================ */
+function NoSelection() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: EASE }}
+      className="bg-surface-container rounded-xl p-space-xl text-center relative overflow-hidden"
+    >
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-48 h-48 rounded-full bg-surface-container-high/40 blur-3xl" />
+      </div>
+      <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 relative z-10 inline-block mb-space-md">
+        touch_app
+      </span>
+      <h3 className="font-headline-md text-headline-md text-on-surface uppercase mb-2 relative z-10">
+        Select an Exercise
+      </h3>
+      <p className="font-body-md text-on-surface-variant relative z-10">
+        Choose from the list below or scan a QR tag to load machine telemetry.
+      </p>
+    </motion.div>
+  );
+}
