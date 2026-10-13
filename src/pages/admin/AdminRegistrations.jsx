@@ -39,7 +39,7 @@ export default function AdminRegistrations() {
   const [busyId, setBusyId] = useState(null);
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const load = async () => {
