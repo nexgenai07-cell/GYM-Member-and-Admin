@@ -199,7 +199,7 @@ export default function AdminRegistrations() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search acama / name / email / phone"
+          placeholder="Search Iqama / name / email / phone"
           className="bg-[#131316] border border-[#1a1a1e] rounded px-3 py-2 text-[13px] text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container outline-none w-full md:w-72"
         />
 
@@ -236,7 +236,7 @@ export default function AdminRegistrations() {
               <thead>
                 <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
                   <th className="px-4 py-3">Photo</th>
-                  <th className="px-4 py-3">Acama</th>
+                  <th className="px-4 py-3">Iqama</th>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Phone</th>
@@ -273,7 +273,7 @@ export default function AdminRegistrations() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-[12px] font-mono text-on-surface">
-                        {r.acama_number}
+                        {r.iqama_number}
                       </td>
                       <td className="px-4 py-3 text-[13px] text-on-surface">
                         {r.full_name}

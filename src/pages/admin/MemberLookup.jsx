@@ -12,7 +12,7 @@ const fmtDuration = (seconds) => {
 };
 
 export default function MemberLookup() {
-  const [acama, setAcama] = useState('');
+  const [iqama, setIqama] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -29,7 +29,7 @@ export default function MemberLookup() {
 
   const lookup = async (e) => {
     e?.preventDefault();
-    const q = acama.trim();
+    const q = iqama.trim();
     if (!q) return;
     setLoading(true);
     setResult(null);
@@ -41,7 +41,7 @@ export default function MemberLookup() {
       if (!res.found) {
         setError(
           res.reason === 'registration_pending'
-            ? 'This acama has a registration waiting for approval.'
+            ? 'This Iqama has a registration waiting for approval.'
             : 'Member not found.'
         );
       }
@@ -101,7 +101,7 @@ export default function MemberLookup() {
   };
 
   const reset = () => {
-    setAcama('');
+    setIqama('');
     setResult(null);
     setError('');
     setFaceVerified(false);
@@ -125,7 +125,7 @@ export default function MemberLookup() {
           Member Lookup
         </h1>
         <p className="font-body-sm text-on-surface-variant text-[13px]">
-          Enter an acama number at the gym entrance to verify the member and
+          Enter the member's Iqama number at the gym entrance to verify the member and
           start their session timer.
         </p>
       </motion.div>
@@ -133,9 +133,10 @@ export default function MemberLookup() {
       {/* Search box */}
       <form onSubmit={lookup} className="flex gap-2 mb-6 max-w-2xl">
         <input
-          value={acama}
-          onChange={(e) => setAcama(e.target.value.toUpperCase())}
-          placeholder="AC-XXXX-XXXX"
+          value={iqama}
+          onChange={(e) => setIqama(e.target.value.replace(/\D/g, '').slice(0, 10))}
+          placeholder="2XXXXXXXXX"
+          inputMode="numeric"
           className="flex-1 bg-[#131316] border border-[#1a1a1e] rounded px-4 py-3 text-[16px] font-mono text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container outline-none"
           autoFocus
         />
@@ -230,8 +231,8 @@ export default function MemberLookup() {
               <Stat label="Status" value={result.membership?.status} />
               <Stat label="Pass ID" value={result.membership?.pass_id} mono />
               <Stat
-                label="Acama"
-                value={result.membership?.acama_number}
+                label="Iqama"
+                value={result.membership?.iqama_number}
                 mono
               />
               <Stat

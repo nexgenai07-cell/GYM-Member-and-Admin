@@ -225,9 +225,9 @@ export const adminService = {
   // ============================================
   // MEMBER LOOKUP + GYM ENTRY
   // ============================================
-  async lookupMember(acama) {
+  async lookupMember(iqama) {
     const { data } = await api.get('/admin/registrations-api/members/lookup/', {
-      params: { acama },
+      params: { iqama },
     });
     return data;
   },
