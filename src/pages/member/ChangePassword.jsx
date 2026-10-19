@@ -3,9 +3,10 @@
 // approved; this is where they replace it.
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const MIN_LENGTH = 8;   // backend: Django MinimumLengthValidator
 
@@ -46,7 +47,13 @@ function PasswordField({ id, label, value, onChange, show, autoComplete, error }
   );
 }
 
-export default function ChangePassword() {
+/**
+ * @param {boolean} forced  rendered standalone (no member layout) while the account is
+ *                          still on its emailed temporary password
+ */
+export default function ChangePassword({ forced = false }) {
+  const { refreshUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
@@ -74,8 +81,17 @@ export default function ChangePassword() {
     try {
       await authService.changePassword(form.current, form.next, form.confirm);
       setForm(EMPTY);
-      setDone(true);
       toast.success('Password changed');
+      if (forced) {
+        try {
+          await refreshUser();        // clears must_change_password → the portal unlocks
+          navigate('/dashboard', { replace: true });
+        } catch {
+          window.location.assign('/dashboard');   // password IS changed; a reload re-reads the user
+        }
+        return;
+      }
+      setDone(true);
     } catch (err) {
       const data = err?.response?.data;
       if (data && typeof data === 'object') {
@@ -93,8 +109,13 @@ export default function ChangePassword() {
     }
   };
 
+  const signOut = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
-    <div className="w-full px-space-xl pb-space-2xl pt-space-xl flex justify-center">
+    <div className={`w-full px-space-xl pb-space-2xl pt-space-xl flex justify-center ${forced ? 'min-h-screen items-center bg-background' : ''}`}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -106,7 +127,9 @@ export default function ChangePassword() {
           <div>
             <h1 className="font-headline-md text-[22px] text-on-surface uppercase tracking-wider">Change password</h1>
             <p className="font-body-sm text-on-surface-variant text-[13px] mt-space-2xs">
-              If you logged in with the temporary password from your welcome email, replace it now.
+              {forced
+                ? 'You are signed in with the temporary password from your welcome email. Choose your own password to continue.'
+                : 'If you logged in with the temporary password from your welcome email, replace it now.'}
             </p>
           </div>
         </div>
@@ -162,6 +185,16 @@ export default function ChangePassword() {
             >
               {saving ? 'Saving…' : 'Change password'}
             </button>
+
+            {forced && (
+              <button
+                type="button"
+                onClick={signOut}
+                className="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant hover:text-on-surface transition-colors"
+              >
+                Log out
+              </button>
+            )}
           </form>
         )}
       </motion.div>

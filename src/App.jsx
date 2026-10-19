@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 // Member layout
@@ -88,11 +88,22 @@ function RootRedirect() {
 /* ============================================
    MEMBER PROTECTED ROUTE
    ============================================ */
+const CHANGE_PASSWORD_PATH = '/dashboard/change-password';
+
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, mustChangePassword } = useAuth();
+  const { pathname } = useLocation();
 
   if (loading) return <AuthLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Temporary password from the welcome email: nothing else until it's changed
+  // (the API enforces the same — every other call returns 403 password_change_required).
+  // Shown without the member layout, whose header/sidebar would call locked endpoints.
+  if (mustChangePassword) {
+    return pathname === CHANGE_PASSWORD_PATH
+      ? <ChangePassword forced />
+      : <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+  }
 
   return children;
 }
@@ -102,12 +113,16 @@ function ProtectedRoute({ children }) {
    ADMIN PROTECTED ROUTE
    ============================================ */
 function AdminProtectedRoute({ children }) {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, mustChangePassword } = useAuth();
 
   if (loading) return <AuthLoader />;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (mustChangePassword) {
+    return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
   }
 
   if (!['admin', 'manager'].includes(user?.role)) {

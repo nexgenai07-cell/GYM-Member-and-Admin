@@ -26,6 +26,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Account still on its emailed temporary password (e.g. a stale cached user):
+    // the API refuses everything else, so go straight to the change-password screen.
+    if (
+      error.response?.status === 403 &&
+      error.response.data?.code === 'password_change_required' &&
+      window.location.pathname !== '/dashboard/change-password'
+    ) {
+      window.location.assign('/dashboard/change-password');
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 

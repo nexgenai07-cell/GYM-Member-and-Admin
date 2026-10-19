@@ -1,6 +1,5 @@
 // src/pages/member/Profile.jsx — TOP SECTION ONLY (replace the hooks)
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
 import { nutritionService } from '../../services/nutritionService';
@@ -54,21 +53,6 @@ export default function Profile() {
         membership={membership}
         stats={stats}
       />
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm p-space-md mb-space-xl rounded-lg bg-surface-container border border-surface-container-high">
-        <div className="flex items-center gap-space-sm">
-          <span className="material-symbols-outlined text-primary">lock_reset</span>
-          <span className="font-body-md text-[14px] text-on-surface">
-            Still using the temporary password from your welcome email? Change it now.
-          </span>
-        </div>
-        <Link
-          to="/dashboard/change-password"
-          className="shrink-0 px-space-md py-space-xs rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-md text-label-md uppercase tracking-widest transition-colors text-center"
-        >
-          Change password
-        </Link>
-      </div>
 
       <ProfileStatsGrid dexa={dexa} stats={stats} />
 

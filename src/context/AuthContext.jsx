@@ -39,6 +39,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Re-read the user from the API (e.g. after a password change clears must_change_password).
+  const refreshUser = async () => {
+    const me = await authService.me();
+    localStorage.setItem('user', JSON.stringify(me));
+    setUser(me);
+    return me;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -47,7 +55,9 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
+        mustChangePassword: !!user?.must_change_password,
       }}
     >
       {children}
