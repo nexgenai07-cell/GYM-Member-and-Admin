@@ -1,6 +1,6 @@
 // src/pages/member/ChangePassword.jsx
-// Members receive a temporary password by email when their registration is
-// approved; this is where they replace it.
+// Lets a member change their password. Also shown standalone ("forced") when the
+// account has must_change_password set, e.g. after an admin reset.
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -48,8 +48,8 @@ function PasswordField({ id, label, value, onChange, show, autoComplete, error }
 }
 
 /**
- * @param {boolean} forced  rendered standalone (no member layout) while the account is
- *                          still on its emailed temporary password
+ * @param {boolean} forced  rendered standalone (no member layout) while the account
+ *                          has must_change_password set
  */
 export default function ChangePassword({ forced = false }) {
   const { refreshUser, logout } = useAuth();
@@ -128,8 +128,8 @@ export default function ChangePassword({ forced = false }) {
             <h1 className="font-headline-md text-[22px] text-on-surface uppercase tracking-wider">Change password</h1>
             <p className="font-body-sm text-on-surface-variant text-[13px] mt-space-2xs">
               {forced
-                ? 'You are signed in with the temporary password from your welcome email. Choose your own password to continue.'
-                : 'If you logged in with the temporary password from your welcome email, replace it now.'}
+                ? 'For your security, please choose a new password before continuing.'
+                : 'Enter your current password, then choose a new one.'}
             </p>
           </div>
         </div>

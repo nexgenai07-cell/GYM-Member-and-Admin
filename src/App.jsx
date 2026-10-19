@@ -96,7 +96,7 @@ function ProtectedRoute({ children }) {
 
   if (loading) return <AuthLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  // Temporary password from the welcome email: nothing else until it's changed
+  // must_change_password (e.g. after an admin reset): nothing else until it's changed
   // (the API enforces the same — every other call returns 403 password_change_required).
   // Shown without the member layout, whose header/sidebar would call locked endpoints.
   if (mustChangePassword) {

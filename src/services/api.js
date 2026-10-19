@@ -26,7 +26,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Account still on its emailed temporary password (e.g. a stale cached user):
+    // Account must change its password (e.g. a stale cached user after an admin reset):
     // the API refuses everything else, so go straight to the change-password screen.
     if (
       error.response?.status === 403 &&
