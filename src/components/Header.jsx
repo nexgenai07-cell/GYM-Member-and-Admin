@@ -391,6 +391,7 @@ export default function Header() {
                   {/* Links */}
                   <div className="p-space-xs">
                     <DropdownLink icon="person" label="My Profile" onClick={() => { navigate('/dashboard/profile'); setOpenDropdown(null); }} />
+                    <DropdownLink icon="lock_reset" label="Change Password" onClick={() => { navigate('/dashboard/change-password'); setOpenDropdown(null); }} />
                     <DropdownLink icon="credit_card" label="Membership" onClick={() => { navigate('/dashboard/payments'); setOpenDropdown(null); }} />
                     <DropdownLink icon="receipt_long" label="Payments & Invoices" onClick={() => { navigate('/dashboard/payments'); setOpenDropdown(null); }} />
                     <DropdownLink icon="event_available" label="Attendance History" onClick={() => { navigate('/dashboard/attendance'); setOpenDropdown(null); }} />

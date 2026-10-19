@@ -36,6 +36,16 @@ export const authService = {
     return data;
   },
 
+  /** POST /auth/change-password/ — 400 carries field errors (old_password, new_password, …). */
+  async changePassword(oldPassword, newPassword, newPasswordConfirm) {
+    const { data } = await api.post('/auth/change-password/', {
+      old_password: oldPassword,
+      new_password: newPassword,
+      new_password_confirm: newPasswordConfirm,
+    });
+    return data;
+  },
+
   getCurrentUser() {
     const u = localStorage.getItem('user');
     return u ? JSON.parse(u) : null;
