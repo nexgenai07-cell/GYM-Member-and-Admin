@@ -94,7 +94,7 @@ export default function AdminRegistrations() {
   };
 
   const handleBulkApproveToday = async () => {
-    if (!window.confirm("Approve all PAID/PENDING registrations submitted today?")) return;
+    if (!window.confirm("Approve all PAID registrations submitted today? Each payment is re-verified with Moyasar; unpaid ones are skipped.")) return;
     setBulkBusy(true);
     try {
       const res = await adminService.bulkApproveRegistrations({ onlyToday: true });
@@ -112,7 +112,7 @@ export default function AdminRegistrations() {
   const handleBulkApproveAll = async () => {
     if (
       !window.confirm(
-        "Approve ALL pending + paid registrations (not just today)? This will create user accounts."
+        "Approve ALL paid registrations (not just today)? Each payment is re-verified with Moyasar. This will create user accounts."
       )
     )
       return;
@@ -130,10 +130,17 @@ export default function AdminRegistrations() {
     }
   };
 
-  const totalPending = useMemo(
-    () => (stats?.pending || 0) + (stats?.paid || 0),
-    [stats]
-  );
+  // Only paid registrations can be approved (backend re-verifies with Moyasar).
+  const paidCount = useMemo(() => stats?.paid || 0, [stats]);
+
+  const copyPaymentId = async (paymentId) => {
+    try {
+      await navigator.clipboard.writeText(paymentId);
+      toast.success('Payment ID copied — search it in the Moyasar dashboard');
+    } catch {
+      toast.error('Could not copy');
+    }
+  };
 
   return (
     <div className="p-8 bg-background min-h-screen">
@@ -205,7 +212,7 @@ export default function AdminRegistrations() {
 
         <button
           onClick={handleBulkApproveToday}
-          disabled={bulkBusy || totalPending === 0}
+          disabled={bulkBusy || paidCount === 0}
           className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-[11px] font-bold uppercase tracking-wider"
         >
           Approve Today
@@ -213,7 +220,7 @@ export default function AdminRegistrations() {
 
         <button
           onClick={handleBulkApproveAll}
-          disabled={bulkBusy || totalPending === 0}
+          disabled={bulkBusy || paidCount === 0}
           className="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white text-[11px] font-bold uppercase tracking-wider"
         >
           Approve All
@@ -243,6 +250,7 @@ export default function AdminRegistrations() {
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Payment</th>
+                  <th className="px-4 py-3">Moyasar Payment ID</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -251,6 +259,8 @@ export default function AdminRegistrations() {
                 {registrations.map((r) => {
                   const actionable =
                     r.status === 'pending' || r.status === 'payment_confirmed';
+                  const canApprove =
+                    r.payment_status === 'paid' && !!r.moyasar_payment_id;
                   return (
                     <tr
                       key={r.id}
@@ -288,7 +298,7 @@ export default function AdminRegistrations() {
                         {r.plan_name} · {r.duration_months} mo
                       </td>
                       <td className="px-4 py-3 text-[12px] text-on-surface">
-                        ${r.payment_amount}
+                        SAR {r.payment_amount}
                       </td>
                       <td className="px-4 py-3 text-[11px] uppercase tracking-wider">
                         <span
@@ -302,6 +312,24 @@ export default function AdminRegistrations() {
                         >
                           {r.payment_status}
                         </span>
+                        {r.payment_failure_reason && (
+                          <div className="mt-1 normal-case tracking-normal text-[11px] text-rose-400 max-w-[220px] whitespace-normal">
+                            {r.payment_failure_reason}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[11px] font-mono text-on-surface">
+                        {r.moyasar_payment_id ? (
+                          <button
+                            onClick={() => copyPaymentId(r.moyasar_payment_id)}
+                            title="Copy — verify this payment in the Moyasar dashboard before approving"
+                            className="hover:text-primary-container underline decoration-dotted break-all text-left"
+                          >
+                            {r.moyasar_payment_id}
+                          </button>
+                        ) : (
+                          <span className="text-on-surface-variant">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
@@ -311,7 +339,12 @@ export default function AdminRegistrations() {
                           <>
                             <button
                               onClick={() => handleApprove(r.id)}
-                              disabled={busyId === r.id}
+                              disabled={busyId === r.id || !canApprove}
+                              title={
+                                canApprove
+                                  ? 'Verify the payment in the Moyasar dashboard, then approve'
+                                  : 'Approval needs a paid Moyasar payment'
+                              }
                               className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-[10px] font-bold uppercase tracking-wider mr-2"
                             >
                               Approve
