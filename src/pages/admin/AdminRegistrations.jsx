@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/adminService';
+import { formatDate, formatRemaining } from '../../utils/membershipTime';
 
 const STATUS_FILTERS = [
   { id: 'pending', label: 'Pending' },
@@ -333,6 +334,18 @@ export default function AdminRegistrations() {
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
+                        {r.membership && (
+                          <div
+                            className={`mt-1 text-[11px] whitespace-nowrap ${
+                              r.membership.time_remaining?.expired ? 'text-rose-400' : 'text-on-surface-variant'
+                            }`}
+                            title={`Started ${formatDate(r.membership.start_date)} (approval) · expires ${formatDate(r.membership.expiry_date)}`}
+                          >
+                            {r.membership.time_remaining?.expired
+                              ? `Expired ${formatDate(r.membership.expiry_date)}`
+                              : `${formatRemaining(r.membership.time_remaining)} left`}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         {actionable ? (

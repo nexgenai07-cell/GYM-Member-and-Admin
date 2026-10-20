@@ -12,6 +12,7 @@ import BiometricStream from '../../components/BiometricStream';
 import AIDirectives from '../../components/AIDirectives';
 import FloorDensity from '../../components/FloorDensity';
 import RecentLogs from '../../components/RecentLogs';
+import MembershipCountdown from '../../components/MembershipCountdown';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -125,6 +126,9 @@ export default function Dashboard() {
 
         <StreakBadge streak={streak} target={12} />
       </section>
+
+      {/* Membership time left — counted from the day the registration was approved */}
+      <MembershipCountdown membership={membership} loading={loading} />
 
       {/* Stats Row */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">

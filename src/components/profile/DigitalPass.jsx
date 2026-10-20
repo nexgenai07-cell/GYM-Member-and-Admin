@@ -1,6 +1,7 @@
 // src/components/profile/DigitalPass.jsx
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
+import { formatDate, formatRemaining } from '../../utils/membershipTime';
 
 export default function DigitalPass({ user, membership }) {
   const passId = user?.id?.toString().padStart(4, '0') || '0000';
@@ -77,8 +78,13 @@ export default function DigitalPass({ user, membership }) {
               ID: {passId}-TK
             </span>
             <span className="font-label-md text-label-md text-on-surface-variant mt-2">
-              Expiry: {membership?.expiry_date || '—'}
+              Expiry: {formatDate(membership?.expiry_date)}
             </span>
+            {membership?.time_remaining && (
+              <span className={`font-label-md text-label-md font-bold ${membership.time_remaining.expired ? 'text-error' : 'text-on-surface'}`}>
+                {membership.time_remaining.expired ? 'Expired' : `${formatRemaining(membership.time_remaining)} left`}
+              </span>
+            )}
           </div>
 
           {/* ⬇️ REAL QR CODE ⬇️ */}

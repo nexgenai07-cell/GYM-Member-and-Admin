@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/adminService';
+import { formatDate, formatRemaining } from '../../utils/membershipTime';
 
 const fmtDuration = (seconds) => {
   const h = Math.floor(seconds / 3600);
@@ -17,7 +18,6 @@ export default function MemberLookup() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [faceVerified, setFaceVerified] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   // Tick every second while a session is running
@@ -34,7 +34,6 @@ export default function MemberLookup() {
     setLoading(true);
     setResult(null);
     setError('');
-    setFaceVerified(false);
     try {
       const res = await adminService.lookupMember(q);
       setResult(res);
@@ -52,31 +51,12 @@ export default function MemberLookup() {
     }
   };
 
-  const faceVerify = async () => {
-    if (!result?.member) return;
-    setBusy(true);
-    try {
-      // Stub call — server just records the attempt
-      const res = await adminService.faceVerify(result.member.id, {
-        match: true,
-        confidence: 0.97,
-      });
-      setFaceVerified(!!res.matched);
-      toast.success('Face verified (stub)');
-    } catch (err) {
-      toast.error(err.message || 'Face verify failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const startTimer = async () => {
     if (!result?.member) return;
     setBusy(true);
     try {
-      const ci = await adminService.checkInMember(result.member.id, {
-        faceVerified,
-      });
+      // Desk check-in: no face comparison happens here (the gate script does that).
+      const ci = await adminService.checkInMember(result.member.id, {});
       toast.success('Session started');
       setResult({ ...result, active_check_in: ci });
     } catch (err) {
@@ -104,7 +84,6 @@ export default function MemberLookup() {
     setIqama('');
     setResult(null);
     setError('');
-    setFaceVerified(false);
   };
 
   // Live session elapsed
@@ -208,13 +187,6 @@ export default function MemberLookup() {
               {result.is_valid ? '✓ Valid' : '✗ Not Valid'}
             </div>
 
-            <button
-              onClick={faceVerify}
-              disabled={busy || faceVerified}
-              className="mt-3 w-full px-3 py-2 rounded bg-[#131316] hover:bg-[#1a1a1e] disabled:opacity-40 text-on-surface-variant text-[11px] font-bold uppercase tracking-wider"
-            >
-              {faceVerified ? '✓ Face Verified' : 'Face Verify (stub)'}
-            </button>
           </div>
 
           {/* Details */}
@@ -222,12 +194,15 @@ export default function MemberLookup() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
               <Stat label="Plan" value={result.membership?.plan?.display_name} />
               <Stat
-                label="Days Remaining"
-                value={result.membership?.days_remaining}
+                label="Time Remaining"
+                value={formatRemaining(result.membership?.time_remaining)}
                 accent={
-                  result.membership?.days_remaining <= 5 ? 'text-amber-400' : ''
+                  result.membership?.time_remaining?.expired
+                    ? 'text-rose-400'
+                    : result.membership?.days_remaining <= 5 ? 'text-amber-400' : ''
                 }
               />
+              <Stat label="Started (approved)" value={formatDate(result.membership?.start_date)} />
               <Stat label="Status" value={result.membership?.status} />
               <Stat label="Pass ID" value={result.membership?.pass_id} mono />
               <Stat
@@ -237,7 +212,7 @@ export default function MemberLookup() {
               />
               <Stat
                 label="Expires"
-                value={result.membership?.expiry_date}
+                value={formatDate(result.membership?.expiry_date)}
               />
             </div>
 
