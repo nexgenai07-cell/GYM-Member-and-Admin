@@ -38,6 +38,10 @@ import AdminCMS from './pages/admin/AdminCMS';
 import AdminRegistrations from './pages/admin/AdminRegistrations';
 import MemberLookup from './pages/admin/MemberLookup';
 import AdminSettings from './pages/admin/AdminSettings';
+import SiteContent from './pages/admin/SiteContent';
+import SiteLists from './pages/admin/SiteLists';
+import SitePlans from './pages/admin/SitePlans';
+import SiteInbox from './pages/admin/SiteInbox';
 
 // Shared
 import Login from './pages/Login';
@@ -185,6 +189,10 @@ function App() {
         <Route path="registrations" element={<AdminRegistrations />} />
         <Route path="member-lookup" element={<MemberLookup />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="site-content" element={<SiteContent />} />
+        <Route path="site-lists" element={<SiteLists />} />
+        <Route path="site-plans" element={<SitePlans />} />
+        <Route path="site-inbox" element={<SiteInbox />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 

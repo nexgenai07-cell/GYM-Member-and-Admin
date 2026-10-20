@@ -43,6 +43,15 @@ const navGroups = [
     ],
   },
   {
+    label: 'Public Website',
+    items: [
+      { path: '/admin/site-content', label: 'Site Content', icon: 'web' },
+      { path: '/admin/site-lists', label: 'Facilities & Articles', icon: 'view_list' },
+      { path: '/admin/site-plans', label: 'Membership Plans', icon: 'sell' },
+      { path: '/admin/site-inbox', label: 'Website Inbox', icon: 'inbox' },
+    ],
+  },
+  {
     label: 'System',
     items: [
       { path: '/admin/cms', label: 'Content CMS', icon: 'article' },
