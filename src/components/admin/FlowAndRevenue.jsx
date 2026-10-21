@@ -1,5 +1,6 @@
 // src/components/admin/FlowAndRevenue.jsx
 import { motion } from 'framer-motion';
+import { formatSAR } from '../../utils/money';
 
 // Build a smooth SVG path from hourly counts
 // viewBox: 0 0 600 240
@@ -51,10 +52,10 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-              Turnstile Flow Analysis
+              Check-ins by hour
             </span>
             <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-              24-Hour Arena Load vs 30D Baseline
+              Today vs 30-day average
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -156,7 +157,7 @@ export default function FlowAndRevenue({ data, loading }) {
             </span>
           </div>
           <span className="font-label-md text-[10px] text-primary font-bold uppercase tracking-wider">
-            Live Feed
+            Today
           </span>
         </div>
       </motion.div>
@@ -171,21 +172,21 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="flex justify-between items-start">
           <div>
             <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-              Financial Engine
+              {summary.range_label || 'Revenue'}
             </span>
             <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-              Revenue Protocol Streams
+              Where revenue comes from
             </h2>
           </div>
           <span className="font-title-md text-title-md text-on-surface font-mono">
-            ${Number(summary.total_30d || 0).toLocaleString()}
+            {formatSAR(summary.total_30d)}
           </span>
         </div>
 
         <div className="flex flex-col gap-4 my-4">
           {streams.length === 0 ? (
             <div className="text-center py-8 text-on-surface-variant text-[13px]">
-              No revenue streams in the last 30 days
+              No payments in this period
             </div>
           ) : (
             streams.map((r, i) => (
@@ -201,7 +202,7 @@ export default function FlowAndRevenue({ data, loading }) {
                     {r.label}
                   </span>
                   <span className="text-on-surface font-mono">
-                    ${Number(r.value).toLocaleString()} ({r.percent}%)
+                    {formatSAR(r.value)} ({r.percent}%)
                   </span>
                 </div>
                 <div className="w-full bg-surface-container-lowest h-3 rounded-lg overflow-hidden">
@@ -220,18 +221,18 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="grid grid-cols-2 gap-3 pt-2">
           <div className="p-3 bg-surface-container-lowest rounded-lg">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase block">
-              Avg Revenue / Lifter
+              Avg per paying member
             </span>
             <span className="font-headline-md text-headline-md text-on-surface">
-              ${Number(summary.avg_per_member || 0).toFixed(2)}
+              {formatSAR(summary.avg_per_member)}
             </span>
           </div>
           <div className="p-3 bg-surface-container-lowest rounded-lg">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase block">
-              Run Rate (ARR)
+              Annual run rate
             </span>
             <span className="font-headline-md text-headline-md text-primary">
-              ${Math.round((summary.arr || 0) / 1000)}K
+              {formatSAR(summary.arr)}
             </span>
           </div>
         </div>

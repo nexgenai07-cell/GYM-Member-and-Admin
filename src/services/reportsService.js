@@ -2,8 +2,8 @@
 import api from './api';
 
 export const reportsService = {
-  async templates(params = {}) {
-    const { data } = await api.get('/reports/templates/', { params });
+  async templates() {
+    const { data } = await api.get('/reports/templates/');
     return data;
   },
 
@@ -12,20 +12,21 @@ export const reportsService = {
     return data;
   },
 
+  /** payload: { template_key, start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } */
   async generate(payload) {
-    // payload: { template_key, period, format }
     const { data } = await api.post('/reports/generate/', payload);
     return data;
   },
 
-  async report(reportId) {
-    const { data } = await api.get(`/reports/history/${reportId}/`);
-    return data;
-  },
-
-  async download(reportId) {
-    const { data } = await api.get(`/reports/history/${reportId}/download/`);
-    return data;
+  /** Saves the report's CSV through the browser. */
+  async download(report) {
+    const { data } = await api.get(`/reports/history/${report.report_id}/download/`, { responseType: 'blob' });
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${report.name.replace(/[\\/:*?"<>|]/g, '-')}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
 
   async deleteReport(reportId) {

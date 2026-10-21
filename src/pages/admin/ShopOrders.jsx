@@ -2,6 +2,7 @@
 // Fulfil shop orders (paid → preparing → ready / in locker → collected), refund them,
 // and settle payments that were taken but couldn't be delivered ("review").
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { opsService as api } from '../../services/opsService';
 import { errorMessage } from '../../utils/apiError';
@@ -37,8 +38,9 @@ const OPEN = ['paid', 'preparing', 'ready', 'dispatched'];
 const sar = (v) => `SAR ${Number(v || 0).toFixed(2)}`;
 
 export default function ShopOrders() {
-  const [tab, setTab] = useState('open');
-  const [q, setQ] = useState('');
+  const [params] = useSearchParams();             // ?q=ORD-… from the header search
+  const [tab, setTab] = useState(params.get('q') ? '' : 'open');
+  const [q, setQ] = useState(params.get('q') || '');
   const [data, setData] = useState({ counts: {}, results: [] });
   const [review, setReview] = useState([]);
   const [loading, setLoading] = useState(true);

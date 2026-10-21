@@ -1,5 +1,30 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import api from '../../services/api';
+
+const HEALTH_MS = 60_000;
+
+/** Measured round trip to the API (a light authenticated call), refreshed every minute. */
+function useApiHealth() {
+  const [health, setHealth] = useState({ ok: null, ms: null });
+  useEffect(() => {
+    let alive = true;
+    const ping = async () => {
+      const t0 = performance.now();
+      try {
+        await api.get('/dashboard/occupancy/');
+        if (alive) setHealth({ ok: true, ms: Math.round(performance.now() - t0) });
+      } catch (e) {
+        if (alive) setHealth({ ok: e?.response ? true : false, ms: e?.response ? Math.round(performance.now() - t0) : null });
+      }
+    };
+    ping();
+    const id = setInterval(ping, HEALTH_MS);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+  return health;
+}
 
 /* ============================================
    ADMIN NAV ITEMS
@@ -9,7 +34,7 @@ const navGroups = [
     label: 'Overview',
     items: [
       { path: '/admin', label: 'Dashboard', icon: 'dashboard', end: true },
-      { path: '/admin/analytics', label: 'AI Insights', icon: 'insights' },
+      { path: '/admin/analytics', label: 'Insights', icon: 'insights' },
     ],
   },
   {
@@ -50,20 +75,19 @@ const navGroups = [
       { path: '/admin/site-content', label: 'Site Content', icon: 'web' },
       { path: '/admin/site-lists', label: 'Facilities & Articles', icon: 'view_list' },
       { path: '/admin/site-plans', label: 'Membership Plans', icon: 'sell' },
-      { path: '/admin/facility-pricing', label: 'Facility Pricing', icon: 'pool' },
       { path: '/admin/site-inbox', label: 'Website Inbox', icon: 'inbox' },
     ],
   },
   {
     label: 'System',
     items: [
-      { path: '/admin/cms', label: 'Content CMS', icon: 'article' },
       { path: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],
   },
 ];
 
 export default function AdminSidebar() {
+  const health = useApiHealth();
   return (
     <aside className="fixed left-0 top-0 h-screen w-72 bg-[#08080a] z-50 flex flex-col border-r border-[#1a1a1e]">
       {/* ============ LOGO / BRAND ============ */}
@@ -139,22 +163,18 @@ export default function AdminSidebar() {
         <div className="bg-[#0e0e0f] rounded-lg px-3 py-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-              System Health
+              API
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-label-md text-[10px] text-emerald-400 uppercase font-bold">
-                Optimal
+              <span className={`w-1.5 h-1.5 rounded-full ${health.ok === false ? 'bg-error' : health.ok ? 'bg-emerald-400 animate-pulse' : 'bg-[#2a2a2e]'}`} />
+              <span className={`font-label-md text-[10px] uppercase font-bold ${health.ok === false ? 'text-error' : 'text-emerald-400'}`}>
+                {health.ok === false ? 'Unreachable' : health.ok ? 'Online' : 'Checking…'}
               </span>
             </span>
           </div>
           <div className="flex items-center justify-between text-[10px] font-label-md text-on-surface-variant uppercase tracking-wider">
-            <span>API Response</span>
-            <span className="text-on-surface font-bold">42ms</span>
-          </div>
-          <div className="flex items-center justify-between text-[10px] font-label-md text-on-surface-variant uppercase tracking-wider">
-            <span>Active Terminals</span>
-            <span className="text-on-surface font-bold">18/18</span>
+            <span>Response time</span>
+            <span className="text-on-surface font-bold">{health.ms != null ? `${health.ms} ms` : '—'}</span>
           </div>
         </div>
       </motion.div>

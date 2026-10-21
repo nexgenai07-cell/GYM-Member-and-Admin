@@ -23,7 +23,7 @@ export const authService = {
       if (refresh) {
         await api.post('/auth/logout/', { refresh });
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     localStorage.removeItem('access_token');

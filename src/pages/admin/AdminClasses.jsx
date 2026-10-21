@@ -1,174 +1,228 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+// src/pages/admin/AdminClasses.jsx
+// The weekly class timetable. Members book a standing weekly spot from their portal
+// (Classes page); full classes take a waitlist that moves up automatically.
+import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useApi } from '../../hooks/useApi';
+import { adminService } from '../../services/adminService';
 import { classesService } from '../../services/classesService';
+import { Drawer, PageHeader } from '../../components/site/SiteUi';
+import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { errorMessage, fieldErrors } from '../../utils/apiError';
 
-const statusColors = {
-  full: { bg: 'bg-error/20', text: 'text-error', label: 'Full' },
-  open: { bg: 'bg-emerald-400/15', text: 'text-emerald-400', label: 'Open' },
-};
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const CATEGORIES = [['strength', 'Strength'], ['hiit', 'HIIT'], ['combat', 'Combat'], ['mobility', 'Mobility'],
+  ['endurance', 'Endurance'], ['olympic', 'Olympic lifting'], ['recovery', 'Recovery']];
+const LEVELS = [['all_levels', 'All levels'], ['beginner', 'Beginner'], ['intermediate', 'Intermediate'], ['advanced', 'Advanced']];
+const NEW = { name: '', category: 'strength', level: 'all_levels', description: '', trainer_id: '', day_of_week: 0,
+  start_time: '18:00', duration_minutes: 60, capacity: 12, location: '', is_active: true };
 
 export default function AdminClasses() {
-  const [schedule, setSchedule] = useState({ days: [], slots: [] });
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [showPaused, setShowPaused] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const { data, loading, refetch } = useApi(() => classesService.adminList(showPaused ? { include_paused: 1 } : {}), [showPaused]);
+  const { data: stats, refetch: refetchStats } = useApi(() => classesService.stats(), []);
+  const { data: trainers } = useApi(() => adminService.trainersAdmin(), []);
+  const list = Array.isArray(data) ? data : [];
+  const saved = () => { refetch(); refetchStats(); };
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [s, st] = await Promise.all([
-        classesService.schedule(),
-        classesService.stats(),
-      ]);
-      setSchedule(s);
-      setStats(st);
-    } catch (e) {
-      toast.error('Failed to load schedule');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const times = [...new Set(list.map((c) => c.start_time))].sort();
+  const at = (day, t) => list.filter((c) => c.day_of_week === day && c.start_time === t);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const statCards = [
-    { label: 'Weekly Classes', value: stats?.total_classes ?? 0, icon: 'event', accent: false },
-    { label: 'Active Enrollments', value: stats?.active_enrollments ?? 0, icon: 'groups', accent: true },
-    { label: 'Attendance Rate', value: stats?.attendance_rate ? `${stats.attendance_rate}%` : '0%', icon: 'check_circle', accent: false },
-    { label: 'Waitlisted', value: stats?.waitlisted ?? 0, icon: 'hourglass_empty', accent: true },
+  const tiles = [
+    ['Classes a week', stats?.total_classes], ['Spots booked', stats?.active_enrollments],
+    ['Fill rate', stats ? `${stats.fill_rate}%` : undefined], ['Full classes', stats?.full_classes],
+    ['On waitlists', stats?.waitlisted], ['Members booked', stats?.members_booked],
   ];
 
   return (
-    <div className="w-full p-6 flex flex-col gap-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-2 text-primary mb-2">
-          <span className="material-symbols-outlined text-[16px]">event</span>
-          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Class Scheduling System
-          </span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          Weekly Class Schedule
-        </h1>
-      </motion.div>
+    <div className="p-6 md:p-8 flex flex-col gap-6">
+      <PageHeader title="Classes" subtitle="Weekly timetable (gym time). Members book a standing spot from their portal.">
+        <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
+          <input type="checkbox" checked={showPaused} onChange={(e) => setShowPaused(e.target.checked)} /> Show paused
+        </label>
+        <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>+ Add class</button>
+      </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {statCards.map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className={`relative rounded-lg p-5 shadow-md overflow-hidden ${
-              s.accent ? 'bg-primary-container/10 border border-primary-container/30' : 'bg-surface-container'
-            }`}
-          >
-            <div className={`relative w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${s.accent ? 'bg-primary-container/20 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
-              <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
-            </div>
-            <span className="relative font-label-md text-[10px] text-on-surface-variant uppercase block">
-              {s.label}
-            </span>
-            <span className={`relative block font-headline-lg text-headline-lg leading-none mt-1 ${s.accent ? 'text-primary' : 'text-on-surface'}`}>
-              {s.value}
-            </span>
-          </motion.div>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        {tiles.map(([label, value]) => (
+          <div key={label} className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg px-4 py-3">
+            <div className="text-[22px] font-bold text-on-surface">{value ?? '—'}</div>
+            <div className="text-[10px] uppercase tracking-widest text-on-surface-variant">{label}</div>
+          </div>
         ))}
       </div>
 
       {loading ? (
-        <div className="h-96 bg-surface-container rounded-xl animate-pulse" />
-      ) : schedule.slots.length === 0 ? (
-        <div className="text-center py-16 bg-surface-container-low rounded-xl">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-            event
-          </span>
-          <p className="font-title-md text-title-md text-on-surface mt-3">No classes scheduled</p>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Add classes via Django admin.
-          </p>
+        <div className="h-96 bg-[#0e0e0f] rounded-lg animate-pulse" />
+      ) : list.length === 0 ? (
+        <div className="text-center py-16 bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg text-on-surface-variant text-[13px] flex flex-col items-center gap-3">
+          No classes on the timetable yet.
+          <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>Add the first class</button>
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-surface-container rounded-xl shadow-md overflow-hidden"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[900px]">
-              <thead>
-                <tr className="bg-surface-container-lowest">
-                  <th className="py-3 px-4 text-left font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-                    Time
-                  </th>
-                  {schedule.days.map((day) => (
-                    <th
-                      key={day}
-                      className="py-3 px-2 text-center font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider"
-                    >
-                      {day.slice(0, 3)}
-                    </th>
+        <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse">
+            <thead>
+              <tr className="border-b border-[#1a1a1e] text-[10px] uppercase tracking-widest text-on-surface-variant">
+                <th className="px-3 py-3 text-left w-20">Time</th>
+                {DAYS.map((d) => <th key={d} className="px-2 py-3 text-center">{d.slice(0, 3)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {times.map((t) => (
+                <tr key={t} className="border-b border-[#1a1a1e] last:border-0 align-top">
+                  <td className="px-3 py-2 font-mono text-[13px] text-primary font-bold">{t}</td>
+                  {DAYS.map((_, d) => (
+                    <td key={d} className="px-1 py-2">
+                      <div className="flex flex-col gap-1">
+                        {at(d, t).map((c) => (
+                          <button key={c.id} type="button" onClick={() => setEditing(c)}
+                            className={`text-left p-2 rounded border-l-2 bg-[#131316] hover:bg-[#1a1a1e] ${
+                              !c.is_active ? 'border-neutral-600 opacity-50' : c.status === 'full' ? 'border-rose-500' : 'border-emerald-500'}`}>
+                            <span className="block text-[12px] text-on-surface font-bold leading-tight">{c.name}</span>
+                            <span className="block text-[10px] text-on-surface-variant truncate">{c.trainer || 'No trainer'}{c.location && ` · ${c.location}`}</span>
+                            <span className="block text-[10px] text-on-surface-variant mt-0.5">
+                              {c.booked}/{c.capacity}{c.waitlisted > 0 && ` · ${c.waitlisted} waiting`}{!c.is_active && ' · paused'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </td>
                   ))}
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-container-highest/50">
-                {schedule.slots.map((slot, idx) => (
-                  <tr key={slot.time}>
-                    <td className="py-3 px-4 font-mono text-[13px] text-primary font-bold whitespace-nowrap">
-                      {slot.time}
-                    </td>
-                    {schedule.days.map((day) => {
-                      const cls = slot[day];
-                      const status = statusColors[cls.status] || statusColors.open;
-                      const isEmpty = cls.name === '—';
-                      return (
-                        <td key={day} className="py-2 px-1">
-                          {isEmpty ? (
-                            <div className="p-2 rounded-lg bg-surface-container-lowest/50 border border-dashed border-surface-container-high text-center">
-                              <span className="font-label-md text-[10px] text-on-surface-variant/40">
-                                —
-                              </span>
-                            </div>
-                          ) : (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0.3, delay: idx * 0.05 }}
-                              className={`p-2 rounded-lg border-l-2 cursor-pointer ${
-                                cls.status === 'full'
-                                  ? 'bg-error/10 border-error'
-                                  : 'bg-surface-container-lowest border-emerald-400'
-                              }`}
-                            >
-                              <span className="font-title-md text-[11px] text-on-surface block leading-tight">
-                                {cls.name}
-                              </span>
-                              <span className="font-label-md text-[9px] text-on-surface-variant uppercase block mt-1">
-                                {cls.trainer}
-                              </span>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="font-label-md text-[9px] text-on-surface-variant">
-                                  {cls.enrolled}/{cls.capacity}
-                                </span>
-                                <span className={`px-1 py-0.5 rounded text-[8px] font-bold uppercase ${status.bg} ${status.text}`}>
-                                  {status.label}
-                                </span>
-                              </div>
-                            </motion.div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
+
+      {editing && <ClassEditor cls={editing} trainers={Array.isArray(trainers) ? trainers : []}
+        onClose={() => setEditing(null)} onSaved={saved} />}
     </div>
+  );
+}
+
+function Field({ label, error, children, className = '' }) {
+  return (
+    <label className={`flex flex-col gap-1 ${className}`}>
+      <span className={labelCls}>{label}</span>
+      {children}
+      {error && <span className="text-[11px] text-rose-400">{error}</span>}
+    </label>
+  );
+}
+
+function ClassEditor({ cls, trainers, onClose, onSaved }) {
+  const isNew = !cls.id;
+  const [f, setF] = useState({ ...cls, trainer_id: cls.trainer_id ?? '' });
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+  const { data: roster, refetch: refetchRoster } = useApi(
+    () => (isNew ? Promise.resolve(null) : classesService.roster(cls.id)), [cls.id], { showError: false });
+  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+
+  const save = async () => {
+    setBusy(true);
+    setErrors({});
+    const body = {
+      name: f.name, category: f.category, level: f.level, description: f.description, trainer_id: f.trainer_id || null,
+      day_of_week: Number(f.day_of_week), start_time: f.start_time, duration_minutes: f.duration_minutes,
+      capacity: f.capacity, location: f.location, is_active: f.is_active,
+    };
+    try {
+      await (isNew ? classesService.create(body) : classesService.update(cls.id, body));
+      toast.success(isNew ? 'Class added — members can book it now' : 'Class saved');
+      onSaved();
+      onClose();
+    } catch (err) {
+      setErrors(fieldErrors(err));
+      toast.error(errorMessage(err, 'Could not save the class'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    const n = (cls.booked || 0) + (cls.waitlisted || 0);
+    if (!window.confirm(`Remove ${cls.name} from the timetable?${n ? ` ${n} booked/waitlisted members will be notified.` : ''}`)) return;
+    try {
+      await classesService.remove(cls.id);
+      toast.success('Class removed');
+      onSaved();
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not remove the class'));
+    }
+  };
+
+  const kick = async (e) => {
+    if (!window.confirm(`Remove ${e.name} from this class? They’ll be notified.`)) return;
+    try {
+      toast.success((await classesService.removeFromRoster(cls.id, e.id)).detail);
+      refetchRoster();
+      onSaved();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not remove them'));
+    }
+  };
+
+  const people = roster?.roster || [];
+
+  return (
+    <Drawer open title={isNew ? 'Add class' : cls.name} onClose={onClose}
+      subtitle={isNew ? 'Repeats every week at the same time.' : `${cls.day}s ${cls.start_time}–${cls.end_time} · ${cls.booked}/${cls.capacity} booked`}
+      footer={<>
+        {!isNew && <button type="button" className={btn.danger} onClick={remove}>Remove</button>}
+        <div className="flex-1" />
+        <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
+        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+      </>}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Field label="Name" error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} placeholder="Morning HIIT" /></Field>
+        <Field label="Day" error={errors.day_of_week}>
+          <select className={inputCls} value={f.day_of_week} onChange={set('day_of_week')}>
+            {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+          </select></Field>
+        <Field label="Starts (gym time)" error={errors.start_time}><input className={inputCls} type="time" value={f.start_time} onChange={set('start_time')} /></Field>
+        <Field label="Length (minutes)" error={errors.duration_minutes}><input className={inputCls} type="number" min="10" max="300" value={f.duration_minutes} onChange={set('duration_minutes')} /></Field>
+        <Field label="Spots" error={errors.capacity}><input className={inputCls} type="number" min="1" max="500" value={f.capacity} onChange={set('capacity')} /></Field>
+        <Field label="Category" error={errors.category}>
+          <select className={inputCls} value={f.category} onChange={set('category')}>{CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+        <Field label="Level" error={errors.level}>
+          <select className={inputCls} value={f.level} onChange={set('level')}>{LEVELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+        <Field label="Trainer" error={errors.trainer_id}>
+          <select className={inputCls} value={f.trainer_id} onChange={set('trainer_id')}>
+            <option value="">No trainer</option>
+            {trainers.map((t) => <option key={t.id} value={t.id}>{t.user_name}</option>)}
+          </select></Field>
+        <Field label="Room" error={errors.location}><input className={inputCls} value={f.location} onChange={set('location')} placeholder="Studio 1" /></Field>
+        <Field label="Description" error={errors.description} className="md:col-span-2">
+          <textarea className={inputCls} rows={3} value={f.description} onChange={set('description')} /></Field>
+      </div>
+      <label className="flex items-start gap-2 text-[13px] text-on-surface">
+        <input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />
+        <span>On the timetable<span className="block text-[11px] text-on-surface-variant">Untick to pause it: members keep their spots but can’t see or book it until you turn it back on.</span></span>
+      </label>
+
+      {!isNew && (
+        <div className="flex flex-col gap-2">
+          <span className={labelCls}>Roster ({people.filter((p) => p.status === 'booked').length} booked, {people.filter((p) => p.status === 'waitlist').length} waiting)</span>
+          {people.length === 0 ? (
+            <p className="text-[12px] text-on-surface-variant">Nobody has booked yet.</p>
+          ) : people.map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-2 bg-[#0e0e0f] border border-[#1a1a1e] rounded px-3 py-2 text-[13px]">
+              <div className="min-w-0">
+                <div className="text-on-surface truncate">{p.name}</div>
+                <div className="text-[11px] text-on-surface-variant truncate">{p.email} · since {new Date(p.since).toLocaleDateString()}</div>
+              </div>
+              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${p.status === 'booked' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                {p.status === 'booked' ? 'Booked' : 'Waitlist'}</span>
+              <button type="button" className={btn.ghost} onClick={() => kick(p)}>Remove</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Drawer>
   );
 }

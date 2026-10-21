@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import QrScanner from '../../components/QrScanner';
+import { machineTagFrom } from '../../utils/machineQr';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
@@ -96,7 +97,7 @@ export default function MachineGuide() {
   };
 
   const lookup = useCallback(async (raw) => {
-    const tag = String(raw || '').trim();
+    const tag = machineTagFrom(raw);
     if (!tag) return;
     setScanning(false);
     try {

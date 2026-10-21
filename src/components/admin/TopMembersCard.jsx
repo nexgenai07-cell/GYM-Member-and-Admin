@@ -1,6 +1,6 @@
 // src/components/admin/TopMembersCard.jsx
 import { motion } from 'framer-motion';
-
+import { formatSAR } from '../../utils/money';
 const tierColors = {
   'Black Elite': 'bg-gradient-to-r from-[#2a2a2e] to-[#3a3a3e] text-on-surface',
   'Pro': 'bg-primary-container/20 text-primary',
@@ -86,7 +86,7 @@ export default function TopMembersCard({ data, loading }) {
                   i === 0 ? 'text-primary' : 'text-on-surface'
                 }`}
               >
-                ${Number(m.ltv).toLocaleString()}
+                {formatSAR(m.ltv)}
               </span>
             </motion.div>
           ))}
@@ -96,10 +96,10 @@ export default function TopMembersCard({ data, loading }) {
       <div className="mt-auto pt-4 border-t border-surface-container-high">
         <div className="flex items-center justify-between">
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-            Top {members.length} Total LTV
+            Top {members.length} paid in total
           </span>
           <span className="font-headline-md text-headline-md text-primary">
-            ${Number(totalLtv).toLocaleString()}
+            {formatSAR(totalLtv)}
           </span>
         </div>
       </div>

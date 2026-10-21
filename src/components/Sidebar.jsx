@@ -7,6 +7,7 @@ const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'grid_view', end: true },
   { path: '/dashboard/notifications', label: 'Notifications', icon: 'notifications' },
   { path: '/dashboard/machine-guide', label: 'Machine Guide', icon: 'precision_manufacturing' },
+  { path: '/dashboard/classes', label: 'Classes', icon: 'event' },
   { path: '/dashboard/courses', label: 'Courses', icon: 'sports_gymnastics' },
   { path: '/dashboard/player', label: 'Player', icon: 'play_circle' },
   { path: '/dashboard/trainers', label: 'Trainers', icon: 'group' },

@@ -4,6 +4,9 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/adminService';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
+import { formatSAR } from '../../utils/money';
+import { errorMessage } from '../../utils/apiError';
+import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 
 const STATUS_FILTERS = [
   { id: 'pending', label: 'Pending' },
@@ -42,7 +45,7 @@ export default function AdminRegistrations() {
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
-
+  const [rejecting, setRejecting] = useState(null);   // the registration being rejected
   const load = async () => {
     setLoading(true);
     try {
@@ -53,7 +56,7 @@ export default function AdminRegistrations() {
       setRegistrations(listRes.results || []);
       setStats(statsRes);
     } catch (err) {
-      toast.error(err.message || 'Failed to load registrations');
+      toast.error(errorMessage(err, 'Failed to load registrations'));
     } finally {
       setLoading(false);
     }
@@ -74,21 +77,22 @@ export default function AdminRegistrations() {
       );
       await load();
     } catch (err) {
-      toast.error(err.message || 'Approval failed');
+      toast.error(errorMessage(err, 'Approval failed'));
     } finally {
       setBusyId(null);
     }
   };
 
-  const handleReject = async (id) => {
-    const reason = window.prompt('Reason for rejection?') ?? '';
+  const handleReject = async ({ reason, refund }) => {
+    const id = rejecting.id;
     setBusyId(id);
     try {
-      await adminService.rejectRegistration(id, reason);
-      toast.success('Registration rejected');
+      const res = await adminService.rejectRegistration(id, reason, refund);
+      toast.success(res.refunded ? `Rejected and ${formatSAR(rejecting.payment_amount)} refunded` : 'Registration rejected');
+      setRejecting(null);
       await load();
     } catch (err) {
-      toast.error(err.message || 'Rejection failed');
+      toast.error(errorMessage(err, 'Rejection failed'));
     } finally {
       setBusyId(null);
     }
@@ -102,9 +106,10 @@ export default function AdminRegistrations() {
       toast.success(
         `Approved ${res.approved_count}. Failed: ${res.failed_count}`
       );
+      if (res.failed?.length) toast.error(res.failed.map((f) => `#${f.id}: ${f.error}`).join('\n'), { duration: 8000 });
       await load();
     } catch (err) {
-      toast.error(err.message || 'Bulk approve failed');
+      toast.error(errorMessage(err, 'Bulk approve failed'));
     } finally {
       setBulkBusy(false);
     }
@@ -123,9 +128,10 @@ export default function AdminRegistrations() {
       toast.success(
         `Approved ${res.approved_count}. Failed: ${res.failed_count}`
       );
+      if (res.failed?.length) toast.error(res.failed.map((f) => `#${f.id}: ${f.error}`).join('\n'), { duration: 8000 });
       await load();
     } catch (err) {
-      toast.error(err.message || 'Bulk approve failed');
+      toast.error(errorMessage(err, 'Bulk approve failed'));
     } finally {
       setBulkBusy(false);
     }
@@ -297,15 +303,22 @@ export default function AdminRegistrations() {
                       </td>
                       <td className="px-4 py-3 text-[12px] text-on-surface">
                         {r.plan_name} · {r.duration_months} mo
+                        {r.facilities?.length > 0 && (
+                          <div className="mt-1 text-[11px] text-on-surface-variant whitespace-normal max-w-[200px]">
+                            + {r.facilities.map((f) => f.name).join(', ')}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-[12px] text-on-surface">
-                        SAR {r.payment_amount}
+                      <td className="px-4 py-3 text-[12px] text-on-surface whitespace-nowrap">
+                        {formatSAR(r.payment_amount)}
                       </td>
                       <td className="px-4 py-3 text-[11px] uppercase tracking-wider">
                         <span
                           className={
                             r.payment_status === 'paid'
                               ? 'text-emerald-400'
+                              : r.payment_status === 'refunded'
+                              ? 'text-sky-400'
                               : r.payment_status === 'failed'
                               ? 'text-rose-400'
                               : 'text-amber-400'
@@ -363,7 +376,7 @@ export default function AdminRegistrations() {
                               Approve
                             </button>
                             <button
-                              onClick={() => handleReject(r.id)}
+                              onClick={() => setRejecting(r)}
                               disabled={busyId === r.id}
                               className="px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white text-[10px] font-bold uppercase tracking-wider"
                             >
@@ -371,8 +384,8 @@ export default function AdminRegistrations() {
                             </button>
                           </>
                         ) : (
-                          <span className="text-[11px] text-on-surface-variant">
-                            {r.created_user_email || '—'}
+                          <span className="text-[11px] text-on-surface-variant" title={r.rejection_reason || undefined}>
+                            {r.created_user_email || (r.status === 'rejected' ? r.rejection_reason : '—')}
                           </span>
                         )}
                       </td>
@@ -384,6 +397,41 @@ export default function AdminRegistrations() {
           </div>
         </div>
       )}
+
+      {rejecting && (
+        <RejectDialog reg={rejecting} busy={busyId === rejecting.id} onClose={() => setRejecting(null)} onSubmit={handleReject} />
+      )}
+    </div>
+  );
+}
+
+function RejectDialog({ reg, busy, onClose, onSubmit }) {
+  const paid = reg.payment_status === 'paid';
+  const [reason, setReason] = useState('');
+  const [refund, setRefund] = useState(paid);
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true"
+      aria-label="Reject registration" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <form className="w-full max-w-md bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl p-5 flex flex-col gap-3"
+        onSubmit={(e) => { e.preventDefault(); onSubmit({ reason: reason.trim(), refund: paid && refund }); }}>
+        <h3 className="text-on-surface font-bold uppercase tracking-wider">Reject {reg.full_name}</h3>
+        <label className="flex flex-col gap-1"><span className={labelCls}>Reason (emailed to the applicant)</span>
+          <textarea className={inputCls} rows={3} maxLength={500} value={reason} autoFocus
+            onChange={(e) => setReason(e.target.value)} placeholder="e.g. The Iqama photo is unreadable" /></label>
+        {paid ? (
+          <label className="flex items-start gap-2 text-[13px] text-on-surface">
+            <input type="checkbox" className="mt-1" checked={refund} onChange={(e) => setRefund(e.target.checked)} />
+            <span>Refund {formatSAR(reg.payment_amount)} to their card through Moyasar
+              <span className="block text-[11px] text-on-surface-variant">Untick only if the money was already returned another way.</span></span>
+          </label>
+        ) : (
+          <p className="text-[11px] text-on-surface-variant">No payment was taken for this signup, so there is nothing to refund.</p>
+        )}
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
+          <button type="submit" className={btn.danger} disabled={busy}>{busy ? 'Rejecting…' : refund && paid ? 'Reject & refund' : 'Reject'}</button>
+        </div>
+      </form>
     </div>
   );
 }

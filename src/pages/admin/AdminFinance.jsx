@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
+import { formatSAR } from '../../utils/money';
 import RevenueChart from '../../components/admin/RevenueChart';
 import RevenueStreams from '../../components/admin/RevenueStreams';
 import TopMembersCard from '../../components/admin/TopMembersCard';
@@ -11,16 +12,17 @@ import InvoiceDrawer from '../../components/admin/InvoiceDrawer';
 
 export default function AdminFinance() {
   const [page, setPage] = useState(1);
+  const [range, setRange] = useState('30d');
+  const [q, setQ] = useState('');
+  const [type, setType] = useState('');
   const [selectedTxn, setSelectedTxn] = useState(null);
-
   const { data: overview, loading: loadingOv } = useApi(
-    () => adminService.financeOverview(),
-    []
+    () => adminService.financeOverview(range),
+    [range]
   );
-
   const { data: txData, loading: loadingTx } = useApi(
-    () => adminService.transactions({ page }),
-    [page]
+    () => adminService.transactions({ page, q: q.trim(), type }),
+    [page, q, type]
   );
 
   const { data: monthly, loading: loadingMonthly } = useApi(
@@ -29,8 +31,8 @@ export default function AdminFinance() {
   );
 
   const { data: streams, loading: loadingStreams } = useApi(
-    () => adminService.revenueStreams(),
-    []
+    () => adminService.revenueStreams(range),
+    [range]
   );
 
   const { data: topMembers, loading: loadingTop } = useApi(
@@ -45,7 +47,7 @@ export default function AdminFinance() {
     try {
       const detail = await adminService.transactionDetail(txn.id);
       setSelectedTxn(detail);
-    } catch (e) {
+    } catch {
       toast.error('Failed to load invoice');
     }
   };
@@ -59,43 +61,52 @@ export default function AdminFinance() {
         <div className="flex items-center gap-2 text-primary mb-2">
           <span className="material-symbols-outlined text-[16px]">payments</span>
           <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Financial Command Center
+            Finance
           </span>
         </div>
         <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          Revenue & Invoicing
+          Revenue & payments
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          Real-time revenue telemetry across all transactions.
+          Money received by card, STC Pay, top-ups and desk payments. Spending locker credit isn’t counted again — it was counted when topped up.
         </p>
       </motion.div>
+
+      <div className="flex gap-1" role="tablist" aria-label="Period">
+        {[['7d', '7 days'], ['30d', '30 days'], ['90d', '90 days'], ['ytd', 'Year to date']].map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={range === id} onClick={() => setRange(id)}
+            className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${range === id ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant hover:text-on-surface'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <FinanceStat
-          label="Monthly Recurring Revenue"
-          value={loading ? '—' : `$${Number(overview?.mrr ?? 0).toLocaleString()}`}
-          delta="Rolling month"
+          label="Received"
+          value={loading ? '—' : formatSAR(overview?.received)}
+          delta={`${overview?.range_label || ''} · ${overview?.payment_count ?? 0} payments`}
           icon="payments"
           accent
         />
         <FinanceStat
-          label="Annual Run Rate"
-          value={loading ? '—' : `$${Number(overview?.arr ?? 0).toLocaleString()}`}
-          delta="ARR projection"
+          label="This month"
+          value={loading ? '—' : formatSAR(overview?.this_month)}
+          delta={`Annual run rate ${formatSAR(overview?.run_rate)}`}
           icon="trending_up"
         />
         <FinanceStat
-          label="Pending"
-          value={loading ? '—' : `$${Number(overview?.pending_amount ?? 0).toLocaleString()}`}
-          delta={`${overview?.pending_count ?? 0} invoices`}
+          label="Payments to review"
+          value={loading ? '—' : formatSAR(overview?.review_amount)}
+          delta={`${overview?.review_count ?? 0} — refund or follow up in Shop Orders`}
           icon="schedule"
           accent
         />
         <FinanceStat
-          label="Refunds (30d)"
-          value={loading ? '—' : `$${Number(overview?.refunds_30d ?? 0).toLocaleString()}`}
-          delta="Rolling 30 days"
+          label="Refunds"
+          value={loading ? '—' : formatSAR(overview?.refunds)}
+          delta={overview?.range_label || ''}
           icon="undo"
         />
       </div>
@@ -121,8 +132,18 @@ export default function AdminFinance() {
       >
         <div className="p-5 border-b border-surface-container-high flex items-center justify-between">
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase">
-            Transaction Ledger
+            All transactions
           </h2>
+          <div className="flex gap-2 flex-wrap">
+            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search member, item, ID…" aria-label="Search transactions"
+              className="bg-surface-container-lowest text-on-surface text-[12px] px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary" />
+            <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} aria-label="Type"
+              className="bg-surface-container-lowest text-on-surface text-[12px] px-3 py-2 rounded border border-surface-container-high">
+              <option value="">All types</option><option value="subscription">Memberships & add-ons</option>
+              <option value="retail">Shop</option><option value="coaching">Trainers & courses</option>
+              <option value="topup">Top-ups</option><option value="refund">Refunds</option>
+            </select>
+          </div>
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase">
             {total} transactions
           </span>
@@ -174,7 +195,7 @@ export default function AdminFinance() {
                           {t.transaction_id}
                         </span>
                         <span className="font-label-md text-[9px] text-on-surface-variant">
-                          {new Date(t.created_at).toLocaleDateString()}
+                          {new Date(t.created_at).toLocaleString()} · {t.method || '—'}
                         </span>
                       </div>
                     </td>
@@ -199,8 +220,7 @@ export default function AdminFinance() {
                           Number(t.amount) < 0 ? 'text-error' : 'text-on-surface'
                         }`}
                       >
-                        {Number(t.amount) < 0 ? '-' : ''}$
-                        {Math.abs(Number(t.amount)).toFixed(2)}
+                        {formatSAR(t.amount)}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -254,7 +274,7 @@ export default function AdminFinance() {
                 {page}
               </span>
               <button
-                disabled={transactions.length < 20}
+                disabled={page >= (txData?.pages || 1)}
                 onClick={() => setPage(page + 1)}
                 className="px-3 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface text-[11px] font-bold uppercase disabled:opacity-30"
                 type="button"

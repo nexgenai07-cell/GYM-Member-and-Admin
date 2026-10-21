@@ -1,410 +1,282 @@
 // src/pages/admin/AdminMachines.jsx
+// Machines members can scan. Each machine's QR holds a member-portal link
+// (/dashboard/machine-guide?qr=TAG); print it and stick it on the machine.
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
+import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
+import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { errorMessage, fieldErrors } from '../../utils/apiError';
+import { machineQrLink } from '../../utils/machineQr';
+
+const STATUS = [['', 'All'], ['active', 'Active'], ['offline', 'Offline'], ['untagged', 'No QR']];
+const NEW = {
+  name: '', category: 'strength', primary_muscle: 'full_body', equipment_type: '', machine_id: '', description: '',
+  setup_instructions: '', technique_cues: [], video_url: '', image_url: '', default_rest_seconds: 90,
+  recommended_weight_kg: '', target_intensity: '', cadence: '', is_compound: false, is_active: true,
+};
 
 export default function AdminMachines() {
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
-  const [qrModal, setQrModal] = useState(null);
+  const [q, setQ] = useState('');
+  const [category, setCategory] = useState('');
+  const [status, setStatus] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [qrFor, setQrFor] = useState(null);
 
-  const { data: machines, loading, refetch } = useApi(
-    () => {
-      const params = {};
-      if (category !== 'all') params.category = category;
-      return adminService.machines(params);
-    },
-    [category]
-  );
+  const { data, loading, refetch } = useApi(
+    () => adminService.machines({ q: q || undefined, category: category || undefined, status: status || undefined }),
+    [q, category, status]);
+  const { data: stats, refetch: refetchStats } = useApi(() => adminService.machineStats(), []);
+  const { data: options } = useApi(() => adminService.machineCategories(), []);
+  const list = Array.isArray(data) ? data : [];
+  const cats = options?.categories || [];
+  const saved = () => { refetch(); refetchStats(); };
 
-  const { data: stats } = useApi(() => adminService.machineStats(), []);
-  const { data: categories } = useApi(
-    () => adminService.machineCategories(),
-    []
-  );
-
-  const list = Array.isArray(machines) ? machines : [];
-  const cats = Array.isArray(categories) ? categories : [];
-
-  const filtered = search
-    ? list.filter(
-        (m) =>
-          m.name?.toLowerCase().includes(search.toLowerCase()) ||
-          m.qr_tag_id?.toLowerCase().includes(search.toLowerCase())
-      )
-    : list;
-
-  const handleRegenerateQR = async (m) => {
-    if (!confirm(`Regenerate QR for ${m.name}? Old QR will stop working.`)) return;
+  const regenerate = async (m) => {
+    if (!window.confirm(`Give ${m.name} a new QR code? The printed label stops working — you’ll need to print the new one.`)) return;
     try {
-      const res = await adminService.regenerateQR(m.id);
-      toast.success(`New QR: ${res.qr_tag_id}`);
-      refetch();
-    } catch (e) {
-      toast.error('Failed to regenerate QR');
+      const row = await adminService.regenerateQR(m.id);
+      toast.success(`New code ${row.qr_tag_id}`);
+      saved();
+      setQrFor(row);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not change the code'));
     }
   };
 
-  return (
-    <div className="w-full p-6 flex flex-col gap-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-2 text-primary mb-2">
-          <span className="material-symbols-outlined text-[16px]">
-            precision_manufacturing
-          </span>
-          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Machine Fleet Management
-          </span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          Machines & QR Fleet
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          Real-time telemetry, QR generation, and utilization tracking.
-        </p>
-      </motion.div>
+  const tiles = [
+    ['Machines', stats?.total], ['With QR', stats?.with_qr], ['Need a QR', stats?.without_qr], ['Offline', stats?.offline],
+    ['Most used (30 days)', stats?.top_machine ? `${stats.top_machine} · ${stats.top_machine_count}` : 'No logs yet'],
+  ];
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile
-          label="Total Machines"
-          value={stats?.total ?? '—'}
-          icon="precision_manufacturing"
-        />
-        <StatTile
-          label="QR Tagged"
-          value={stats?.with_qr ?? '—'}
-          icon="qr_code_2"
-          accent
-        />
-        <StatTile
-          label="Untagged"
-          value={stats?.without_qr ?? '—'}
-          icon="warning"
-        />
-        <StatTile
-          label="Top Machine"
-          value={stats?.top_machine_count ?? 0}
-          icon="trending_up"
-          accent
-        />
+  return (
+    <div className="p-6 md:p-8 flex flex-col gap-6">
+      <PageHeader title="Machines & QR" subtitle="Members scan a machine’s QR to open its guide and log their sets.">
+        <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>+ Add machine</button>
+      </PageHeader>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {tiles.map(([label, value]) => (
+          <div key={label} className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg px-4 py-3 min-w-0">
+            <div className="text-[20px] font-bold text-on-surface truncate" title={typeof value === 'string' ? value : undefined}>{value ?? '—'}</div>
+            <div className="text-[10px] uppercase tracking-widest text-on-surface-variant">{label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row gap-3 bg-surface-container-low rounded-xl p-4">
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {['all', ...cats].map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`px-3 py-2 rounded text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
-                category === c
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface'
-              }`}
-              type="button"
-            >
-              {c}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="flex gap-1 flex-wrap">
+          {STATUS.map(([id, label]) => (
+            <button key={id || 'all'} type="button" onClick={() => setStatus(id)}
+              className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+                status === id ? 'bg-primary-container text-on-primary-container' : 'bg-[#131316] text-on-surface-variant hover:text-on-surface'}`}>
+              {label}
             </button>
           ))}
         </div>
-
-        <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none z-10">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Search by name or QR tag..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-container-lowest text-on-surface text-body-md pl-10 pr-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"
-          />
-        </div>
+        <div className="flex-1" />
+        <select className={`${inputCls} lg:w-44`} value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
+          <option value="">All categories</option>
+          {cats.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        <input className={`${inputCls} lg:w-64`} value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name, QR code, equipment…" aria-label="Search machines" />
       </div>
 
-      {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="h-64 bg-surface-container rounded-xl animate-pulse"
-            />
-          ))}
+          {[1, 2, 3].map((i) => <div key={i} className="h-48 bg-[#0e0e0f] rounded-lg animate-pulse" />)}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-surface-container-low rounded-xl">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-            precision_manufacturing
-          </span>
-          <p className="font-title-md text-title-md text-on-surface mt-3">
-            No machines found
-          </p>
-        </div>
+      ) : list.length === 0 ? (
+        <Empty>{q || category || status ? 'No machines match.' : 'No machines yet — add your first one.'}</Empty>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((m, i) => (
-            <MachineCard
-              key={m.id}
-              machine={m}
-              index={i}
-              onViewQR={setQrModal}
-              onRegenerate={handleRegenerateQR}
-            />
+          {list.map((m) => (
+            <div key={m.id} className={`bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-4 flex flex-col gap-3 ${m.is_active ? '' : 'opacity-60'}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-widest text-primary font-bold">{m.category_label} · {m.muscle_label}</div>
+                  <div className="text-on-surface font-bold truncate">{m.name}</div>
+                  {m.equipment_type && <div className="text-[11px] text-on-surface-variant truncate">{m.equipment_type}</div>}
+                </div>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${
+                  m.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}>
+                  {m.is_active ? 'Active' : 'Offline'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[12px]">
+                <div><div className="text-[9px] uppercase tracking-widest text-on-surface-variant">QR code</div>
+                  <div className="font-mono text-primary truncate">{m.qr_tag_id || 'None'}</div></div>
+                <div><div className="text-[9px] uppercase tracking-widest text-on-surface-variant">Sets, 30 days</div>
+                  <div className="text-on-surface font-bold">{m.entries_30d ?? 0}</div></div>
+                <div><div className="text-[9px] uppercase tracking-widest text-on-surface-variant">All time</div>
+                  <div className="text-on-surface font-bold">{m.total_workout_entries}</div></div>
+              </div>
+              <div className="flex gap-2 mt-auto pt-3 border-t border-[#1a1a1e]">
+                <button type="button" className={`${btn.ghost} flex-1`} onClick={() => setEditing(m)}>Edit</button>
+                {m.qr_tag_id
+                  ? <button type="button" className={`${btn.ghost} flex-1`} onClick={() => setQrFor(m)}>QR label</button>
+                  : <button type="button" className={`${btn.primary} flex-1`} onClick={() => regenerate(m)}>Create QR</button>}
+              </div>
+            </div>
           ))}
         </div>
       )}
 
-      {/* QR Modal */}
-      <AnimatePresence>
-        {qrModal && (
-          <QRModal machine={qrModal} onClose={() => setQrModal(null)} />
-        )}
-      </AnimatePresence>
+      {editing && <MachineEditor machine={editing} options={options} onClose={() => setEditing(null)}
+        onSaved={(row, isNew) => { saved(); if (isNew) setQrFor(row); }} />}
+      {qrFor && <QrLabel machine={qrFor} onClose={() => setQrFor(null)} onRegenerate={() => regenerate(qrFor)} />}
     </div>
   );
 }
 
-/* ============================================ */
-/* MACHINE CARD                                  */
-/* ============================================ */
-function MachineCard({ machine, index, onViewQR, onRegenerate }) {
+function Field({ label, error, hint, children, className = '' }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
-      whileHover={{ y: -3 }}
-      className="bg-surface-container rounded-xl p-5 flex flex-col gap-3 shadow-md hover:shadow-xl"
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-            {machine.category}
-          </span>
-          <h3 className="font-title-lg text-title-lg text-on-surface mt-1">
-            {machine.name}
-          </h3>
-        </div>
-        <span
-          className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${
-            machine.is_active
-              ? 'bg-emerald-400/15 text-emerald-400'
-              : 'bg-error/20 text-error'
-          }`}
-        >
-          {machine.is_active ? 'Active' : 'Offline'}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-surface-container-lowest rounded-lg p-2">
-          <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider block">
-            QR Tag
-          </span>
-          <span className="font-mono text-[11px] text-primary">
-            {machine.qr_tag_id || 'Unassigned'}
-          </span>
-        </div>
-        <div className="bg-surface-container-lowest rounded-lg p-2">
-          <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider block">
-            Muscle
-          </span>
-          <span className="font-title-md text-[12px] text-on-surface capitalize">
-            {machine.primary_muscle}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between text-on-surface-variant text-[10px] uppercase tracking-wider pt-2 border-t border-surface-container-high">
-        <span>Workout Entries</span>
-        <span className="text-primary font-bold">
-          {machine.total_workout_entries}
-        </span>
-      </div>
-
-      <div className="flex gap-2 mt-1">
-        <button
-          onClick={() => onViewQR(machine)}
-          disabled={!machine.qr_tag_id}
-          className="flex-1 py-2 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-40 flex items-center justify-center gap-1"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[14px]">qr_code_2</span>
-          View QR
-        </button>
-        <button
-          onClick={() => onRegenerate(machine)}
-          className="flex-1 py-2 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[14px]">refresh</span>
-          Regenerate
-        </button>
-      </div>
-    </motion.div>
+    <label className={`flex flex-col gap-1 ${className}`}>
+      <span className={labelCls}>{label}</span>
+      {children}
+      {hint && <span className="text-[11px] text-on-surface-variant">{hint}</span>}
+      {error && <span className="text-[11px] text-rose-400">{error}</span>}
+    </label>
   );
 }
 
-/* ============================================ */
-/* QR MODAL                                      */
-/* ============================================ */
-function QRModal({ machine, onClose }) {
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-  const qrPayload = machine.qr_tag_id
-    ? `${apiBase}/workouts/machine/${machine.qr_tag_id}/`
-    : `${apiBase}/workouts/machine/${machine.id}/`;
+function MachineEditor({ machine, options, onClose, onSaved }) {
+  const isNew = !machine.id;
+  const [f, setF] = useState(() => ({ ...machine, technique_cues: (machine.technique_cues || []).join('\n'),
+    recommended_weight_kg: machine.recommended_weight_kg ?? '' }));
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
 
-  const downloadQR = (format) => {
-    const svg = document.getElementById('qr-svg');
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-
-    img.onload = () => {
-      canvas.width = 512;
-      canvas.height = 512;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 512, 512);
-      ctx.drawImage(img, 0, 0, 512, 512);
-
-      const url = canvas.toDataURL(`image/${format}`);
-      const link = document.createElement('a');
-      link.download = `${machine.qr_tag_id || 'machine'}-qr.${format}`;
-      link.href = url;
-      link.click();
-    };
-
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  const save = async () => {
+    setBusy(true);
+    setErrors({});
+    const body = { ...f, technique_cues: f.technique_cues };
+    delete body.id; delete body.qr_tag_id; delete body.total_workout_entries; delete body.entries_30d;
+    delete body.category_label; delete body.muscle_label;
+    try {
+      const row = isNew ? await adminService.createMachine(body) : await adminService.updateMachine(machine.id, body);
+      toast.success(isNew ? `${row.name} added — print its QR label` : 'Machine saved');
+      onSaved(row, isNew);
+      onClose();
+    } catch (err) {
+      setErrors(fieldErrors(err));
+      toast.error(errorMessage(err, 'Could not save the machine'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-surface-container-high overflow-hidden"
-      >
-        <div className="p-5 border-b border-surface-container-high flex items-center justify-between">
-          <div>
-            <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-              QR Fleet Tag
-            </span>
-            <h3 className="font-headline-md text-headline-md text-on-surface uppercase">
-              {machine.name}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-error/20 flex items-center justify-center"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
-        </div>
-
-        <div className="p-6 flex flex-col items-center gap-4">
-          <div className="bg-white rounded-2xl p-6 shadow-[0_0_40px_rgba(229,25,55,0.15)]">
-            <QRCodeSVG
-              id="qr-svg"
-              value={qrPayload}
-              size={200}
-              level="H"
-              bgColor="#ffffff"
-              fgColor="#000000"
-            />
-          </div>
-
-          <div className="text-center">
-            <span className="font-mono text-[12px] text-primary font-bold block">
-              {machine.qr_tag_id}
-            </span>
-            <span className="font-label-md text-[10px] text-on-surface-variant mt-1 block">
-              {machine.category} · {machine.primary_muscle}
-            </span>
-          </div>
-
-          <div className="w-full grid grid-cols-2 gap-2 mt-2">
-            <button
-              onClick={() => downloadQR('png')}
-              className="flex items-center justify-center gap-2 py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider transition-all"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              <span>PNG</span>
-            </button>
-            <button
-              onClick={() => downloadQR('svg')}
-              className="flex items-center justify-center gap-2 py-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg uppercase tracking-wider transition-all"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              <span>SVG</span>
-            </button>
-          </div>
-
-          <button
-            onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg uppercase tracking-wider transition-all"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[18px]">print</span>
-            <span>Print QR Tag</span>
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
+    <Drawer open title={isNew ? 'Add machine' : machine.name} onClose={onClose}
+      subtitle={isNew ? 'It gets a QR code as soon as it’s saved.' : `QR ${machine.qr_tag_id || 'not created yet'}`}
+      footer={<>
+        <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
+        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+      </>}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Field label="Name" error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} placeholder="Leg Press" /></Field>
+        <Field label="Category" error={errors.category}>
+          <select className={inputCls} value={f.category} onChange={set('category')}>
+            {(options?.categories || []).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select></Field>
+        <Field label="Main muscle group" error={errors.primary_muscle}>
+          <select className={inputCls} value={f.primary_muscle} onChange={set('primary_muscle')}>
+            {(options?.muscles || []).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select></Field>
+        <Field label="Equipment" error={errors.equipment_type}><input className={inputCls} value={f.equipment_type} onChange={set('equipment_type')} placeholder="Plate-loaded, 45° sled" /></Field>
+        <Field label="Floor number / asset ID" error={errors.machine_id}><input className={inputCls} value={f.machine_id} onChange={set('machine_id')} placeholder="ST-07" /></Field>
+        <Field label="What it’s for" error={errors.description} className="md:col-span-2">
+          <textarea className={inputCls} rows={3} value={f.description} onChange={set('description')} /></Field>
+        <Field label="Setup" error={errors.setup_instructions} className="md:col-span-2">
+          <textarea className={inputCls} rows={3} value={f.setup_instructions} onChange={set('setup_instructions')} placeholder="Seat height so knees are at 90°…" /></Field>
+        <Field label="Technique cues (one per line)" error={errors.technique_cues} className="md:col-span-2">
+          <textarea className={inputCls} rows={4} value={f.technique_cues} onChange={set('technique_cues')} /></Field>
+        <Field label="Rest between sets (seconds)" error={errors.default_rest_seconds}>
+          <input className={inputCls} type="number" min="0" max="900" value={f.default_rest_seconds} onChange={set('default_rest_seconds')} /></Field>
+        <Field label="Starting weight (kg, optional)" error={errors.recommended_weight_kg}>
+          <input className={inputCls} inputMode="decimal" value={f.recommended_weight_kg} onChange={set('recommended_weight_kg')} /></Field>
+        <Field label="Target intensity" error={errors.target_intensity}><input className={inputCls} value={f.target_intensity} onChange={set('target_intensity')} placeholder="RPE 8" /></Field>
+        <Field label="Tempo" error={errors.cadence}><input className={inputCls} value={f.cadence} onChange={set('cadence')} placeholder="3-0-1-0" /></Field>
+        <Field label="Video link" error={errors.video_url}><input className={inputCls} value={f.video_url} onChange={set('video_url')} placeholder="https://…" /></Field>
+        <Field label="Image link" error={errors.image_url}><input className={inputCls} value={f.image_url} onChange={set('image_url')} placeholder="https://…" /></Field>
+      </div>
+      <div className="flex flex-col gap-2 text-[13px] text-on-surface">
+        <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_compound} onChange={set('is_compound')} />Compound movement</label>
+        <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />
+          <span>In service<span className="block text-[11px] text-on-surface-variant">When off, scanning its QR says the machine is unavailable.</span></span></label>
+      </div>
+    </Drawer>
   );
 }
 
-function StatTile({ label, value, icon, accent }) {
+function QrLabel({ machine, onClose, onRegenerate }) {
+  const link = machineQrLink(machine.qr_tag_id);
+
+  const svgMarkup = () => new XMLSerializer().serializeToString(document.getElementById('machine-qr'));
+
+  const download = () => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 1024;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, 1024, 1024);
+      ctx.drawImage(img, 64, 64, 896, 896);
+      const a = document.createElement('a');
+      a.download = `${machine.qr_tag_id}.png`;
+      a.href = c.toDataURL('image/png');
+      a.click();
+    };
+    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgMarkup())))}`;
+  };
+
+  const print = () => {
+    const w = window.open('', '_blank', 'width=480,height=640');
+    if (!w) { toast.error('Allow pop-ups to print the label'); return; }
+    const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(machine.qr_tag_id)}</title>
+      <style>body{font-family:system-ui,sans-serif;text-align:center;margin:24px}svg{width:70mm;height:70mm}
+      h1{font-size:20px;margin:12px 0 4px}p{margin:2px 0;color:#444;font-size:12px}</style></head>
+      <body>${svgMarkup()}<h1>${esc(machine.name)}</h1><p>Scan with your phone or the Smart Gym app</p>
+      <p><b>${esc(machine.qr_tag_id)}</b></p></body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-lg p-5 shadow-md overflow-hidden ${
-        accent
-          ? 'bg-primary-container/10 border border-primary-container/30'
-          : 'bg-surface-container'
-      }`}
-    >
-      {accent && (
-        <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary-container/15 rounded-full blur-2xl pointer-events-none" />
-      )}
-      <div
-        className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
-          accent
-            ? 'bg-primary-container/20 text-primary'
-            : 'bg-surface-container-high text-on-surface-variant'
-        }`}
-      >
-        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+    <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true"
+      aria-label={`QR label for ${machine.name}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-sm bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl p-5 flex flex-col items-center gap-4">
+        <div className="w-full flex items-start justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-primary font-bold">QR label</div>
+            <div className="text-on-surface font-bold">{machine.name}</div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="w-8 h-8 rounded bg-[#131316] text-on-surface-variant grid place-items-center">
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+        <div className="bg-white rounded-lg p-4">
+          <QRCodeSVG id="machine-qr" value={link} size={200} level="M" bgColor="#ffffff" fgColor="#000000" />
+        </div>
+        <div className="text-center">
+          <div className="font-mono text-primary font-bold">{machine.qr_tag_id}</div>
+          <div className="text-[11px] text-on-surface-variant break-all mt-1">{link}</div>
+        </div>
+        <div className="w-full grid grid-cols-2 gap-2">
+          <button type="button" className={btn.primary} onClick={print}>Print label</button>
+          <button type="button" className={btn.ghost} onClick={download}>Download PNG</button>
+        </div>
+        <button type="button" className="text-[11px] text-on-surface-variant underline" onClick={onRegenerate}>
+          Label lost or copied? Issue a new code
+        </button>
       </div>
-      <span className="font-label-md text-[10px] text-on-surface-variant uppercase block">
-        {label}
-      </span>
-      <span
-        className={`block font-headline-lg text-headline-lg leading-none mt-1 ${
-          accent ? 'text-primary' : 'text-on-surface'
-        }`}
-      >
-        {value}
-      </span>
-    </motion.div>
+    </div>
   );
 }

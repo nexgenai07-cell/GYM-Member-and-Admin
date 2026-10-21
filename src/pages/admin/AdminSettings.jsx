@@ -1,532 +1,105 @@
 // src/pages/admin/AdminSettings.jsx
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+// What this deployment is actually configured to do (payments, email, uploads, gym), who can do
+// what, and your own account. Values come from the server's environment variables.
+import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
+import { PageHeader } from '../../components/site/SiteUi';
+import { btn } from '../../components/site/siteStyles';
 
-const SECTIONS = [
-  { id: 'general', label: 'General', icon: 'tune', description: 'Brand, locale, region' },
-  { id: 'roles', label: 'Roles & Permissions', icon: 'badge', description: 'Access control matrix' },
-  { id: 'integrations', label: 'Integrations', icon: 'extension', description: 'Connected services' },
-  { id: 'security', label: 'Security', icon: 'shield', description: '2FA, sessions, policies' },
-  { id: 'notifications', label: 'Notifications', icon: 'notifications', description: 'Channels & alerts' },
-  { id: 'billing', label: 'Billing', icon: 'payments', description: 'Invoice & tax settings' },
-];
+function Card({ title, icon, children }) {
+  return (
+    <section className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-5 flex flex-col gap-3">
+      <h2 className="flex items-center gap-2 text-on-surface font-bold uppercase tracking-wider text-[13px]">
+        <span className="material-symbols-outlined text-primary text-[18px]">{icon}</span>{title}
+      </h2>
+      <dl className="flex flex-col gap-2 text-[13px]">{children}</dl>
+    </section>
+  );
+}
+
+function Row({ label, value, tone }) {
+  const color = { ok: 'text-emerald-400', warn: 'text-amber-300', bad: 'text-rose-400' }[tone] || 'text-on-surface';
+  return (
+    <div className="flex justify-between gap-4 border-b border-[#1a1a1e] last:border-0 pb-2 last:pb-0">
+      <dt className="text-on-surface-variant">{label}</dt>
+      <dd className={`text-right ${color}`}>{value}</dd>
+    </div>
+  );
+}
 
 export default function AdminSettings() {
-  const [activeSection, setActiveSection] = useState('general');
-  const [draft, setDraft] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const { data: s, loading } = useApi(() => adminService.settings(), []);
 
-  const { data, loading } = useApi(() => adminService.settings(), []);
-
-  // Sync server → draft on first load
-  useEffect(() => {
-    if (data && !draft) {
-      setDraft(JSON.parse(JSON.stringify(data)));
-    }
-  }, [data, draft]);
-
-  const updateSection = (section, patch) => {
-    setDraft((prev) => ({
-      ...prev,
-      [section]: { ...prev[section], ...patch },
-    }));
-  };
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await adminService.updateSettings(draft);
-      toast.success('Settings saved');
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Save failed');
-    } finally {
-      setSaving(false);
-    }
-  };
+  if (loading || !s) {
+    return <div className="p-6 md:p-8"><div className="h-96 bg-[#0e0e0f] rounded-lg animate-pulse" /></div>;
+  }
+  const { payments: p, email: e, storage: st, gym: g, server, access, me } = s;
+  const modeTone = { live: 'ok', test: 'warn' }[p.mode] || 'bad';
 
   return (
-    <div className="w-full p-6 flex flex-col gap-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between flex-wrap gap-3"
-      >
-        <div>
-          <div className="flex items-center gap-2 text-primary mb-2">
-            <span className="material-symbols-outlined text-[16px]">settings</span>
-            <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-              System Configuration
-            </span>
+    <div className="p-6 md:p-8 flex flex-col gap-6">
+      <PageHeader title="Settings" subtitle="How this system is set up. These values come from the server’s environment variables (Vercel → Project → Settings → Environment Variables); change them there and redeploy." />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card title="Payments" icon="credit_card">
+          <Row label="Provider" value={p.provider} />
+          <Row label="Mode" value={p.mode === 'live' ? 'Live — real cards are charged' : p.mode === 'test' ? 'Test — no real money moves' : `Not working (${p.mode})`} tone={modeTone} />
+          <Row label="Checkout key" value={p.publishable_key_set ? 'Set' : 'Missing'} tone={p.publishable_key_set ? 'ok' : 'bad'} />
+          <Row label="Webhook secret" value={p.webhook_secret_set ? 'Set' : 'Missing — payments still verify on return, but late confirmations are missed'} tone={p.webhook_secret_set ? 'ok' : 'warn'} />
+          <Row label="Currency" value={p.currency} />
+          <Row label="VAT on shop items" value={`${p.vat_rate_percent}%`} />
+        </Card>
+
+        <Card title="Email" icon="mail">
+          <Row label="Sending" value={e.sending ? 'Yes' : 'No'} tone={e.sending ? 'ok' : 'bad'} />
+          <Row label="How" value={e.method} />
+          <Row label="From address" value={e.from} />
+          <Row label="Contact form alerts go to" value={e.contact_form_notifies || 'Nobody (messages wait in Website Inbox)'} tone={e.contact_form_notifies ? undefined : 'warn'} />
+          {!e.sending && <p className="text-[12px] text-amber-300">Welcome emails, receipts, password resets and staff invites aren’t delivered until email is set up.</p>}
+        </Card>
+
+        <Card title="Gym" icon="fitness_center">
+          <Row label="Time zone (all dates and hours)" value={g.time_zone} />
+          <Row label="Capacity for the live load" value={`${g.capacity.value || '—'} · from ${g.capacity.source}`} tone={g.capacity.value ? undefined : 'warn'} />
+          <Row label="Member portal" value={g.portal_url.join(', ')} />
+          <Row label="Uploads" value={st.uploads} tone={st.durable ? 'ok' : 'warn'} />
+          <Row label="Database" value={server.database} />
+          {server.debug && <Row label="Debug mode" value="On — never use on the live site" tone="bad" />}
+        </Card>
+
+        <Card title="Your account" icon="account_circle">
+          <Row label="Name" value={me.name || '—'} />
+          <Row label="Email" value={me.email} />
+          <Row label="Role" value={me.role} />
+          <div className="flex gap-2 pt-2">
+            <Link to="/dashboard/change-password" className={btn.ghost}>Change password</Link>
+            <Link to="/admin/staff" className={btn.ghost}>Manage staff</Link>
           </div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-            Admin Settings
-          </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-            Configure system preferences, roles, integrations, and security policies.
-          </p>
-        </div>
+        </Card>
+      </div>
 
-        <button
-          onClick={save}
-          disabled={saving || loading || !draft}
-          className={`px-5 py-3 rounded-lg font-label-lg uppercase tracking-wider transition-all flex items-center gap-2 ${
-            saving || loading
-              ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed'
-              : 'bg-primary-container hover:bg-secondary-container text-on-primary-container shadow-[0_0_16px_rgba(229,25,55,0.35)]'
-          }`}
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {saving ? 'hourglass_top' : 'save'}
-          </span>
-          <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-        </button>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Sidebar nav */}
-        <div className="lg:col-span-3 flex flex-col gap-1">
-          {SECTIONS.map((s) => (
-            <motion.button
-              key={s.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => setActiveSection(s.id)}
-              className={`flex items-start gap-3 px-4 py-3 rounded-lg transition-all text-left ${
-                activeSection === s.id
-                  ? 'bg-primary-container/15 border border-primary-container/30'
-                  : 'bg-surface-container-low hover:bg-surface-container-high'
-              }`}
-              type="button"
-            >
-              <span
-                className={`material-symbols-outlined text-[20px] mt-0.5 ${
-                  activeSection === s.id ? 'text-primary' : 'text-on-surface-variant'
-                }`}
-              >
-                {s.icon}
-              </span>
-              <div className="flex flex-col min-w-0">
-                <span
-                  className={`font-title-md text-[13px] ${
-                    activeSection === s.id ? 'text-primary' : 'text-on-surface'
-                  }`}
-                >
-                  {s.label}
-                </span>
-                <span className="font-label-md text-[10px] text-on-surface-variant mt-0.5">
-                  {s.description}
+      <section className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-5 flex flex-col gap-3">
+        <h2 className="flex items-center gap-2 text-on-surface font-bold uppercase tracking-wider text-[13px]">
+          <span className="material-symbols-outlined text-primary text-[18px]">shield_person</span>Who can do what
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {access.map((a) => (
+            <div key={a.role} className="bg-[#131316] rounded-lg p-4 text-[13px] flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-on-surface font-bold">{a.role}</span>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${a.portal ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
+                  {a.portal ? 'Admin sign-in' : 'No admin sign-in'}
                 </span>
               </div>
-            </motion.button>
+              <ul className="flex flex-col gap-1">
+                {a.can.map((c) => <li key={c} className="text-on-surface-variant">✓ {c}</li>)}
+                {(a.cannot || []).map((c) => <li key={c} className="text-on-surface-variant/60">✕ {c}</li>)}
+              </ul>
+            </div>
           ))}
         </div>
-
-        {/* Content */}
-        <div className="lg:col-span-9">
-          {loading || !draft ? (
-            <div className="bg-surface-container rounded-xl p-6 h-96 animate-pulse" />
-          ) : (
-            <>
-              {activeSection === 'general' && (
-                <GeneralSettings
-                  data={draft.general}
-                  onChange={(patch) => updateSection('general', patch)}
-                />
-              )}
-              {activeSection === 'roles' && (
-                <RolesSettings data={draft.roles} />
-              )}
-              {activeSection === 'integrations' && (
-                <IntegrationsSettings data={draft.integrations} />
-              )}
-              {activeSection === 'security' && (
-                <SecuritySettings
-                  data={draft.security}
-                  onChange={(patch) => updateSection('security', patch)}
-                />
-              )}
-              {activeSection === 'notifications' && (
-                <NotificationsSettings
-                  data={draft.notifications}
-                  onChange={(patch) => updateSection('notifications', patch)}
-                />
-              )}
-              {activeSection === 'billing' && (
-                <BillingSettings
-                  data={draft.billing}
-                  onChange={(patch) => updateSection('billing', patch)}
-                />
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      </section>
     </div>
-  );
-}
-
-/* ============================================ */
-/* SHARED UI                                     */
-/* ============================================ */
-function SettingsCard({ title, description, children }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-surface-container rounded-xl p-6 shadow-md flex flex-col gap-4"
-    >
-      <div>
-        <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-          {title}
-        </h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          {description}
-        </p>
-      </div>
-      <div className="flex flex-col gap-4">{children}</div>
-    </motion.div>
-  );
-}
-
-function SettingsInput({ label, value, type = 'text', onChange }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) =>
-          onChange && onChange(type === 'number' ? Number(e.target.value) : e.target.value)
-        }
-        className="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md px-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"
-      />
-    </div>
-  );
-}
-
-function Toggle({ label, description, checked, onChange }) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg">
-      <div className="flex flex-col min-w-0 pr-4">
-        <span className="font-title-md text-[13px] text-on-surface">{label}</span>
-        <span className="font-label-md text-[10px] text-on-surface-variant mt-0.5">
-          {description}
-        </span>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`w-11 h-6 rounded-full transition-colors shrink-0 ${
-          checked ? 'bg-primary-container' : 'bg-surface-container-highest'
-        }`}
-        type="button"
-      >
-        <span
-          className={`block w-5 h-5 rounded-full bg-white transition-transform shadow-md ${
-            checked ? 'translate-x-5' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
-
-/* ============================================ */
-/* GENERAL                                       */
-/* ============================================ */
-function GeneralSettings({ data, onChange }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <SettingsCard
-        title="Brand Identity"
-        description="Manage your gym's public identity and contact information."
-      >
-        <SettingsInput
-          label="Gym Name"
-          value={data.gym_name || ''}
-          onChange={(v) => onChange({ gym_name: v })}
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SettingsInput
-            label="Primary Email"
-            type="email"
-            value={data.primary_email || ''}
-            onChange={(v) => onChange({ primary_email: v })}
-          />
-          <SettingsInput
-            label="Support Phone"
-            type="tel"
-            value={data.support_phone || ''}
-            onChange={(v) => onChange({ support_phone: v })}
-          />
-        </div>
-        <SettingsInput
-          label="Address"
-          value={data.address || ''}
-          onChange={(v) => onChange({ address: v })}
-        />
-      </SettingsCard>
-
-      <SettingsCard
-        title="Regional Preferences"
-        description="Set language, timezone, and currency."
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <SettingsInput
-            label="Language"
-            value={data.language || ''}
-            onChange={(v) => onChange({ language: v })}
-          />
-          <SettingsInput
-            label="Timezone"
-            value={data.timezone || ''}
-            onChange={(v) => onChange({ timezone: v })}
-          />
-          <SettingsInput
-            label="Currency"
-            value={data.currency || ''}
-            onChange={(v) => onChange({ currency: v })}
-          />
-        </div>
-      </SettingsCard>
-    </div>
-  );
-}
-
-/* ============================================ */
-/* ROLES                                         */
-/* ============================================ */
-function RolesSettings({ data }) {
-  const rows = data?.matrix || [];
-  return (
-    <SettingsCard
-      title="Roles & Permissions Matrix"
-      description="Define what each role can access and modify."
-    >
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-surface-container-lowest text-on-surface-variant font-label-md text-[10px] uppercase tracking-wider">
-              <th className="py-2 px-3 text-left">Role</th>
-              <th className="py-2 px-3 text-left">Members</th>
-              <th className="py-2 px-3 text-left">Trainers</th>
-              <th className="py-2 px-3 text-left">Finance</th>
-              <th className="py-2 px-3 text-left">Machines</th>
-              <th className="py-2 px-3 text-left">Settings</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-container-highest/50">
-            {rows.map((p) => (
-              <tr key={p.role}>
-                <td className="py-2 px-3 font-title-md text-[12px] text-on-surface">
-                  {p.role}
-                </td>
-                <td className="py-2 px-3 text-[11px] text-on-surface-variant">{p.members}</td>
-                <td className="py-2 px-3 text-[11px] text-on-surface-variant">{p.trainers}</td>
-                <td className="py-2 px-3 text-[11px] text-on-surface-variant">{p.finance}</td>
-                <td className="py-2 px-3 text-[11px] text-on-surface-variant">{p.machines}</td>
-                <td className="py-2 px-3 text-[11px] text-on-surface-variant">{p.settings}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </SettingsCard>
-  );
-}
-
-/* ============================================ */
-/* INTEGRATIONS                                  */
-/* ============================================ */
-function IntegrationsSettings({ data }) {
-  const services = data?.services || [];
-  return (
-    <SettingsCard
-      title="Connected Services"
-      description="Third-party integrations and API credentials."
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {services.map((i) => (
-          <div
-            key={i.name}
-            className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[20px]">{i.icon}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-title-md text-[13px] text-on-surface">{i.name}</span>
-                <span className="font-label-md text-[10px] text-on-surface-variant">
-                  {i.detail}
-                </span>
-              </div>
-            </div>
-            <span
-              className={`px-2 py-1 rounded font-label-md text-[9px] uppercase tracking-wider font-bold ${
-                i.status === 'connected'
-                  ? 'bg-emerald-400/15 text-emerald-400'
-                  : 'bg-primary-container/20 text-primary'
-              }`}
-            >
-              {i.status === 'connected' ? 'Connected' : 'Review'}
-            </span>
-          </div>
-        ))}
-      </div>
-    </SettingsCard>
-  );
-}
-
-/* ============================================ */
-/* SECURITY                                      */
-/* ============================================ */
-function SecuritySettings({ data, onChange }) {
-  return (
-    <SettingsCard
-      title="Security & Authentication"
-      description="Configure authentication policies and session controls."
-    >
-      <Toggle
-        label="Enforce 2FA for Admins"
-        description="All admin accounts must use two-factor authentication"
-        checked={!!data.enforce_2fa_admins}
-        onChange={(v) => onChange({ enforce_2fa_admins: v })}
-      />
-      <Toggle
-        label="Enforce 2FA for Staff"
-        description="Trainers and staff require OTP verification"
-        checked={!!data.enforce_2fa_staff}
-        onChange={(v) => onChange({ enforce_2fa_staff: v })}
-      />
-      <Toggle
-        label="Biometric Login"
-        description="Allow fingerprint/face ID on the mobile app"
-        checked={!!data.biometric_login}
-        onChange={(v) => onChange({ biometric_login: v })}
-      />
-      <Toggle
-        label="Session Timeout (30 min)"
-        description="Auto-logout inactive sessions after 30 minutes"
-        checked={!!data.session_timeout_30min}
-        onChange={(v) => onChange({ session_timeout_30min: v })}
-      />
-      <Toggle
-        label="IP Whitelist for Admin"
-        description="Restrict admin panel to specific IP ranges"
-        checked={!!data.ip_whitelist_admin}
-        onChange={(v) => onChange({ ip_whitelist_admin: v })}
-      />
-      <Toggle
-        label="Audit Log Retention"
-        description="Retain all system audit logs for 24 months"
-        checked={!!data.audit_log_retention}
-        onChange={(v) => onChange({ audit_log_retention: v })}
-      />
-    </SettingsCard>
-  );
-}
-
-/* ============================================ */
-/* NOTIFICATIONS                                 */
-/* ============================================ */
-function NotificationsSettings({ data, onChange }) {
-  return (
-    <SettingsCard
-      title="Notification Channels"
-      description="Enable or disable different types of member notifications."
-    >
-      <Toggle
-        label="Push Notifications"
-        description="Send workout reminders, streak alerts, and achievements"
-        checked={!!data.push}
-        onChange={(v) => onChange({ push: v })}
-      />
-      <Toggle
-        label="Email Notifications"
-        description="Send receipts, renewal reminders, and monthly reports"
-        checked={!!data.email}
-        onChange={(v) => onChange({ email: v })}
-      />
-      <Toggle
-        label="WhatsApp Business"
-        description="Enable WhatsApp for confirmations and reminders"
-        checked={!!data.whatsapp}
-        onChange={(v) => onChange({ whatsapp: v })}
-      />
-      <Toggle
-        label="SMS Alerts"
-        description="Critical alerts via SMS (higher cost)"
-        checked={!!data.sms}
-        onChange={(v) => onChange({ sms: v })}
-      />
-      <Toggle
-        label="Marketing Newsletter"
-        description="Include members in promotional campaigns"
-        checked={!!data.marketing_newsletter}
-        onChange={(v) => onChange({ marketing_newsletter: v })}
-      />
-    </SettingsCard>
-  );
-}
-
-/* ============================================ */
-/* BILLING                                       */
-/* ============================================ */
-function BillingSettings({ data, onChange }) {
-  return (
-    <SettingsCard
-      title="Billing & Invoicing"
-      description="Configure billing preferences and invoice details."
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SettingsInput
-          label="Default Currency"
-          value={data.currency || ''}
-          onChange={(v) => onChange({ currency: v })}
-        />
-        <SettingsInput
-          label="Tax Rate (%)"
-          type="number"
-          value={data.tax_rate ?? 0}
-          onChange={(v) => onChange({ tax_rate: v })}
-        />
-        <SettingsInput
-          label="Invoice Prefix"
-          value={data.invoice_prefix || ''}
-          onChange={(v) => onChange({ invoice_prefix: v })}
-        />
-        <SettingsInput
-          label="Payment Terms (days)"
-          type="number"
-          value={data.payment_terms_days ?? 30}
-          onChange={(v) => onChange({ payment_terms_days: v })}
-        />
-      </div>
-      <Toggle
-        label="Auto-Charge Renewals"
-        description="Automatically charge saved payment methods on renewal date"
-        checked={!!data.auto_charge_renewals}
-        onChange={(v) => onChange({ auto_charge_renewals: v })}
-      />
-      <Toggle
-        label="Allow Refunds"
-        description="Enable refunds for canceled subscriptions"
-        checked={!!data.allow_refunds}
-        onChange={(v) => onChange({ allow_refunds: v })}
-      />
-      <Toggle
-        label="Invoice PDF Branding"
-        description="Include Smart Gym logo on generated invoices"
-        checked={!!data.invoice_pdf_branding}
-        onChange={(v) => onChange({ invoice_pdf_branding: v })}
-      />
-    </SettingsCard>
   );
 }

@@ -1,10 +1,10 @@
 // src/components/admin/RevenueStreams.jsx
 import { motion } from 'framer-motion';
-
+import { formatSAR } from '../../utils/money';
 export default function RevenueStreams({ data, loading }) {
   const streams = data?.streams || [];
   const paymentMethods = data?.payment_methods || [];
-  const total = data?.total_30d || 0;
+  const total = data?.total || 0;
 
   if (loading) {
     return <div className="h-96 bg-surface-container rounded-xl animate-pulse" />;
@@ -19,24 +19,24 @@ export default function RevenueStreams({ data, loading }) {
       <div className="flex justify-between items-start">
         <div>
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            Financial Engine
+            {data?.range_label || 'Last 30 days'}
           </span>
           <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-            Revenue Breakdown
+            Where the money comes from
           </h2>
         </div>
         <span className="font-title-md text-title-md text-on-surface font-mono">
-          ${Number(total).toLocaleString()}
+          {formatSAR(total)}
         </span>
       </div>
 
       <div className="flex flex-col gap-4">
         <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
-          By Protocol Stream (30d)
+          By type
         </span>
         {streams.length === 0 ? (
           <div className="text-center py-8 text-on-surface-variant text-[13px]">
-            No revenue streams in the last 30 days
+            No payments in this period
           </div>
         ) : (
           streams.map((r, i) => (
@@ -57,12 +57,12 @@ export default function RevenueStreams({ data, loading }) {
                   </span>
                 </div>
                 <span className="font-mono text-[11px] text-on-surface whitespace-nowrap">
-                  ${Number(r.value).toLocaleString()} · {r.percent}%
+                  {formatSAR(r.value)} · {r.percent}%
                 </span>
               </div>
               <div className="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
                 <motion.div
-                  className={`${r.color} h-full rounded-full`}
+                  className={`${r.value < 0 ? 'bg-on-surface-variant/50' : 'bg-primary-container'} h-full rounded-full`}
                   initial={{ width: 0 }}
                   animate={{ width: `${r.percent}%` }}
                   transition={{ duration: 1, delay: 0.2 + i * 0.08 }}
@@ -77,7 +77,7 @@ export default function RevenueStreams({ data, loading }) {
 
       <div className="flex flex-col gap-4">
         <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
-          By Payment Method
+          By payment method
         </span>
         {paymentMethods.length === 0 ? (
           <div className="text-center py-4 text-on-surface-variant text-[12px]">
@@ -105,7 +105,7 @@ export default function RevenueStreams({ data, loading }) {
                   {p.label}
                 </span>
                 <span className="font-mono text-[11px] text-on-surface-variant">
-                  ${Number(p.value).toLocaleString()}
+                  {formatSAR(p.value)}
                 </span>
               </motion.div>
             ))}

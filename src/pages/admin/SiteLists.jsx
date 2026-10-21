@@ -2,6 +2,7 @@
 // Admin-managed lists on the public website (facilities, articles, …).
 // The form is generated from each list's schema served by the backend.
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { siteContentService as api } from '../../services/siteContentService';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
@@ -19,18 +20,24 @@ export default function SiteLists() {
   const [busy, setBusy] = useState(false);
 
   const schema = useMemo(() => schemas.find((s) => s.name === active), [schemas, active]);
+  // Deep links from other admin pages: ?list=facilities&edit=<id> | &new=1
+  const [params, setParams] = useSearchParams();
+  const [deepLink, setDeepLink] = useState(() => ({
+    list: params.get('list'), edit: Number(params.get('edit')) || null, isNew: !!params.get('new'),
+  }));
 
   useEffect(() => {
     (async () => {
       try {
         const data = await api.collections();
         setSchemas(data);
-        setActive((a) => a || data[0]?.name || null);
+        const wanted = deepLink.list;
+        setActive((a) => a || (data.some((s) => s.name === wanted) ? wanted : data[0]?.name) || null);
       } catch (err) {
         toast.error(errorMessage(err));
       }
     })();
-  }, []);
+  }, [deepLink.list]);
 
   const [version, setVersion] = useState(0);
   const load = useCallback(() => setVersion((v) => v + 1), []);
@@ -41,11 +48,19 @@ export default function SiteLists() {
       setLoading(true);
       try {
         const data = await api.items(active);
-        if (alive) setItems(data);
+        if (!alive) return;
+        setItems(data);
+        if (deepLink.list === active && (deepLink.edit || deepLink.isNew)) {
+          const target = deepLink.edit ? data.find((i) => i.id === deepLink.edit) : null;
+          if (target) setEditing(target);
+          else if (deepLink.isNew) setEditing({});
+          setDeepLink({ list: null });
+          setParams({}, { replace: true });
+        }
       } catch (err) { toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [active, version]);
+  }, [active, version, deepLink, setParams]);
 
   const replace = (saved) => setItems((all) => {
     const exists = all.some((i) => i.id === saved.id);

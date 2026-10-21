@@ -51,7 +51,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            Physical Hub Telemetry
+            Facilities right now
           </span>
           <span className="flex items-center gap-1.5">
             <span
@@ -66,12 +66,12 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
         </div>
 
         <h3 className="font-headline-md text-headline-md uppercase text-on-surface">
-          Facility Node Status
+          Facility load
         </h3>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1 text-[13px]">
           {list.length > 0
             ? `${list.length} active node${list.length > 1 ? 's' : ''} · ${totalVisits} visits today`
-            : 'No active facility nodes reporting'}
+            : "Set facility capacities in Admin → Facilities to track load"}
         </p>
       </div>
 
@@ -184,21 +184,13 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
         </div>
       )}
 
-      {/* Security chip */}
-      <div className="flex items-center gap-2 bg-surface-container-low p-3 rounded-lg mb-3 text-on-surface-variant font-label-md text-[10px]">
-        <span className="material-symbols-outlined text-[14px] text-primary">
-          lock
-        </span>
-        <span>Security: AES-256 Quantum Mesh · 24/7 monitoring</span>
-      </div>
-
       <button
         onClick={() => navigate('/admin/facilities')}
         className="w-full py-3 bg-surface-container-high hover:bg-surface-bright text-on-surface rounded-lg font-label-lg text-label-lg uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">tune</span>
-        <span>Access Facility Nodes</span>
+        <span>Manage facilities</span>
       </button>
     </motion.div>
   );

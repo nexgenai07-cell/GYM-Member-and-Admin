@@ -1,392 +1,292 @@
 // src/pages/admin/AdminMembers.jsx
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+// Members: who has an active, expiring, expired or frozen membership, the member
+// file (payments, visits, facilities), and the actions the front desk needs.
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useApi } from '../../hooks/useApi';
-import { adminService } from '../../services/adminService';
+import { adminService as api } from '../../services/adminService';
+import { errorMessage } from '../../utils/apiError';
+import { formatDate, formatRemaining } from '../../utils/membershipTime';
+import { formatSAR } from '../../utils/money';
+import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
+import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 
-const PAGE_SIZE = 10;
+const FILTERS = [
+  ['', 'All', 'total'], ['active', 'Active', 'active'], ['expiring', 'Expiring (14 days)', 'expiring'],
+  ['expired', 'Expired', 'expired'], ['frozen', 'Frozen', 'frozen'], ['none', 'No membership', 'none'],
+  ['inactive', 'Deactivated', 'inactive'],
+];
+const BADGE = {
+  active: 'bg-emerald-500/15 text-emerald-400', expiring: 'bg-amber-500/15 text-amber-300',
+  expired: 'bg-rose-500/15 text-rose-300', frozen: 'bg-sky-500/15 text-sky-300', none: 'bg-[#1a1a1e] text-on-surface-variant',
+};
 
 export default function AdminMembers() {
+  const [params] = useSearchParams();   // ?status= from alerts and insights
+  const [status, setStatus] = useState(() => (FILTERS.some(([id]) => id && id === params.get('status')) ? params.get('status') : ''));
   const [search, setSearch] = useState('');
-  const [role, setRole] = useState('all');
   const [page, setPage] = useState(1);
+  const [data, setData] = useState({ count: 0, results: [], next: null, previous: null });
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState([]);
+  const [file, setFile] = useState(null);            // member detail
+  const [dialog, setDialog] = useState(null);        // { kind: extend|freeze|message, ids? }
+  const [busy, setBusy] = useState(false);
 
-  const {
-    data: rawMembers,
-    loading,
-    refetch: refetchMembers,
-  } = useApi(
-    () => {
-      const params = { page };
-      if (search) params.search = search;
-      if (role !== 'all') params.role = role;
-      return adminService.members(params);
-    },
-    [page, role],
-    { showError: true }
-  );
+  const [version, setVersion] = useState(0);
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  useEffect(() => {
+    let alive = true;
+    const id = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const [list, st] = await Promise.all([api.members({ status, search: search.trim(), page }), api.memberStats()]);
+        if (!alive) return;
+        setData(list);
+        setStats(st);
+      } catch (err) { toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
+    }, 250);
+    return () => { alive = false; clearTimeout(id); };
+  }, [status, search, page, version]);
 
-  const { data: stats } = useApi(() => adminService.memberStats(), []);
-
-  const members = rawMembers?.results || rawMembers || [];
-  const total = rawMembers?.count || members.length;
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setPage(1);
-    refetchMembers();
+  const openFile = async (id) => {
+    try { setFile(await api.member(id)); } catch (err) { toast.error(errorMessage(err)); }
   };
 
-  const handleAction = async (action, member) => {
-    if (action === 'delete') {
-      if (!confirm(`Deactivate ${member.full_name || member.email}?`)) return;
-    }
+  const run = async (id, action, fields = {}, ok = 'Done') => {
+    setBusy(true);
     try {
-      await adminService.memberAction(member.id, action);
-      toast.success(`Action "${action}" applied to ${member.full_name || member.email}`);
-      refetchMembers();
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || `Failed to ${action}`);
-    }
+      await api.memberAction(id, action, fields);
+      toast.success(ok);
+      setDialog(null);
+      if (file?.id === id) setFile(await api.member(id));
+      reload();
+    } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
   };
 
-  const handleBulkAction = async (action, memberIds) => {
-    if (memberIds.length === 0) {
-      toast.error('No members selected');
-      return;
-    }
+  const bulk = async (action, fields = {}) => {
+    setBusy(true);
     try {
-      const res = await adminService.bulkMemberAction(action, memberIds);
-      toast.success(res.detail || `Bulk ${action} done`);
-      refetchMembers();
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Bulk action failed');
-    }
+      if (action === 'export') {
+        const blob = await api.bulkMemberAction('export', selected);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'smart-gym-members.csv'; a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const res = await api.bulkMemberAction(action, selected, fields);
+        toast.success(res.detail);
+        if (res.errors?.length) toast.error(res.errors.slice(0, 3).join('\n'));
+        setDialog(null);
+        reload();
+      }
+    } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
   };
+
+  const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const allOnPage = data.results.length > 0 && data.results.every((m) => selected.includes(m.id));
 
   return (
-    <div className="w-full p-6 flex flex-col gap-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
-      >
-        <div>
-          <div className="flex items-center gap-2 text-primary">
-            <span className="material-symbols-outlined text-[16px]">groups</span>
-            <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-              Member Roster Management
-            </span>
+    <div className="p-8 bg-background min-h-screen">
+      <PageHeader title="Members" subtitle="Search by name, email, phone or Iqama. Open a member to extend, freeze, message or reset their password." />
+
+      <div className="flex gap-1 mb-4 flex-wrap" role="tablist">
+        {FILTERS.map(([id, label, key]) => (
+          <button key={label} type="button" role="tab" aria-selected={status === id} onClick={() => { setStatus(id); setPage(1); }}
+            className={`px-4 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${status === id ? 'bg-primary-container text-on-primary-container' : 'bg-[#131316] text-on-surface-variant hover:text-on-surface'}`}>
+            {label} <span className="opacity-60">({stats[key] ?? 0})</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2 mb-4 flex-wrap items-center">
+        <input className={`${inputCls} max-w-sm`} placeholder="Search name, email, phone, Iqama…" value={search} aria-label="Search members"
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        {selected.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="text-[12px] text-on-surface-variant">{selected.length} selected</span>
+            <button type="button" className={btn.ghost} disabled={busy} onClick={() => setDialog({ kind: 'message', ids: selected })}>Message</button>
+            <button type="button" className={btn.ghost} disabled={busy} onClick={() => setDialog({ kind: 'freeze', ids: selected })}>Freeze</button>
+            <button type="button" className={btn.ghost} disabled={busy} onClick={() => bulk('export')}>Export CSV</button>
+            <button type="button" className={btn.ghost} onClick={() => setSelected([])}>Clear</button>
           </div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider mt-1">
-            Members Directory
-          </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-            Full member ledger with real-time status, role, and account telemetry.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container-high">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-            Live Sync Active
-          </span>
-        </div>
-      </motion.div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile
-          label="Total Members"
-          value={stats?.total ?? total}
-          icon="groups"
-        />
-        <StatTile
-          label="Active"
-          value={stats?.active ?? '—'}
-          icon="how_to_reg"
-          accent={false}
-        />
-        <StatTile
-          label="Verified"
-          value={stats?.verified ?? '—'}
-          icon="check_circle"
-          accent
-        />
-        <StatTile
-          label="Expiring Soon"
-          value={stats?.expiring_soon ?? '—'}
-          icon="schedule"
-          accent
-        />
+        )}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row gap-3 bg-surface-container-low rounded-xl p-4">
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {['all', 'member', 'trainer', 'nutritionist', 'admin'].map((r) => (
-            <button
-              key={r}
-              onClick={() => {
-                setRole(r);
-                setPage(1);
-              }}
-              className={`px-3 py-2 rounded text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
-                role === r
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface'
-              }`}
-              type="button"
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSearch} className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none z-10">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Search by name, email, or username..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-container-lowest text-on-surface text-body-md pl-10 pr-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"
-          />
-        </form>
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <div className="bg-surface-container-low rounded-xl p-4 flex flex-col gap-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-surface-container rounded animate-pulse" />
-          ))}
-        </div>
-      ) : members.length === 0 ? (
-        <div className="text-center py-16 bg-surface-container-low rounded-xl">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-            person_search
-          </span>
-          <p className="font-title-md text-title-md text-on-surface mt-3">
-            No members found
-          </p>
-        </div>
-      ) : (
-        <div className="bg-surface-container-low rounded-xl shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-surface-container-lowest text-on-surface-variant font-label-md text-[10px] uppercase tracking-wider">
-                  <th className="py-3 px-4 text-left">Member</th>
-                  <th className="py-3 px-4 text-left">Role</th>
-                  <th className="py-3 px-4 text-left">Status</th>
-                  <th className="py-3 px-4 text-left">Phone</th>
-                  <th className="py-3 px-4 text-left">Joined</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+      {loading && !data.results.length ? <Empty>Loading…</Empty> : !data.results.length ? <Empty>No members here.</Empty> : (
+        <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
+          <table className="w-full text-left text-[13px]">
+            <thead>
+              <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-[#1a1a1e]">
+                <th className="p-3 w-8">
+                  <input type="checkbox" aria-label="Select page" checked={allOnPage}
+                    onChange={() => setSelected(allOnPage ? selected.filter((id) => !data.results.some((m) => m.id === id))
+                      : [...new Set([...selected, ...data.results.map((m) => m.id)])])} />
+                </th>
+                <th className="p-3">Member</th><th className="p-3">Iqama</th><th className="p-3">Plan</th>
+                <th className="p-3">Expires</th><th className="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.results.map((m) => (
+                <tr key={m.id} className={`border-b border-[#1a1a1e] last:border-0 hover:bg-[#131316] cursor-pointer ${m.is_active ? '' : 'opacity-60'}`}
+                  onClick={() => openFile(m.id)}>
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" aria-label={`Select ${m.full_name}`} checked={selected.includes(m.id)} onChange={() => toggle(m.id)} />
+                  </td>
+                  <td className="p-3"><div className="text-on-surface font-bold">{m.full_name}</div><div className="text-[11px] text-on-surface-variant">{m.email}{m.phone && ` · ${m.phone}`}</div></td>
+                  <td className="p-3 font-mono text-on-surface-variant">{m.iqama_number || '—'}</td>
+                  <td className="p-3 text-on-surface">{m.plan || '—'}</td>
+                  <td className="p-3 text-on-surface-variant">{m.expiry_date ? `${formatDate(m.expiry_date)} · ${formatRemaining(m.time_remaining)}` : '—'}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${BADGE[m.membership_status]}`}>{m.membership_status === 'none' ? 'No plan' : m.membership_status}</span>
+                    {!m.is_active && <span className="ml-1 text-[10px] text-rose-300 uppercase font-bold">Deactivated</span>}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-container-highest/50">
-                {members.map((m, i) => (
-                  <MemberRow
-                    key={m.id}
-                    member={m}
-                    index={i}
-                    onAction={handleAction}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="p-4 bg-surface-container-lowest flex items-center justify-between">
-            <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-              Page {page} · {total} members
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-                className="px-3 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface text-[11px] font-bold uppercase disabled:opacity-30"
-                type="button"
-              >
-                Prev
-              </button>
-              <span className="px-3 py-1 rounded bg-primary-container text-on-primary-container text-[11px] font-bold">
-                {page}
-              </span>
-              <button
-                disabled={members.length < PAGE_SIZE}
-                onClick={() => setPage(page + 1)}
-                className="px-3 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface text-[11px] font-bold uppercase disabled:opacity-30"
-                type="button"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
+
+      <div className="flex items-center justify-between mt-3 text-[12px] text-on-surface-variant">
+        <span>{data.count} member{data.count === 1 ? '' : 's'}</span>
+        <div className="flex gap-2">
+          <button type="button" className={btn.ghost} disabled={!data.previous} onClick={() => setPage((p) => p - 1)}>Previous</button>
+          <span className="self-center">Page {page}</span>
+          <button type="button" className={btn.ghost} disabled={!data.next} onClick={() => setPage((p) => p + 1)}>Next</button>
+        </div>
+      </div>
+
+      {/* Member file */}
+      <Drawer open={!!file} title={file?.full_name} subtitle={file ? `${file.email}${file.phone ? ` · ${file.phone}` : ''}` : ''}
+        onClose={() => setFile(null)}
+        footer={file && (
+          <div className="flex gap-2 flex-wrap">
+            {file.membership && <button type="button" className={btn.primary} onClick={() => setDialog({ kind: 'extend', id: file.id })}>Extend</button>}
+            {file.membership && (file.membership_status === 'frozen'
+              ? <button type="button" className={btn.ghost} disabled={busy} onClick={() => run(file.id, 'unfreeze', {}, 'Unfrozen')}>Unfreeze</button>
+              : <button type="button" className={btn.ghost} onClick={() => setDialog({ kind: 'freeze', id: file.id })}>Freeze</button>)}
+            <button type="button" className={btn.ghost} onClick={() => setDialog({ kind: 'message', id: file.id })}>Message</button>
+            <button type="button" className={btn.ghost} disabled={busy}
+              onClick={() => window.confirm(`Email ${file.email} a temporary password? Their current password stops working.`) && run(file.id, 'reset_password', {}, 'Temporary password emailed')}>
+              Reset password
+            </button>
+            {file.is_active
+              ? <button type="button" className={btn.danger} disabled={busy} onClick={() => window.confirm(`Deactivate ${file.full_name}? They can't log in until reactivated.`) && run(file.id, 'deactivate', {}, 'Deactivated')}>Deactivate</button>
+              : <button type="button" className={btn.primary} disabled={busy} onClick={() => run(file.id, 'reactivate', {}, 'Reactivated')}>Reactivate</button>}
+          </div>
+        )}
+      >
+        {file && <MemberFile file={file} />}
+      </Drawer>
+
+      <ActionDialog dialog={dialog} busy={busy} onClose={() => setDialog(null)}
+        onSubmit={(fields) => (dialog.ids
+          ? bulk(dialog.kind, fields)
+          : run(dialog.id, dialog.kind, fields, { extend: 'Membership extended', freeze: 'Membership frozen', message: 'Message sent' }[dialog.kind]))} />
     </div>
   );
 }
 
-/* ============================================ */
-/* MEMBER ROW                                    */
-/* ============================================ */
-function MemberRow({ member, index, onAction }) {
-  const initials = (member.full_name || member.username || member.email || '?')
-    .split(' ')
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
+function MemberFile({ file }) {
+  const m = file.membership;
   return (
-    <motion.tr
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.03 }}
-      className="hover:bg-surface-container-high/60 transition-colors"
-    >
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-on-primary-container font-bold text-[13px]">
-            {initials}
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-title-md text-[13px] text-on-surface truncate">
-              {member.full_name || member.username}
-            </span>
-            <span className="font-label-md text-[10px] text-on-surface-variant truncate">
-              {member.email}
-            </span>
-          </div>
-        </div>
-      </td>
-
-      <td className="py-3 px-4">
-        <span
-          className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-            member.role === 'admin'
-              ? 'bg-primary-container text-on-primary-container'
-              : member.role === 'manager'
-              ? 'bg-primary-container/20 text-primary'
-              : 'bg-surface-container-high text-on-surface-variant'
-          }`}
-        >
-          {member.role}
-        </span>
-      </td>
-
-      <td className="py-3 px-4">
-        <span
-          className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-            member.is_active
-              ? 'bg-emerald-400/15 text-emerald-400'
-              : 'bg-error/20 text-error'
-          }`}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-          {member.is_active ? 'Active' : 'Inactive'}
-        </span>
-      </td>
-
-      <td className="py-3 px-4">
-        <span className="font-body-md text-[12px] text-on-surface-variant">
-          {member.phone || '—'}
-        </span>
-      </td>
-
-      <td className="py-3 px-4">
-        <span className="font-label-md text-[11px] text-on-surface-variant">
-          {new Date(member.created_at).toLocaleDateString()}
-        </span>
-      </td>
-
-      <td className="py-3 px-4 text-right">
-        <div className="flex items-center justify-end gap-1">
-          <ActionBtn
-            icon="visibility"
-            label="View"
-            onClick={() => onAction('view', member)}
-          />
-          <ActionBtn
-            icon="refresh"
-            label="Renew"
-            onClick={() => onAction('renew', member)}
-          />
-          <ActionBtn
-            icon="pause_circle"
-            label="Freeze"
-            onClick={() => onAction('freeze', member)}
-          />
-          <ActionBtn
-            icon="delete"
-            label="Delete"
-            onClick={() => onAction('delete', member)}
-            danger
-          />
-        </div>
-      </td>
-    </motion.tr>
-  );
-}
-
-function ActionBtn({ icon, label, onClick, danger }) {
-  return (
-    <button
-      onClick={onClick}
-      title={label}
-      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-        danger
-          ? 'hover:bg-error/20 text-on-surface-variant hover:text-error'
-          : 'hover:bg-surface-container-high text-on-surface-variant hover:text-primary'
-      }`}
-      type="button"
-    >
-      <span className="material-symbols-outlined text-[16px]">{icon}</span>
-    </button>
-  );
-}
-
-function StatTile({ label, value, icon, accent }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-lg p-5 shadow-md overflow-hidden ${
-        accent
-          ? 'bg-primary-container/10 border border-primary-container/30'
-          : 'bg-surface-container'
-      }`}
-    >
-      {accent && (
-        <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary-container/15 rounded-full blur-2xl pointer-events-none" />
-      )}
-      <div
-        className={`relative w-10 h-10 rounded-lg flex items-center justify-center ${
-          accent
-            ? 'bg-primary-container/20 text-primary'
-            : 'bg-surface-container-high text-on-surface-variant'
-        }`}
-      >
-        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+    <div className="flex flex-col gap-5 text-[13px]">
+      <div className="grid grid-cols-2 gap-3">
+        <Info label="Plan" value={m?.plan?.display_name || 'No membership'} />
+        <Info label="Status" value={file.membership_status === 'frozen' ? `Frozen until ${formatDate(file.frozen_until)}` : file.membership_status} />
+        <Info label="Expires" value={m ? `${formatDate(m.expiry_date)} (${formatRemaining(m.time_remaining)})` : '—'} />
+        <Info label="Iqama · Pass" value={m ? `${m.iqama_number || '—'} · ${m.pass_id}` : '—'} />
+        <Info label="Locker credit" value={formatSAR(file.locker_credit)} />
+        <Info label="Visits" value={m?.total_check_ins ?? 0} />
       </div>
-      <span className="relative font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider mt-3 block">
-        {label}
-      </span>
-      <span
-        className={`relative block font-headline-lg text-headline-lg leading-none mt-1 ${
-          accent ? 'text-primary' : 'text-on-surface'
-        }`}
-      >
-        {value}
-      </span>
-    </motion.div>
+      {file.must_change_password && <p className="text-amber-300 text-[12px]">Must change password at next login.</p>}
+      <Section title="Facilities">
+        {file.facilities.length ? file.facilities.map((f) => <div key={f.name}>{f.name} · until {formatDate(f.expires_on)}</div>) : <span className="text-on-surface-variant">None</span>}
+      </Section>
+      <Section title="Recent payments">
+        {file.recent_payments.length ? file.recent_payments.map((p, i) => (
+          <div key={i} className="flex justify-between gap-2">
+            <span className="truncate">{new Date(p.date).toLocaleDateString()} · {p.description}</span>
+            <span className="shrink-0">{formatSAR(p.amount)}</span>
+          </div>
+        )) : <span className="text-on-surface-variant">None</span>}
+      </Section>
+      <Section title="Recent visits">
+        {file.recent_visits.length ? file.recent_visits.map((v, i) => (
+          <div key={i}>{new Date(v.check_in).toLocaleString()} {v.check_out ? `→ ${new Date(v.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '· in the gym'} · {v.zone}</div>
+        )) : <span className="text-on-surface-variant">None</span>}
+      </Section>
+      {file.iqama_number && <Link to={`/admin/member-lookup?iqama=${file.iqama_number}`} className="text-primary text-[12px] hover:underline">Open in Member Lookup (check in) →</Link>}
+    </div>
   );
+}
+
+function ActionDialog({ dialog, busy, onClose, onSubmit }) {
+  const [f, setF] = useState({});
+  useEffect(() => {
+    const id = setTimeout(() => setF(dialog?.kind === 'extend' ? { months: 1, payment: 'cash', amount: '' } : dialog?.kind === 'freeze' ? { days: 14 } : { title: '', message: '' }), 0);
+    return () => clearTimeout(id);
+  }, [dialog]);
+  if (!dialog) return null;
+  const title = { extend: 'Extend membership', freeze: 'Freeze membership', message: 'Send a message' }[dialog.kind];
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <form className="w-full max-w-md bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl p-5 flex flex-col gap-3"
+        onSubmit={(e) => { e.preventDefault(); onSubmit(f); }}>
+        <h3 className="text-on-surface font-bold uppercase tracking-wider">{title}{dialog.ids ? ` · ${dialog.ids.length} members` : ''}</h3>
+        {dialog.kind === 'extend' && (
+          <>
+            <label className="flex flex-col gap-1"><span className={labelCls}>Months</span>
+              <select className={inputCls} value={f.months} onChange={(e) => setF({ ...f, months: Number(e.target.value) })}>
+                {[1, 2, 3, 6, 12].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select></label>
+            <label className="flex flex-col gap-1"><span className={labelCls}>Payment</span>
+              <select className={inputCls} value={f.payment} onChange={(e) => setF({ ...f, payment: e.target.value })}>
+                <option value="cash">Cash at desk</option><option value="card_terminal">Card terminal at desk</option>
+                <option value="complimentary">Complimentary (no payment)</option>
+              </select></label>
+            {f.payment !== 'complimentary' && (
+              <label className="flex flex-col gap-1"><span className={labelCls}>Amount received (SAR)</span>
+                <input className={inputCls} inputMode="decimal" required value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></label>
+            )}
+            <label className="flex flex-col gap-1"><span className={labelCls}>Note (optional)</span>
+              <input className={inputCls} maxLength={120} value={f.note || ''} onChange={(e) => setF({ ...f, note: e.target.value })} /></label>
+            <p className="text-[11px] text-on-surface-variant">Added after the current expiry (or from today if expired). Desk payments appear in the member’s payment history and in revenue.</p>
+          </>
+        )}
+        {dialog.kind === 'freeze' && (
+          <>
+            <label className="flex flex-col gap-1"><span className={labelCls}>Days (1–90)</span>
+              <input className={inputCls} type="number" min="1" max="90" value={f.days ?? ''} onChange={(e) => setF({ ...f, days: Number(e.target.value) })} /></label>
+            <p className="text-[11px] text-on-surface-variant">No gym access during the freeze; the expiry date moves forward by the same number of days. Unfreezing early gives back the unused days.</p>
+          </>
+        )}
+        {dialog.kind === 'message' && (
+          <>
+            <label className="flex flex-col gap-1"><span className={labelCls}>Title</span>
+              <input className={inputCls} maxLength={120} required value={f.title || ''} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
+            <label className="flex flex-col gap-1"><span className={labelCls}>Message</span>
+              <textarea className={inputCls} rows={4} maxLength={2000} required value={f.message || ''} onChange={(e) => setF({ ...f, message: e.target.value })} /></label>
+            <p className="text-[11px] text-on-surface-variant">Appears in the member portal’s notifications.</p>
+          </>
+        )}
+        <div className="flex gap-2 justify-end">
+          <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
+          <button type="submit" className={btn.primary} disabled={busy}>{busy ? 'Saving…' : 'Confirm'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Info({ label, value }) {
+  return <div><div className={labelCls}>{label}</div><div className="text-on-surface capitalize">{value}</div></div>;
+}
+
+function Section({ title, children }) {
+  return <div className="flex flex-col gap-1"><div className={labelCls}>{title}</div><div className="flex flex-col gap-1 text-on-surface">{children}</div></div>;
 }

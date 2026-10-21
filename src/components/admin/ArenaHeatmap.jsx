@@ -11,10 +11,10 @@ export default function ArenaHeatmap({ data, loading }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            Spatial Operations Matrix
+            Today
           </span>
           <h2 className="font-headline-lg text-headline-lg uppercase text-on-surface">
-            Arena Floor Zone Heatmap
+            Busy zones
           </h2>
         </div>
         <div className="flex items-center gap-3 flex-wrap">

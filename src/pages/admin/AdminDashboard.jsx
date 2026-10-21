@@ -1,6 +1,9 @@
 // src/pages/admin/AdminDashboard.jsx
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
+import { formatSAR } from '../../utils/money';
 import { adminService } from '../../services/adminService';
 import ControlBar from '../../components/admin/ControlBar';
 import Scorecards from '../../components/admin/Scorecards';
@@ -10,27 +13,53 @@ import AuditFeed from '../../components/admin/AuditFeed';
 import FacilityNodeCard from '../../components/admin/FacilityNodeCard';
 
 export default function AdminDashboard() {
-  const { data: overview, loading } = useApi(() => adminService.overview(), []);
-  const { data: flowData, loading: flowLoading } = useApi(
-    () => adminService.flowAndRevenue(),
-    []
+  const [range, setRange] = useState('30d');
+  const [exporting, setExporting] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState(() => new Date());
+  const { data: overview, loading, refetch: refetchOverview } = useApi(() => adminService.overview(range), [range]);
+  const { data: flowData, loading: flowLoading, refetch: refetchFlow } = useApi(
+    () => adminService.flowAndRevenue(range),
+    [range]
   );
-  const { data: heatmap, loading: heatmapLoading } = useApi(
+  const { data: heatmap, loading: heatmapLoading, refetch: refetchHeatmap } = useApi(
     () => adminService.arenaHeatmap(),
     []
   );
-  const { data: audit, loading: auditLoading } = useApi(
+  const { data: audit, loading: auditLoading, refetch: refetchAudit } = useApi(
     () => adminService.auditFeed(20),
     []
   );
-  const { data: nodes, loading: nodesLoading } = useApi(
+  const { data: nodes, loading: nodesLoading, refetch: refetchNodes } = useApi(
     () => adminService.facilityNodes(),
     []
   );
 
+  const refresh = () => {
+    refetchOverview(); refetchFlow(); refetchHeatmap(); refetchAudit(); refetchNodes();
+    setUpdatedAt(new Date());
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const blob = await adminService.exportTransactions(range);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `smart-gym-transactions-${range}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="w-full p-6 flex flex-col gap-6">
-      <ControlBar />
+      <ControlBar range={range} onRange={setRange} updatedAt={updatedAt} onRefresh={refresh}
+        onExport={exportCsv} exporting={exporting} />
 
       <LiveKPIs overview={overview} loading={loading} />
 
@@ -58,11 +87,11 @@ export default function AdminDashboard() {
 function LiveKPIs({ overview, loading }) {
   const kpis = [
     {
-      label: 'Turnstile Flow',
+      label: 'Check-ins',
       value: overview?.activity?.check_ins_today ?? '—',
-      sub: 'Check-ins today',
+      sub: 'today',
       subAccent: true,
-      footer: 'Live telemetry',
+      footer: 'Gate + desk check-ins',
       icon: 'door_sliding',
     },
     {
@@ -74,13 +103,11 @@ function LiveKPIs({ overview, loading }) {
       icon: 'group',
     },
     {
-      label: '30d Revenue',
-      value: overview
-        ? `$${Math.round(overview.revenue.last_30d).toLocaleString()}`
-        : '—',
-      sub: `${overview?.revenue?.transaction_count ?? 0} transactions`,
+      label: 'Revenue',
+      value: overview ? formatSAR(overview.revenue.last_30d) : '—',
+      sub: `${overview?.revenue?.transaction_count ?? 0} payments`,
       subAccent: true,
-      footer: 'Rolling 30-day',
+      footer: overview?.revenue?.range_label || '',
       icon: 'payments',
     },
     {

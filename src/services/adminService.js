@@ -5,8 +5,20 @@ export const adminService = {
   // ============================================
   // OVERVIEW
   // ============================================
-  async overview() {
-    const { data } = await api.get('/admin/overview/');
+  /** range: '7d' | '30d' | '90d' | 'ytd' */
+  async overview(range = '30d') {
+    const { data } = await api.get('/admin/overview/', { params: { range } });
+    return data;
+  },
+
+  /** CSV of every transaction in the range (Blob). */
+  async emailReceipt(transactionId) {
+    const { data } = await api.post(`/admin/finance/transactions/${transactionId}/email-receipt/`);
+    return data;
+  },
+
+  async exportTransactions(range = '30d') {
+    const { data } = await api.get('/admin/finance/transactions/export/', { params: { range }, responseType: 'blob' });
     return data;
   },
 
@@ -33,20 +45,20 @@ export const adminService = {
     return data;
   },
 
-  async memberAction(id, action, payload = {}) {
-    const { data } = await api.post(`/admin/members/${id}/action/`, { action, payload });
+  /** action: extend | freeze | unfreeze | message | reset_password | deactivate | reactivate (+ its fields) */
+  async memberAction(id, action, fields = {}) {
+    const { data } = await api.post(`/admin/members/${id}/action/`, { action, ...fields });
     return data;
   },
 
-  async bulkMemberAction(action, memberIds) {
-    const { data } = await api.post('/admin/members/bulk-action/', {
-      action,
-      member_ids: memberIds,
-    });
+  /** action: message | freeze (+ fields) — JSON; export — CSV Blob. */
+  async bulkMemberAction(action, memberIds, fields = {}) {
+    const { data } = await api.post('/admin/members/bulk-action/', { action, member_ids: memberIds, ...fields },
+      action === 'export' ? { responseType: 'blob' } : undefined);
     return data;
   },
 
-    async machineStats() {
+  async machineStats() {
     const { data } = await api.get('/admin/machines/stats/');
     return data;
   },
@@ -63,8 +75,8 @@ export const adminService = {
     return data;
   },
 
-  async revenueStreams() {
-    const { data } = await api.get('/admin/finance/revenue-streams/');
+  async revenueStreams(range = '30d') {
+    const { data } = await api.get('/admin/finance/revenue-streams/', { params: { range } });
     return data;
   },
 
@@ -80,7 +92,7 @@ export const adminService = {
     return data;
   },
 
-    async trainersAdmin(params = {}) {
+  async trainersAdmin(params = {}) {
     const { data } = await api.get('/admin/trainers/', { params });
     return data;
   },
@@ -90,8 +102,77 @@ export const adminService = {
     return data;
   },
 
-    async staffAdmin(params = {}) {
+  async createTrainer(payload) {
+    const { data } = await api.post('/admin/trainers/', payload);
+    return data;
+  },
+
+  async updateTrainer(id, payload) {
+    const { data } = await api.patch(`/admin/trainers/${id}/`, payload);
+    return data;
+  },
+
+  async uploadTrainerPhoto(id, file) {
+    const form = new FormData();
+    form.append('image', file);
+    const { data } = await api.post(`/admin/trainers/${id}/photo/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return data;
+  },
+
+  // Courses (all statuses — the member catalogue only shows published ones)
+  async coursesAdmin(params = {}) {
+    const { data } = await api.get('/admin/courses/', { params });
+    return data;
+  },
+
+  async courseStats() {
+    const { data } = await api.get('/admin/courses/stats/');
+    return data;
+  },
+
+  async courseAdmin(id) {
+    const { data } = await api.get(`/admin/courses/${id}/`);
+    return data;
+  },
+
+  async createCourse(payload) {
+    const { data } = await api.post('/admin/courses/', payload);
+    return data;
+  },
+
+  async updateCourse(id, payload) {
+    const { data } = await api.patch(`/admin/courses/${id}/`, payload);
+    return data;
+  },
+
+  async deleteCourse(id) {
+    await api.delete(`/admin/courses/${id}/`);
+  },
+
+  async uploadCourseCover(id, file) {
+    const form = new FormData();
+    form.append('image', file);
+    const { data } = await api.post(`/admin/courses/${id}/cover/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return data;
+  },
+
+  async staffAdmin(params = {}) {
     const { data } = await api.get('/admin/staff/', { params });
+    return data;
+  },
+
+  async createStaff(payload) {
+    const { data } = await api.post('/admin/staff/', payload);
+    return data;
+  },
+
+  async updateStaff(id, payload) {
+    const { data } = await api.patch(`/admin/staff/${id}/`, payload);
+    return data;
+  },
+
+  async sendStaffSignIn(id) {
+    const { data } = await api.post(`/admin/staff/${id}/send-sign-in/`);
     return data;
   },
 
@@ -100,13 +181,8 @@ export const adminService = {
     return data;
   },
 
-    async settings() {
+  async settings() {
     const { data } = await api.get('/admin/settings/');
-    return data;
-  },
-
-  async updateSettings(payload) {
-    const { data } = await api.patch('/admin/settings/update/', payload);
     return data;
   },
 
@@ -115,6 +191,16 @@ export const adminService = {
   // ============================================
   async machines(params = {}) {
     const { data } = await api.get('/admin/machines/', { params });
+    return data;
+  },
+
+  async createMachine(payload) {
+    const { data } = await api.post('/admin/machines/', payload);
+    return data;
+  },
+
+  async updateMachine(id, payload) {
+    const { data } = await api.patch(`/admin/machines/${id}/`, payload);
     return data;
   },
 
@@ -128,8 +214,8 @@ export const adminService = {
   // ============================================
   // FINANCE
   // ============================================
-  async financeOverview() {
-    const { data } = await api.get('/admin/finance/overview/');
+  async financeOverview(range = '30d') {
+    const { data } = await api.get('/admin/finance/overview/', { params: { range } });
     return data;
   },
 
@@ -159,8 +245,8 @@ export const adminService = {
   // ============================================
   // DASHBOARD EXTRAS
   // ============================================
-  async flowAndRevenue() {
-    const { data } = await api.get('/admin/flow-and-revenue/');
+  async flowAndRevenue(range = '30d') {
+    const { data } = await api.get('/admin/flow-and-revenue/', { params: { range } });
     return data;
   },
 
@@ -204,10 +290,10 @@ export const adminService = {
     return data;
   },
 
-  async rejectRegistration(id, reason = '') {
+  async rejectRegistration(id, reason = '', refund = false) {
     const { data } = await api.post(
       `/admin/registrations-api/registrations/${id}/reject/`,
-      { reason }
+      { reason, refund }
     );
     return data;
   },

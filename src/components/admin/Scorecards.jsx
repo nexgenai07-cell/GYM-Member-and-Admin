@@ -1,25 +1,15 @@
 // src/components/admin/Scorecards.jsx
 import { motion } from 'framer-motion';
-
+import { formatSAR } from '../../utils/money';
 export default function Scorecards({ overview, loading }) {
   const cards = [
     {
-      label: 'Monthly Recurring Revenue',
-      value: overview
-        ? `$${Math.round(overview.revenue.last_30d).toLocaleString()}`
-        : '$0',
+      label: 'Revenue received',
+      value: overview ? formatSAR(overview.revenue.last_30d) : '—',
       icon: 'payments',
       accent: true,
-      breakdown: {
-        label: 'Live revenue stream',
-        bars: [
-          { width: 64, color: 'bg-primary-container' },
-          { width: 26, color: 'bg-primary' },
-          { width: 10, color: 'bg-surface-variant' },
-        ],
-      },
-      footerLeft: `${overview?.revenue?.transaction_count ?? 0} settled transactions`,
-      footerRight: 'Last 30 days',
+      footerLeft: `${overview?.revenue?.transaction_count ?? 0} payments (card, STC Pay, top-ups)`,
+      footerRight: overview?.revenue?.range_label || '',
     },
     {
       label: 'Active Memberships',
@@ -37,7 +27,7 @@ export default function Scorecards({ overview, loading }) {
           : 0
       }%`,
       footerLeft: `${overview?.members?.expiring_soon ?? 0} expiring in 14 days`,
-      footerRight: 'Safety threshold: Normal',
+      footerRight: '',
     },
     {
       label: 'Content Pipeline',
@@ -50,12 +40,12 @@ export default function Scorecards({ overview, loading }) {
       ],
       footerLeft:
         (overview?.content?.pending_approvals ?? 0) > 0
-          ? `⚠️ ${overview.content.pending_approvals} awaiting review`
-          : '✓ All approved',
-      footerRight: 'Content queue',
+          ? `${overview.content.pending_approvals} awaiting review`
+          : 'None awaiting review',
+      footerRight: '',
     },
     {
-      label: 'Platform Activity',
+      label: 'Member activity',
       value: overview?.activity?.workouts_30d ?? 0,
       icon: 'fitness_center',
       accent: true,

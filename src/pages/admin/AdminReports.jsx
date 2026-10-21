@@ -1,339 +1,164 @@
 // src/pages/admin/AdminReports.jsx
+// CSV reports from live data for a date range (gym time). Each generated report is kept, so a
+// later download matches what was generated; CSV opens in Excel and Google Sheets.
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { reportsService } from '../../services/reportsService';
+import { Empty, PageHeader } from '../../components/site/SiteUi';
+import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { GYM_TZ } from '../../utils/gymTime';
+import { errorMessage } from '../../utils/apiError';
 
-const formatIcons = {
-  PDF: 'picture_as_pdf',
-  CSV: 'table_chart',
-  XLSX: 'table_view',
+// Today in gym time as YYYY-MM-DD (en-CA formats dates that way).
+const iso = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: GYM_TZ }).format(d);
+const TODAY = iso(new Date());
+const shift = (s, days) => { const d = new Date(`${s}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
+const firstOfMonth = (s) => `${s.slice(0, 8)}01`;
+const PRESETS = {
+  this_month: ['This month', () => [firstOfMonth(TODAY), TODAY]],
+  last_month: ['Last month', () => { const end = shift(firstOfMonth(TODAY), -1); return [firstOfMonth(end), end]; }],
+  last_30: ['Last 30 days', () => [shift(TODAY, -29), TODAY]],
+  ytd: ['Year to date', () => [`${TODAY.slice(0, 4)}-01-01`, TODAY]],
+  custom: ['Custom', null],
 };
 
 export default function AdminReports() {
-  const [activeTab, setActiveTab] = useState('templates');
-  const [generating, setGenerating] = useState(null);
+  const [preset, setPreset] = useState('this_month');
+  const [range, setRange] = useState(PRESETS.this_month[1]());
+  const [busy, setBusy] = useState(null);
+  const { data: templates, loading, refetch: refetchTemplates } = useApi(() => reportsService.templates(), []);
+  const { data: history, loading: historyLoading, refetch: refetchHistory } = useApi(() => reportsService.history(), []);
+  const list = Array.isArray(templates) ? templates : [];
+  const past = Array.isArray(history) ? history : [];
 
-  const {
-    data: templates,
-    loading: templatesLoading,
-    refetch: refetchTemplates,
-  } = useApi(() => reportsService.templates(), []);
+  const pick = (key) => {
+    setPreset(key);
+    if (PRESETS[key][1]) setRange(PRESETS[key][1]());
+  };
 
-  const {
-    data: history,
-    loading: historyLoading,
-    refetch: refetchHistory,
-  } = useApi(() => reportsService.history(), []);
-
-  const templatesList = Array.isArray(templates) ? templates : [];
-  const historyList = Array.isArray(history) ? history : [];
-  const loading = templatesLoading || historyLoading;
-
-  // ============================================
-  // HANDLERS
-  // ============================================
-  const handleGenerate = async (template) => {
-    setGenerating(template.key);
+  const generate = async (t) => {
+    setBusy(t.key);
     try {
-      const period = new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
-      });
-
-      const report = await reportsService.generate({
-        template_key: template.key,
-        period,
-        format: 'PDF',
-      });
-
-      toast.success(`${report.name} generated!`);
-      await refetchHistory();
-      setActiveTab('history'); // auto-switch so user sees the new report
-    } catch (e) {
-      const msg = e?.response?.data?.detail || 'Failed to generate report';
-      toast.error(msg);
+      const report = await reportsService.generate({ template_key: t.key, start: range[0], end: range[1] });
+      toast.success(`${report.name} — ${report.row_count} rows`);
+      await reportsService.download(report);
+      refetchHistory();
+      refetchTemplates();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not generate the report'));
     } finally {
-      setGenerating(null);
+      setBusy(null);
     }
   };
 
-  const handleDownload = async (report) => {
+  const download = async (r) => {
     try {
-      const info = await reportsService.download(report.report_id);
-
-      if (info.file_url) {
-        // Real file exists — open it
-        window.open(info.file_url, '_blank');
-        toast.success(`Downloading ${info.name}`);
-      } else {
-        // No file yet — show helpful message
-        toast.success(
-          `${info.name} (${info.format}) — ${(info.size_kb / 1024).toFixed(1)} MB`,
-          { icon: '📄' }
-        );
-      }
-    } catch (e) {
-      toast.error('Failed to download');
+      await reportsService.download(r);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not download the report'));
     }
   };
 
-  const handleDelete = async (report) => {
-    if (!confirm(`Delete "${report.name}"?`)) return;
+  const remove = async (r) => {
+    if (!window.confirm(`Delete “${r.name}”?`)) return;
     try {
-      await reportsService.deleteReport(report.report_id);
+      await reportsService.deleteReport(r.report_id);
       toast.success('Report deleted');
       refetchHistory();
-    } catch (e) {
-      toast.error('Failed to delete');
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not delete the report'));
     }
   };
 
-  // ============================================
-  // RENDER
-  // ============================================
   return (
-    <div className="w-full p-6 flex flex-col gap-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center gap-2 text-primary mb-2">
-          <span className="material-symbols-outlined text-[16px]">assessment</span>
-          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Analytics & Reports
-          </span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          Reports Center
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          Generate operational reports on-demand. Exports include PDF, CSV, and Excel formats.
-        </p>
-      </motion.div>
+    <div className="p-6 md:p-8 flex flex-col gap-6">
+      <PageHeader title="Reports" subtitle="Download real data as CSV (opens in Excel or Google Sheets). Dates are in gym time." />
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('templates')}
-          className={`px-4 py-2 rounded-lg font-label-lg text-label-lg uppercase tracking-wider transition-all ${
-            activeTab === 'templates'
-              ? 'bg-primary-container text-on-primary-container'
-              : 'text-on-surface-variant hover:text-on-surface'
-          }`}
-          type="button"
-        >
-          Templates ({templatesList.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`px-4 py-2 rounded-lg font-label-lg text-label-lg uppercase tracking-wider transition-all ${
-            activeTab === 'history'
-              ? 'bg-primary-container text-on-primary-container'
-              : 'text-on-surface-variant hover:text-on-surface'
-          }`}
-          type="button"
-        >
-          History ({historyList.length})
-        </button>
-      </div>
-
-      {/* Loading */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-48 bg-surface-container rounded-xl animate-pulse"
-            />
-          ))}
-        </div>
-      ) : activeTab === 'templates' ? (
-        /* ============ TEMPLATES TAB ============ */
-        templatesList.length === 0 ? (
-          <div className="text-center py-16 bg-surface-container-low rounded-xl">
-            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-              description
-            </span>
-            <p className="font-title-md text-title-md text-on-surface mt-3">
-              No templates
-            </p>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Run: <code className="px-2 py-0.5 bg-surface-container rounded">python manage.py seed_reports</code>
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {templatesList.map((t, i) => (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                whileHover={{ y: -3 }}
-                className={`relative bg-surface-container rounded-xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col gap-3 ${
-                  t.is_featured ? 'border border-primary-container/30' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      t.is_featured
-                        ? 'bg-primary-container/20 text-primary'
-                        : 'bg-surface-container-high text-on-surface-variant'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[24px]">
-                      {t.icon}
-                    </span>
-                  </div>
-                  {t.is_active && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-400/15 text-emerald-400 font-label-md text-[10px] uppercase tracking-wider font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Active
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="font-title-lg text-title-lg text-on-surface">
-                    {t.title}
-                  </h3>
-                  <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-                    {t.description}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-surface-container-high mt-auto">
-                  <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-                    {t.frequency}
-                  </span>
-                  <button
-                    onClick={() => handleGenerate(t)}
-                    disabled={generating === t.key}
-                    className={`flex items-center gap-1 font-label-md text-[10px] uppercase tracking-wider font-bold transition-opacity ${
-                      generating === t.key
-                        ? 'text-on-surface-variant opacity-50 cursor-not-allowed'
-                        : 'text-primary hover:underline'
-                    }`}
-                    type="button"
-                  >
-                    {generating === t.key ? 'Generating...' : 'Generate'}
-                    <span className="material-symbols-outlined text-[14px]">
-                      arrow_forward
-                    </span>
-                  </button>
-                </div>
-              </motion.div>
+      <section className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-4 flex flex-col lg:flex-row lg:items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <span className={labelCls}>Period</span>
+          <div className="flex gap-1 flex-wrap">
+            {Object.entries(PRESETS).map(([key, [label]]) => (
+              <button key={key} type="button" onClick={() => pick(key)}
+                className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+                  preset === key ? 'bg-primary-container text-on-primary-container' : 'bg-[#131316] text-on-surface-variant hover:text-on-surface'}`}>
+                {label}
+              </button>
             ))}
           </div>
-        )
+        </div>
+        <label className="flex flex-col gap-1"><span className={labelCls}>From</span>
+          <input type="date" className={inputCls} value={range[0]} max={range[1]}
+            onChange={(e) => { setPreset('custom'); setRange([e.target.value, range[1]]); }} /></label>
+        <label className="flex flex-col gap-1"><span className={labelCls}>To</span>
+          <input type="date" className={inputCls} value={range[1]} min={range[0]} max={TODAY}
+            onChange={(e) => { setPreset('custom'); setRange([range[0], e.target.value]); }} /></label>
+      </section>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <div key={i} className="h-40 bg-[#0e0e0f] rounded-lg animate-pulse" />)}
+        </div>
       ) : (
-        /* ============ HISTORY TAB ============ */
-        historyList.length === 0 ? (
-          <div className="text-center py-16 bg-surface-container-low rounded-xl">
-            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-              description
-            </span>
-            <p className="font-title-md text-title-md text-on-surface mt-3">
-              No reports generated yet
-            </p>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Generate one from the Templates tab.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-surface-container-low rounded-xl shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-surface-container-lowest text-on-surface-variant font-label-md text-[10px] uppercase tracking-wider">
-                    <th className="py-3 px-4 text-left">Report</th>
-                    <th className="py-3 px-4 text-left">Type</th>
-                    <th className="py-3 px-4 text-left">Period</th>
-                    <th className="py-3 px-4 text-left">Generated</th>
-                    <th className="py-3 px-4 text-left">Format</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-container-highest/50">
-                  {historyList.map((r, i) => (
-                    <motion.tr
-                      key={r.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="hover:bg-surface-container-high/60 transition-colors"
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-title-md text-[13px] text-on-surface">
-                            {r.name}
-                          </span>
-                          <span className="font-label-md text-[10px] text-on-surface-variant/60 uppercase">
-                            {r.report_id} · by {r.generated_by_name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-[10px] uppercase tracking-wider">
-                          {r.report_type}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-body-md text-body-md text-on-surface text-[13px]">
-                          {r.period}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-label-md text-[11px] text-on-surface-variant">
-                          {r.time_ago}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-primary text-[16px]">
-                            {formatIcons[r.format] || 'description'}
-                          </span>
-                          <span className="font-label-md text-[11px] text-on-surface-variant font-bold uppercase">
-                            {r.format}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => handleDownload(r)}
-                            className="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-[10px] uppercase tracking-wider transition-colors flex items-center gap-1.5"
-                            type="button"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              download
-                            </span>
-                            <span>Download</span>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(r)}
-                            className="w-8 h-8 rounded-lg hover:bg-error/20 text-on-surface-variant hover:text-error flex items-center justify-center transition-colors"
-                            type="button"
-                            title="Delete"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              delete
-                            </span>
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {list.map((t) => (
+            <div key={t.key} className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-4 flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-primary text-[22px]">{t.icon}</span>
+                <div>
+                  <div className="text-on-surface font-bold">{t.title}</div>
+                  <p className="text-[12px] text-on-surface-variant">{t.description}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#1a1a1e]">
+                <span className="text-[11px] text-on-surface-variant">
+                  {t.last_generated_at ? `Last run ${new Date(t.last_generated_at).toLocaleDateString()}` : 'Not run yet'}
+                </span>
+                <button type="button" className={btn.primary} disabled={busy === t.key || !range[0] || !range[1]} onClick={() => generate(t)}>
+                  {busy === t.key ? 'Building…' : 'Download CSV'}
+                </button>
+              </div>
             </div>
-          </div>
-        )
+          ))}
+        </div>
       )}
+
+      <section className="flex flex-col gap-3">
+        <h2 className={labelCls}>Generated reports</h2>
+        {historyLoading ? (
+          <div className="h-24 bg-[#0e0e0f] rounded-lg animate-pulse" />
+        ) : past.length === 0 ? (
+          <Empty>Reports you generate are kept here.</Empty>
+        ) : (
+          <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
+                  <th className="px-4 py-3">Report</th><th className="px-4 py-3">Rows</th><th className="px-4 py-3">Size</th>
+                  <th className="px-4 py-3">Generated</th><th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {past.map((r) => (
+                  <tr key={r.report_id} className="border-b border-[#1a1a1e] last:border-0">
+                    <td className="px-4 py-3"><div className="text-on-surface">{r.name}</div>
+                      <div className="text-[11px] text-on-surface-variant font-mono">{r.report_id}</div></td>
+                    <td className="px-4 py-3 text-on-surface-variant">{r.row_count}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{r.size_kb} KB</td>
+                    <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">
+                      {new Date(r.generated_at).toLocaleString()}<div className="text-[11px]">{r.generated_by_name}</div></td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button type="button" className={btn.ghost} onClick={() => download(r)}>Download</button>{' '}
+                      <button type="button" className={btn.danger} onClick={() => remove(r)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

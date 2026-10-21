@@ -18,6 +18,7 @@ import TrainerProfile from './pages/member/TrainerProfile';
 import Nutritionists from './pages/member/Nutritionists';
 import Shop from './pages/member/Shop';
 import Attendance from './pages/member/Attendance';
+import Classes from './pages/member/Classes';
 import Profile from './pages/member/Profile';
 import Payments from './pages/member/Payments';
 import Notifications from './pages/member/Notifications';
@@ -35,7 +36,6 @@ import AdminClasses from './pages/admin/AdminClasses';
 import AdminStaff from './pages/admin/AdminStaff';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminReports from './pages/admin/AdminReports';
-import AdminCMS from './pages/admin/AdminCMS';
 import AdminRegistrations from './pages/admin/AdminRegistrations';
 import MemberLookup from './pages/admin/MemberLookup';
 import AdminSettings from './pages/admin/AdminSettings';
@@ -43,7 +43,6 @@ import SiteContent from './pages/admin/SiteContent';
 import SiteLists from './pages/admin/SiteLists';
 import SitePlans from './pages/admin/SitePlans';
 import SiteInbox from './pages/admin/SiteInbox';
-import FacilityPricing from './pages/admin/FacilityPricing';
 import ShopOrders from './pages/admin/ShopOrders';
 import TrainerHours from './pages/admin/TrainerHours';
 
@@ -189,7 +188,7 @@ function App() {
         <Route path="finance" element={<AdminFinance />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="analytics" element={<AdminAnalytics />} />
-        <Route path="cms" element={<AdminCMS />} />
+        <Route path="cms" element={<Navigate to="/admin/site-lists?list=articles" replace />} />
         <Route path="registrations" element={<AdminRegistrations />} />
         <Route path="member-lookup" element={<MemberLookup />} />
         <Route path="settings" element={<AdminSettings />} />
@@ -199,7 +198,7 @@ function App() {
         <Route path="site-inbox" element={<SiteInbox />} />
         <Route path="shop-orders" element={<ShopOrders />} />
         <Route path="trainer-hours" element={<TrainerHours />} />
-        <Route path="facility-pricing" element={<FacilityPricing />} />
+        <Route path="facility-pricing" element={<Navigate to="/admin/facilities" replace />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 
@@ -220,6 +219,7 @@ function App() {
                 <Route path="nutritionists" element={<Nutritionists />} />
                 <Route path="shop" element={<Shop />} />
                 <Route path="attendance" element={<Attendance />} />
+                <Route path="classes" element={<Classes />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="payments" element={<Payments />} />
                 <Route path="payments/callback" element={<PaymentCallback />} />

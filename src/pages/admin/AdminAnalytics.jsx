@@ -1,256 +1,87 @@
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+// src/pages/admin/AdminAnalytics.jsx
+// Insights: membership health, visits, member movement per month, and rule-based
+// recommendations that link to the page where you act on them. All from live data.
+import { Link } from 'react-router-dom';
+import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
+import { PageHeader } from '../../components/site/SiteUi';
+import MonthlyColumns from '../../components/admin/MonthlyColumns';
+
+const TONE = {
+  high: 'border-primary-container', medium: 'border-amber-400', low: 'border-[#2a2a2e]',
+};
+const CHIP = {
+  high: 'bg-primary-container/20 text-primary', medium: 'bg-amber-400/15 text-amber-300', low: 'bg-[#1a1a1e] text-on-surface-variant',
+};
 
 export default function AdminAnalytics() {
-  const [kpis, setKpis] = useState(null);
-  const [growth, setGrowth] = useState([]);
-  const [insights, setInsights] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: k } = useApi(() => adminService.analyticsKPIs(), []);
+  const { data: growth, loading: growthLoading } = useApi(() => adminService.analyticsGrowth(), []);
+  const { data: insights, loading: insightsLoading } = useApi(() => adminService.aiInsights(), []);
+  const months = Array.isArray(growth) ? growth : [];
+  const list = Array.isArray(insights) ? insights : [];
 
-  useEffect(() => {
-    Promise.all([
-      adminService.analyticsKPIs(),
-      adminService.analyticsGrowth(),
-      adminService.aiInsights(),
-    ])
-      .then(([k, g, i]) => {
-        setKpis(k);
-        setGrowth(g);
-        setInsights(i);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const tiles = [
+    ['Active members', k?.active_members, k ? `of ${k.total_members} accounts` : ''],
+    ['New members', k?.new_members_30d, 'last 30 days'],
+    ['Lapsed', k?.lapsed_90d, 'ended in 90 days, not renewed'],
+    ['Visited the gym', k?.visit_rate == null ? '—' : `${k.visit_rate}%`, k ? `${k.active_visitors_30d} active members, last 30 days` : ''],
+    ['Visits', k?.visits_30d, 'last 30 days'],
+    ['Average visit', k?.avg_visit_minutes == null ? '—' : `${k.avg_visit_minutes} min`, 'checked-out visits'],
+  ];
 
   return (
-    <div className="w-full p-6 flex flex-col gap-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-2 text-primary mb-2">
-          <span className="material-symbols-outlined text-[16px]">insights</span>
-          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Intelligence Console
-          </span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          AI Business Insights
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          Deep analytics and automated recommendations from system data patterns.
-        </p>
-      </motion.div>
+    <div className="p-6 md:p-8 flex flex-col gap-6">
+      <PageHeader title="Insights" subtitle="How the membership is doing and what needs attention — worked out from live data." />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <AnalyticsStat
-          label="Total Members"
-          value={kpis?.total_members ?? '—'}
-          delta={`+${kpis?.new_members_30d ?? 0} this month`}
-          icon="groups"
-          accent
-        />
-        <AnalyticsStat
-          label="Avg Session Length"
-          value={kpis?.avg_session_minutes ? `${kpis.avg_session_minutes}m` : '—'}
-          delta="Per workout"
-          icon="timer"
-        />
-        <AnalyticsStat
-          label="Retention Rate"
-          value={kpis?.retention_rate ? `${kpis.retention_rate}%` : '—'}
-          delta="Active memberships"
-          icon="trending_up"
-          accent
-        />
-        <AnalyticsStat
-          label="30-Day New Members"
-          value={kpis?.new_members_30d ?? '—'}
-          delta="Rolling 30d"
-          icon="person_add"
-        />
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        {tiles.map(([label, value, hint]) => (
+          <div key={label} className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg px-4 py-3">
+            <div className="text-[22px] font-bold text-on-surface">{value ?? '—'}</div>
+            <div className="text-[10px] uppercase tracking-widest text-on-surface-variant">{label}</div>
+            {hint && <div className="text-[11px] text-on-surface-variant/70 mt-0.5">{hint}</div>}
+          </div>
+        ))}
       </div>
 
-      {/* Growth chart */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-surface-container p-6 rounded-xl shadow-md"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-              Membership Growth
-            </span>
-            <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-              Monthly New Members
-            </h2>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="h-48 bg-surface-container-low rounded animate-pulse" />
-        ) : growth.length === 0 ? (
-          <div className="text-center py-12 bg-surface-container-low rounded-lg">
-            <span className="material-symbols-outlined text-3xl text-on-surface-variant/40">
-              show_chart
-            </span>
-            <p className="font-body-md text-body-md text-on-surface-variant mt-2">
-              Not enough data yet
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-end gap-2 h-48">
-            {growth.map((g, i) => {
-              const max = Math.max(...growth.map((x) => x.new_members));
-              const height = max > 0 ? (g.new_members / max) * 100 : 0;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                  <motion.div
-                    className="w-full bg-primary-container rounded-t"
-                    initial={{ height: 0 }}
-                    animate={{ height: `${height}%` }}
-                    transition={{ duration: 0.8, delay: i * 0.05 }}
-                    style={{ minHeight: '4px' }}
-                  />
-                  <span className="font-label-md text-[9px] text-on-surface-variant uppercase">
-                    {g.month.split(' ')[0]}
-                  </span>
-                  <span className="font-title-md text-title-md text-primary">
-                    {g.new_members}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
-
-      {/* AI Insights */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="flex flex-col gap-4"
-      >
+      <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <div>
-            <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-              Automated Recommendations
-            </span>
-            <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-              AI Insights
-            </h2>
-          </div>
-          <span className="px-3 py-1 rounded bg-primary-container/20 text-primary font-label-md text-[10px] uppercase tracking-wider font-bold">
-            {insights.length} Active
-          </span>
+          <h2 className="font-headline-md text-[18px] uppercase text-on-surface">Needs attention</h2>
+          <span className="text-[11px] text-on-surface-variant">{list.length} item{list.length === 1 ? '' : 's'}</span>
         </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-32 bg-surface-container rounded animate-pulse" />
-            ))}
-          </div>
-        ) : insights.length === 0 ? (
-          <div className="text-center py-12 bg-surface-container-low rounded-xl">
-            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-              check_circle
-            </span>
-            <p className="font-title-md text-title-md text-on-surface mt-3">
-              All Clear
-            </p>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              No urgent insights right now.
-            </p>
+        {insightsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{[1, 2].map((i) => <div key={i} className="h-28 bg-[#0e0e0f] rounded-lg animate-pulse" />)}</div>
+        ) : list.length === 0 ? (
+          <div className="py-10 text-center bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg text-on-surface-variant text-[13px]">
+            All clear — nothing needs attention right now.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {insights.map((insight, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.08 }}
-                className={`bg-surface-container p-5 rounded-xl shadow-md border-l-4 ${
-                  insight.priority === 'high'
-                    ? 'border-primary-container'
-                    : insight.priority === 'medium'
-                    ? 'border-yellow-400'
-                    : 'border-surface-bright'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-[24px] text-primary">
-                    {insight.icon}
-                  </span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-title-lg text-title-lg text-on-surface">
-                        {insight.title}
-                      </h3>
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                          insight.priority === 'high'
-                            ? 'bg-primary-container/20 text-primary'
-                            : insight.priority === 'medium'
-                            ? 'bg-yellow-400/15 text-yellow-400'
-                            : 'bg-surface-container-high text-on-surface-variant'
-                        }`}
-                      >
-                        {insight.priority}
-                      </span>
-                    </div>
-                    <p className="font-body-md text-body-md text-on-surface-variant mt-2">
-                      {insight.description}
-                    </p>
-                    <button
-                      className="mt-3 flex items-center gap-1 font-label-md text-[10px] text-primary uppercase tracking-wider font-bold hover:underline"
-                      type="button"
-                    >
-                      {insight.action}
-                      <span className="material-symbols-outlined text-[14px]">
-                        arrow_forward
-                      </span>
-                    </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {list.map((i) => (
+              <div key={i.title} className={`bg-[#0e0e0f] border border-[#1a1a1e] border-l-4 ${TONE[i.priority]} rounded-lg p-4 flex gap-3`}>
+                <span className="material-symbols-outlined text-primary text-[22px]">{i.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-on-surface font-bold">{i.title}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${CHIP[i.priority]}`}>{i.priority}</span>
                   </div>
+                  <p className="text-[13px] text-on-surface-variant mt-1">{i.description}</p>
+                  <Link to={i.path} className="inline-flex items-center gap-1 mt-2 text-[11px] text-primary font-bold uppercase tracking-wider hover:underline">
+                    {i.action}<span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
-      </motion.div>
-    </div>
-  );
-}
+      </section>
 
-function AnalyticsStat({ label, value, delta, icon, accent }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-lg p-5 shadow-md overflow-hidden ${
-        accent ? 'bg-primary-container/10 border border-primary-container/30' : 'bg-surface-container'
-      }`}
-    >
-      {accent && (
-        <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary-container/15 rounded-full blur-2xl pointer-events-none" />
-      )}
-      <div className="relative w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: accent ? 'rgba(229, 25, 55, 0.2)' : '#2a2a2b' }}>
-        <span className={`material-symbols-outlined text-[20px] ${accent ? 'text-primary' : 'text-on-surface-variant'}`}>
-          {icon}
-        </span>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <MonthlyColumns loading={growthLoading} title="New members per month" unit="New members"
+          rows={months.map((m) => ({ month: m.month, short: m.short, value: m.new_members }))} empty="No sign-ups in the last 12 months." />
+        <MonthlyColumns loading={growthLoading} title="Memberships lapsed per month" unit="Lapsed"
+          rows={months.map((m) => ({ month: m.month, short: m.short, value: m.ended }))} empty="No memberships lapsed in the last 12 months." />
       </div>
-      <span className="relative font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider block">
-        {label}
-      </span>
-      <span className={`relative block font-headline-md text-headline-md leading-none mt-1 ${accent ? 'text-primary' : 'text-on-surface'}`}>
-        {value}
-      </span>
-      <span className="relative font-label-md text-[10px] text-on-surface-variant mt-1 block">
-        {delta}
-      </span>
-    </motion.div>
+    </div>
   );
 }

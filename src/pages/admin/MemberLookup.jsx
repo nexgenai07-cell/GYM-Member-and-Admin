@@ -1,5 +1,6 @@
 // src/pages/admin/MemberLookup.jsx
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/adminService';
@@ -22,8 +23,9 @@ export default function MemberLookup() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const [scanning, setScanning] = useState(false);
+
   // Tick every second while a session is running
   useEffect(() => {
     if (!result?.active_check_in) return;
@@ -61,6 +63,16 @@ export default function MemberLookup() {
       setLoading(false);
     }
   };
+
+  // ?iqama=… (from the header search) looks the member up straight away.
+  const [params] = useSearchParams();
+  const linkedIqama = params.get('iqama');
+  useEffect(() => {
+    if (!linkedIqama) return undefined;
+    const id = setTimeout(() => { setIqama(linkedIqama); lookup(null, linkedIqama); }, 0);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per linked Iqama
+  }, [linkedIqama]);
 
   const startTimer = async () => {
     if (!result?.member) return;

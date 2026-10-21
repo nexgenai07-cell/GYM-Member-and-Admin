@@ -1,10 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+// src/components/admin/AdminHeader.jsx
+// Admin console header: live gym load, global search, "needs attention" alerts
+// (computed by the backend from live data), and the signed-in admin.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+import { dashboardService } from '../../services/dashboardService';
 
-/* ============================================
-   HOOK: Click outside
-   ============================================ */
+const POLL_MS = 60_000;
+const SEARCH_GROUPS = [['members', 'Members', 'person'], ['registrations', 'Registrations', 'how_to_reg'],
+  ['orders', 'Shop orders', 'shopping_bag'], ['machines', 'Machines', 'precision_manufacturing']];
+
 function useClickOutside(ref, handler) {
   useEffect(() => {
     const listener = (event) => {
@@ -16,282 +23,203 @@ function useClickOutside(ref, handler) {
   }, [ref, handler]);
 }
 
-/* ============================================
-   MOCK ADMIN NOTIFICATIONS
-   ============================================ */
-const adminAlerts = [
-  { id: 1, icon: 'person_add', title: 'New Member Registration', message: 'Sarah Lindqvist signed up for Pro Tier.', time: '5 min ago', unread: true },
-  { id: 2, icon: 'warning', title: 'Machine Maintenance', message: 'Chest Press #14 reported sensor fault.', time: '28 min ago', unread: true },
-  { id: 3, icon: 'payments', title: 'Large Transaction', message: '$1,240.00 corporate renewal processed.', time: '1 hour ago', unread: true },
-  { id: 4, icon: 'school', title: 'Course Pending Approval', message: 'Coach Marcus submitted new VBT protocol.', time: '2 hours ago', unread: false },
-];
-
 export default function AdminHeader() {
   const navigate = useNavigate();
-  const [openDropdown, setOpenDropdown] = useState(null);
-  const [alerts] = useState(adminAlerts);
-
-  const notificationsRef = useRef(null);
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(null);             // 'alerts' | 'profile' | 'search'
+  const [alerts, setAlerts] = useState({ total: 0, items: [] });
+  const [occ, setOcc] = useState(null);
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState(null);
+  const alertsRef = useRef(null);
   const profileRef = useRef(null);
+  const searchRef = useRef(null);
+  const searchInput = useRef(null);
 
-  const unreadCount = alerts.filter((a) => a.unread).length;
+  const close = useCallback(() => setOpen(null), []);
+  useClickOutside(alertsRef, () => open === 'alerts' && close());
+  useClickOutside(profileRef, () => open === 'profile' && close());
+  useClickOutside(searchRef, () => open === 'search' && close());
 
-  useClickOutside(notificationsRef, () =>
-    openDropdown === 'notifications' && setOpenDropdown(null)
-  );
-  useClickOutside(profileRef, () =>
-    openDropdown === 'profile' && setOpenDropdown(null)
-  );
-
+  // Alerts + live load, refreshed every minute.
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && setOpenDropdown(null);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    let alive = true;
+    const load = async () => {
+      const [a, o] = await Promise.allSettled([api.get('/admin/alerts/'), dashboardService.occupancy()]);
+      if (!alive) return;
+      if (a.status === 'fulfilled') setAlerts(a.value.data);
+      if (o.status === 'fulfilled') setOcc(o.value);
+    };
+    load();
+    const id = setInterval(load, POLL_MS);
+    return () => { alive = false; clearInterval(id); };
   }, []);
 
-  const toggle = (name) =>
-    setOpenDropdown((prev) => (prev === name ? null : name));
+  // Ctrl/⌘+K focuses search, Esc closes everything.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') close();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInput.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [close]);
+
+  // Debounced search.
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) return undefined;
+    let alive = true;
+    const id = setTimeout(async () => {
+      try {
+        const { data } = await api.get('/admin/search/', { params: { q: term } });
+        if (alive) { setResults(data); setOpen('search'); }
+      } catch { if (alive) setResults(null); }
+    }, 250);
+    return () => { alive = false; clearTimeout(id); };
+  }, [q]);
+
+  const go = (path) => { close(); setQ(''); setResults(null); navigate(path); };
 
   const handleLogout = async () => {
-  setOpenDropdown(null);
-  await logout(); // from useAuth
-  navigate('/login');
-};
+    close();
+    try { await logout(); } finally { navigate('/admin/login', { replace: true }); }
+  };
+
+  const name = user?.full_name || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || 'Admin';
+  const initials = name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const role = user?.role === 'manager' ? 'Manager' : 'Administrator';
+  const anyResults = results && SEARCH_GROUPS.some(([k]) => results[k]?.length);
 
   return (
     <header className="fixed top-0 left-72 right-0 h-16 bg-[#08080a]/95 backdrop-blur-xl z-40 border-b border-[#1a1a1e]">
-      <div className="h-16 w-full px-6 flex items-center justify-between">
-        {/* ============ LEFT: ENVIRONMENT BADGE ============ */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e]">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-            </span>
-            <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
-              Production Environment
-            </span>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-2 text-on-surface-variant font-label-md text-[10px] uppercase tracking-widest">
-            <span className="material-symbols-outlined text-[16px] text-primary">
-              location_on
-            </span>
-            <span>Metro Station Core 01 · Sub-Level Alpha</span>
-          </div>
+      <div className="h-16 w-full px-6 flex items-center justify-between gap-4">
+        {/* Live load */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] shrink-0">
+          <span className={`w-2 h-2 rounded-full ${occ ? 'bg-emerald-400 animate-pulse' : 'bg-[#2a2a2e]'}`} />
+          <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">Gym now</span>
+          <span className="text-[12px] text-on-surface font-bold">
+            {occ ? (occ.capacity ? `${occ.current}/${occ.capacity} · ${occ.percent}%` : `${occ.current} in`) : '—'}
+          </span>
         </div>
 
-        {/* ============ RIGHT: ACTIONS ============ */}
         <div className="flex items-center gap-3">
           {/* Search */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] w-72">
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search members, machines, invoices..."
-              className="flex-1 bg-transparent text-on-surface font-body-md text-body-md outline-none placeholder:text-on-surface-variant/40"
-            />
-            <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1e] text-on-surface-variant text-[10px] font-mono">
-              ⌘K
-            </kbd>
-          </div>
-
-          {/* Notifications */}
-          <div className="relative" ref={notificationsRef}>
-            <button
-              onClick={() => toggle('notifications')}
-              aria-label="Admin alerts"
-              className={`relative w-9 h-9 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] flex items-center justify-center hover:bg-[#1a1a1e] transition-colors ${
-                openDropdown === 'notifications' ? 'bg-[#1a1a1e]' : ''
-              }`}
-              type="button"
-            >
-              <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
-                notifications
-              </span>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold flex items-center justify-center shadow-[0_0_10px_rgba(229,25,55,0.6)]">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-
+          <div className="relative hidden md:block" ref={searchRef}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] w-80 focus-within:border-primary-container">
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+              <input
+                ref={searchInput}
+                type="search"
+                value={q}
+                onChange={(e) => { setQ(e.target.value); if (e.target.value.trim().length < 2) setResults(null); }}
+                onFocus={() => results && setOpen('search')}
+                placeholder="Search members, Iqama, orders, machines…"
+                aria-label="Search"
+                className="bg-transparent text-on-surface text-[13px] flex-1 outline-none placeholder:text-on-surface-variant/50"
+              />
+              <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1e] text-on-surface-variant text-[10px] font-mono">Ctrl K</kbd>
+            </div>
             <AnimatePresence>
-              {openDropdown === 'notifications' && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute right-0 top-full mt-2 w-96 bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl shadow-2xl overflow-hidden z-50 origin-top-right"
-                >
-                  <div className="px-4 py-3 border-b border-[#1a1a1e] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-title-md text-title-md text-on-surface uppercase tracking-wider">
-                        Admin Alerts
-                      </span>
-                      {unreadCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-md text-label-md font-bold">
-                          {unreadCount} new
-                        </span>
-                      )}
+              {open === 'search' && results && (
+                <Panel className="w-96 left-0 right-auto">
+                  {!anyResults ? (
+                    <p className="px-4 py-6 text-center text-[12px] text-on-surface-variant">No matches for “{q.trim()}”.</p>
+                  ) : SEARCH_GROUPS.filter(([k]) => results[k]?.length).map(([k, label, icon]) => (
+                    <div key={k} className="py-1 border-b border-[#1a1a1e] last:border-0">
+                      <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">{label}</div>
+                      {results[k].map((r) => (
+                        <button key={`${k}-${r.id}`} type="button" onClick={() => go(r.path)}
+                          className="w-full flex items-center gap-3 px-4 py-2 hover:bg-[#1a1a1e] text-left">
+                          <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{icon}</span>
+                          <span className="min-w-0">
+                            <span className="block text-[13px] text-on-surface truncate">{r.title}</span>
+                            <span className="block text-[11px] text-on-surface-variant truncate">{r.subtitle}</span>
+                          </span>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {alerts.map((a) => (
-                      <div
-                        key={a.id}
-                        className={`flex items-start gap-3 px-4 py-3 hover:bg-[#1a1a1e] transition-colors border-b border-[#1a1a1e]/50 last:border-b-0 cursor-pointer ${
-                          a.unread ? 'bg-primary-container/5' : ''
-                        }`}
-                      >
-                        <div
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                            a.unread
-                              ? 'bg-primary-container/20 text-primary'
-                              : 'bg-[#1a1a1e] text-on-surface-variant'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">
-                            {a.icon}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={`font-title-md text-[13px] truncate ${
-                                a.unread ? 'text-on-surface' : 'text-on-surface-variant'
-                              }`}
-                            >
-                              {a.title}
-                            </span>
-                            {a.unread && (
-                              <span className="w-2 h-2 rounded-full bg-primary-container shrink-0" />
-                            )}
-                          </div>
-                          <p className="font-body-md text-[12px] text-on-surface-variant line-clamp-2 mt-0.5">
-                            {a.message}
-                          </p>
-                          <span className="font-label-md text-[10px] text-on-surface-variant/60 uppercase mt-1 inline-block">
-                            {a.time}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
+                  ))}
+                </Panel>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-8 bg-[#1a1a1e]" />
-
-          {/* Admin Profile */}
-          <div className="relative" ref={profileRef}>
-            <button
-              onClick={() => toggle('profile')}
-              className={`flex items-center gap-3 pl-1 pr-2 py-1 rounded-lg hover:bg-[#0e0e0f] transition-colors ${
-                openDropdown === 'profile' ? 'bg-[#0e0e0f]' : ''
-              }`}
-              type="button"
-            >
-              <div className="relative">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-on-primary-container font-bold text-[13px] shadow-[0_0_12px_rgba(229,25,55,0.4)]">
-                  AD
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#08080a]" />
-              </div>
-              <div className="hidden md:flex flex-col text-left">
-                <span className="font-title-md text-[13px] text-on-surface leading-tight">
-                  Admin Root
+          {/* Alerts */}
+          <div className="relative" ref={alertsRef}>
+            <button type="button" onClick={() => setOpen(open === 'alerts' ? null : 'alerts')} aria-label={`Alerts (${alerts.total})`}
+              className="relative w-9 h-9 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] flex items-center justify-center hover:bg-[#1a1a1e]">
+              <span className="material-symbols-outlined text-on-surface-variant text-[20px]">notifications</span>
+              {alerts.total > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold flex items-center justify-center">
+                  {alerts.total > 99 ? '99+' : alerts.total}
                 </span>
-                <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-                  Super Admin
-                </span>
-              </div>
-              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
-                expand_more
-              </span>
+              )}
             </button>
-
             <AnimatePresence>
-              {openDropdown === 'profile' && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute right-0 top-full mt-2 w-64 bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl shadow-2xl overflow-hidden z-50 origin-top-right"
-                >
-                  <div className="px-4 py-4 border-b border-[#1a1a1e]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-on-primary-container font-bold text-[15px]">
-                        AD
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-title-md text-title-md text-on-surface">
-                          Admin Root
-                        </span>
-                        <span className="font-label-md text-label-md text-on-surface-variant">
-                          root@smartgym.internal
-                        </span>
-                        <span className="mt-1 inline-block px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-md text-[10px] uppercase tracking-wider font-bold w-fit">
-                          Super Admin · Full Access
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-2">
-                    <AdminMenuItem
-                      icon="person"
-                      label="Admin Profile"
-                      onClick={() => {
-                        navigate('/admin/settings');
-                        setOpenDropdown(null);
-                      }}
-                    />
-                    <AdminMenuItem
-                      icon="shield"
-                      label="Security & 2FA"
-                      onClick={() => {
-                        navigate('/admin/settings');
-                        setOpenDropdown(null);
-                      }}
-                    />
-                    <AdminMenuItem
-                      icon="history"
-                      label="Activity Log"
-                      onClick={() => setOpenDropdown(null)}
-                    />
-                    <AdminMenuItem
-                      icon="settings"
-                      label="System Settings"
-                      onClick={() => {
-                        navigate('/admin/settings');
-                        setOpenDropdown(null);
-                      }}
-                    />
-                  </div>
-
-                  <div className="p-2 border-t border-[#1a1a1e]">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-error/10 text-error transition-colors"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        logout
+              {open === 'alerts' && (
+                <Panel className="w-96">
+                  <div className="px-4 py-3 border-b border-[#1a1a1e] text-[13px] text-on-surface font-bold uppercase tracking-wider">Needs attention</div>
+                  {!alerts.items.length ? (
+                    <p className="px-4 py-8 text-center text-[12px] text-on-surface-variant">All caught up — nothing waiting.</p>
+                  ) : alerts.items.map((a) => (
+                    <button key={a.key} type="button" onClick={() => go(a.path)}
+                      className="w-full flex items-start gap-3 px-4 py-3 hover:bg-[#1a1a1e] text-left border-b border-[#1a1a1e]/50 last:border-0">
+                      <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${a.priority === 'high' ? 'bg-primary-container/20 text-primary' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
+                        <span className="material-symbols-outlined text-[18px]">{a.icon}</span>
                       </span>
-                      <span className="font-title-md text-title-md uppercase tracking-wider">
-                        End Admin Session
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-[13px] text-on-surface font-bold">{a.title}</span>
+                          <span className="text-[11px] text-primary font-bold">{a.count}</span>
+                        </span>
+                        <span className="block text-[12px] text-on-surface-variant">{a.message}</span>
                       </span>
                     </button>
+                  ))}
+                </Panel>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="w-px h-8 bg-[#1a1a1e]" />
+
+          {/* Profile */}
+          <div className="relative" ref={profileRef}>
+            <button type="button" onClick={() => setOpen(open === 'profile' ? null : 'profile')}
+              className="flex items-center gap-3 pl-1 pr-2 py-1 rounded-lg hover:bg-[#0e0e0f]">
+              <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-on-primary-container font-bold text-[13px]">
+                {initials}
+              </span>
+              <span className="hidden md:flex flex-col text-left">
+                <span className="text-[13px] text-on-surface leading-tight">{name}</span>
+                <span className="text-[10px] text-primary uppercase tracking-widest font-bold">{role}</span>
+              </span>
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span>
+            </button>
+            <AnimatePresence>
+              {open === 'profile' && (
+                <Panel className="w-64">
+                  <div className="px-4 py-3 border-b border-[#1a1a1e]">
+                    <div className="text-[13px] text-on-surface font-bold">{name}</div>
+                    <div className="text-[12px] text-on-surface-variant truncate">{user?.email}</div>
                   </div>
-                </motion.div>
+                  <div className="p-2">
+                    <MenuItem icon="settings" label="System settings" onClick={() => go('/admin/settings')} />
+                    <MenuItem icon="lock_reset" label="Change password" onClick={() => go('/dashboard/change-password')} />
+                    <MenuItem icon="public" label="Open public website" onClick={() => { close(); window.open(import.meta.env.VITE_PUBLIC_SITE_URL || 'https://smart-gym-three.vercel.app', '_blank', 'noopener'); }} />
+                  </div>
+                  <div className="p-2 border-t border-[#1a1a1e]">
+                    <button type="button" onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-error/10 text-error">
+                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      <span className="text-[12px] uppercase tracking-wider font-bold">Sign out</span>
+                    </button>
+                  </div>
+                </Panel>
               )}
             </AnimatePresence>
           </div>
@@ -301,20 +229,26 @@ export default function AdminHeader() {
   );
 }
 
-/* ============================================
-   MENU ITEM
-   ============================================ */
-function AdminMenuItem({ icon, label, onClick }) {
+function Panel({ children, className = '' }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1a1a1e] transition-colors text-left group"
-      type="button"
+    <motion.div
+      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.98 }}
+      transition={{ duration: 0.15 }}
+      className={`absolute right-0 top-full mt-2 max-h-[70vh] overflow-y-auto bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl shadow-2xl z-50 ${className}`}
     >
-      <span className="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">
-        {icon}
-      </span>
-      <span className="font-title-md text-title-md text-on-surface">{label}</span>
+      {children}
+    </motion.div>
+  );
+}
+
+function MenuItem({ icon, label, onClick }) {
+  return (
+    <button type="button" onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1a1a1e] text-left">
+      <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{icon}</span>
+      <span className="text-[13px] text-on-surface">{label}</span>
     </button>
   );
 }

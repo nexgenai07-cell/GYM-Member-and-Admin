@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { workoutsService } from '../services/workoutsService';
 import QrScanner from './QrScanner';
+import { machineTagFrom } from '../utils/machineQr';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -16,7 +17,7 @@ export default function ScannerCard() {
   const [looking, setLooking] = useState(false);
 
   const openMachine = useCallback(async (raw) => {
-    const tag = String(raw || '').trim();
+    const tag = machineTagFrom(raw);
     if (!tag) return;
     setScanning(false);
     setLooking(true);
