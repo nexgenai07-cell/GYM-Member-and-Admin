@@ -133,17 +133,20 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
           <div className="flex flex-col">
             <div className="flex items-baseline gap-space-2xs">
               <span className="font-headline-md text-headline-md text-on-surface leading-none tabular-nums">
-                $
-                <CountUp
-                  to={Number(course.price) || 0}
-                  duration={1.2}
-                  delay={0.9}
-                  decimals={course.price % 1 !== 0 ? 2 : 0}
-                />
+                {course.free_for_me ? 'Free' : (
+                  <CountUp
+                    to={Number(course.price) || 0}
+                    duration={1.2}
+                    delay={0.9}
+                    decimals={course.price % 1 !== 0 ? 2 : 0}
+                  />
+                )}
               </span>
-              <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                USD
-              </span>
+              {!course.free_for_me && (
+                <span className="font-label-md text-label-md text-on-surface-variant uppercase">
+                  SAR
+                </span>
+              )}
             </div>
             {course.is_included_with_pro && (
               <span className="font-label-md text-label-md text-primary tracking-wide">

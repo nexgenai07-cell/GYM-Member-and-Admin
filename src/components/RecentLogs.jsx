@@ -12,8 +12,16 @@ const typeIcons = {
   functional: 'sports_gymnastics',
 };
 
-export default function RecentLogs({ workouts = [], loading }) {
+const RANGE_DAYS = { '7 Days': 7, '30 Days': 30, 'All Time': null };
+
+export default function RecentLogs({ workouts: all = [], loading }) {
   const [range, setRange] = useState('7 Days');
+  const days = RANGE_DAYS[range];
+  const [now] = useState(() => Date.now());
+  const since = days ? now - days * 86400000 : 0;
+  const workouts = all
+    .filter((w) => new Date(w.completed_at || w.started_at).getTime() >= since)
+    .slice(0, 10);
 
   if (loading) {
     return (
@@ -24,7 +32,7 @@ export default function RecentLogs({ workouts = [], loading }) {
       >
         <div className="flex items-center justify-between mb-space-md">
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider">
-            Recent Combat &amp; Iron Logs
+            Recent workouts
           </h3>
         </div>
         <div className="flex flex-col gap-2">
@@ -50,10 +58,10 @@ export default function RecentLogs({ workouts = [], loading }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-space-sm">
         <div>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider m-0">
-            Recent Combat &amp; Iron Logs
+            Recent workouts
           </h3>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-            Verified machine telemetry and load volume recordings.
+            Your completed workouts.
           </p>
         </div>
 

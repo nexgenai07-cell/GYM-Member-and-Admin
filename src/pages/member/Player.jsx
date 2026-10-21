@@ -9,7 +9,6 @@ import PlayerHeader from '../../components/player/PlayerHeader';
 import VideoStage from '../../components/player/VideoStage';
 import CoachNotes from '../../components/player/CoachNotes';
 import SyllabusSidebar from '../../components/player/SyllabusSidebar';
-import ExerciseMatrix from '../../components/player/ExerciseMatrix';
 import SessionSummaryDock from '../../components/player/SessionSummaryDock';
 
 export default function Player() {
@@ -86,10 +85,6 @@ export default function Player() {
     } catch (e) {
       toast.error('Failed to mark module complete');
     }
-  };
-
-  const handleSaveDraft = () => {
-    toast.success('Draft saved locally');
   };
 
   const handleBrowseCourses = () => navigate('/dashboard/courses');
@@ -183,16 +178,9 @@ export default function Player() {
         />
       </div>
 
-      {/* EXERCISE MATRIX (shows when workout exists) */}
-      <ExerciseMatrix
-        exercises={[]}
-        onConnect={() => toast.success('Connecting to machine...')}
-      />
-
       <SessionSummaryDock
         onLog={handleStartWorkout}
         logged={logged}
-        onSaveDraft={handleSaveDraft}
       />
     </div>
   );

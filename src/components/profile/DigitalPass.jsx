@@ -1,126 +1,142 @@
 // src/components/profile/DigitalPass.jsx
-import { motion } from 'framer-motion';
+// Entry pass. The QR is a signed token from the backend that expires after two
+// minutes and is refreshed every minute, so a screenshot stops working. Staff
+// scan it in Admin → Member Lookup (or the member uses the face gate).
+import { useCallback, useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
+import { membersService } from '../../services/membersService';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
 
 export default function DigitalPass({ user, membership }) {
-  const passId = user?.id?.toString().padStart(4, '0') || '0000';
-  const tier = membership?.plan?.display_name || 'Member';
-  const status = membership?.status || 'active';
-  const cardholder = user?.full_name || user?.email || 'Member';
+  const [pass, setPass] = useState(null);
+  const [error, setError] = useState('');
+  const [fullscreen, setFullscreen] = useState(false);
+  const [left, setLeft] = useState(0);
 
-  // ----- REAL QR payload -----
-  // Points to the backend verify endpoint we just created.
-  // Anyone scanning this QR will hit /api/members/verify/<id>/ and get JSON.
-  const apiBase =
-    import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-  const qrPayload = user?.id
-    ? `${apiBase}/members/verify/${user.id}/`
-    : `${apiBase}/members/verify/0/`;
+  const tier = membership?.plan?.display_name || 'Member';
+  const cardholder = user?.full_name || user?.email || 'Member';
+  const expired = membership?.time_remaining?.expired;
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await membersService.pass();
+      setPass(data);
+      setLeft(data.refresh_in || 60);
+      setError('');
+    } catch (e) {
+      setError(e?.response?.status === 404 ? 'No membership yet.' : 'Could not load your pass. Check your connection.');
+    }
+  }, []);
+
+  // Fetch, then count down and refetch every `refresh_in` seconds (also when the tab comes back).
+  useEffect(() => {
+    let alive = true;
+    (async () => { if (alive) await refresh(); })();
+    const tick = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { alive = false; clearInterval(tick); document.removeEventListener('visibilitychange', onVisible); };
+  }, [refresh]);
+
+  useEffect(() => {
+    if (pass && left === 0) {
+      const id = setTimeout(refresh, 0);
+      return () => clearTimeout(id);
+    }
+    return undefined;
+  }, [left, pass, refresh]);
+
+  // /dashboard/profile#pass scrolls here.
+  useEffect(() => {
+    if (window.location.hash === '#pass') {
+      document.getElementById('pass')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
+
+  const qr = (size) => (
+    pass?.token ? (
+      <QRCodeSVG value={pass.token} size={size} level="M" bgColor="#ffffff" fgColor="#0a0a0a" />
+    ) : (
+      <div style={{ width: size, height: size }} className="bg-surface-container-high animate-pulse rounded" />
+    )
+  );
 
   return (
     <motion.div
+      id="pass"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4 }}
-      className="rounded-lg bg-surface-container p-space-xl flex flex-col justify-between shadow-lg relative overflow-hidden"
+      className="rounded-lg bg-surface-container p-space-xl flex flex-col justify-between shadow-lg relative overflow-hidden scroll-mt-24"
     >
       <div className="absolute top-0 right-0 w-48 h-48 bg-primary-container/15 rounded-full blur-2xl pointer-events-none" />
 
       <div>
         <div className="flex items-center justify-between mb-space-md flex-wrap gap-2">
           <div className="flex flex-col">
-            <span className="font-label-md text-label-md text-primary uppercase tracking-widest font-bold">
-              Facility Clearance
-            </span>
-            <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">
-              Digital Pass & NFC Key
-            </h2>
+            <span className="font-label-md text-label-md text-primary uppercase tracking-widest font-bold">Entry pass</span>
+            <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">Digital Pass</h2>
           </div>
-          <span className="flex items-center gap-1 font-label-md text-label-md text-primary font-bold uppercase">
-            <span className="w-2 h-2 rounded-full bg-primary-container animate-pulse" />
-            {status}
+          <span className={`flex items-center gap-1 font-label-md text-label-md font-bold uppercase ${pass?.valid ? 'text-emerald-400' : 'text-error'}`}>
+            <span className={`w-2 h-2 rounded-full ${pass?.valid ? 'bg-emerald-400 animate-pulse' : 'bg-error'}`} />
+            {pass ? (pass.valid ? 'Valid for entry' : 'Not valid for entry') : '…'}
           </span>
         </div>
-
         <p className="font-body-md text-body-md text-on-surface-variant mb-space-md">
-          Scan with any phone camera to verify membership. Staff terminal reads the
-          payload and confirms access.
+          Show this QR at the front desk to check in. It refreshes every minute — screenshots stop working.
         </p>
       </div>
 
       <div className="rounded-lg bg-surface-container-lowest p-space-lg shadow-xl relative overflow-hidden my-space-sm">
-        <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-primary-container/20 rounded-full blur-xl pointer-events-none" />
-
         <div className="flex items-center justify-between mb-space-md">
-          <div className="flex items-center gap-space-xs">
-            <span className="material-symbols-outlined text-primary-container text-[24px]">
-              contactless
-            </span>
-            <span className="font-headline-md text-headline-md uppercase tracking-wider text-on-surface">
-              Smart Gym Elite
-            </span>
-          </div>
-          <span className="px-space-xs py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md uppercase">
-            {tier}
-          </span>
+          <span className="font-headline-md text-headline-md uppercase tracking-wider text-on-surface">Smart Gym</span>
+          <span className="px-space-xs py-0.5 rounded bg-surface-container text-on-surface-variant font-label-md text-label-md uppercase">{tier}</span>
         </div>
 
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex flex-col min-w-0">
-            <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-              Cardholder
-            </span>
-            <span className="font-title-md text-title-md text-on-surface truncate">
-              {cardholder}
-            </span>
-            <span className="font-label-md text-label-md text-primary font-bold mt-1">
-              ID: {passId}-TK
-            </span>
-            <span className="font-label-md text-label-md text-on-surface-variant mt-2">
-              Expiry: {formatDate(membership?.expiry_date)}
-            </span>
+            <span className="font-label-md text-label-md text-on-surface-variant uppercase">Cardholder</span>
+            <span className="font-title-md text-title-md text-on-surface truncate">{cardholder}</span>
+            <span className="font-label-md text-label-md text-primary font-bold mt-1">Pass {pass?.pass_id || '—'}</span>
+            <span className="font-label-md text-label-md text-on-surface-variant mt-2">Expiry: {formatDate(membership?.expiry_date)}</span>
             {membership?.time_remaining && (
-              <span className={`font-label-md text-label-md font-bold ${membership.time_remaining.expired ? 'text-error' : 'text-on-surface'}`}>
-                {membership.time_remaining.expired ? 'Expired' : `${formatRemaining(membership.time_remaining)} left`}
+              <span className={`font-label-md text-label-md font-bold ${expired ? 'text-error' : 'text-on-surface'}`}>
+                {expired ? 'Expired' : `${formatRemaining(membership.time_remaining)} left`}
               </span>
             )}
           </div>
 
-          {/* ⬇️ REAL QR CODE ⬇️ */}
-          <div className="p-2 bg-white rounded shadow-md flex items-center justify-center">
-            <QRCodeSVG
-              value={qrPayload}
-              size={96}
-              level="M"
-              bgColor="#ffffff"
-              fgColor="#0a0a0a"
-            />
-          </div>
+          <button type="button" onClick={() => pass && setFullscreen(true)} aria-label="Show pass QR full screen"
+            className="p-2 bg-white rounded shadow-md flex flex-col items-center justify-center">
+            {qr(112)}
+          </button>
         </div>
+        {pass && <p className="text-on-surface-variant text-[11px] mt-3">Refreshes in {left}s</p>}
+        {error && <p className="text-error text-[12px] mt-3" role="alert">{error}</p>}
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-space-sm mt-space-md">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          className="w-full py-space-sm px-space-md rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-lg text-label-lg uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-space-xs shadow-md"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            phone_iphone
-          </span>
-          Add to Apple Wallet
-        </motion.button>
+      <button type="button" onClick={() => setFullscreen(true)} disabled={!pass}
+        className="w-full mt-space-md py-space-sm px-space-md rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider font-bold flex items-center justify-center gap-space-xs disabled:opacity-50">
+        <span className="material-symbols-outlined text-[18px]">fullscreen</span>
+        Show at the desk
+      </button>
 
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          className="w-full py-space-sm px-space-md rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-lg text-label-lg uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-space-xs shadow-md"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[18px]">wallet</span>
-          Google Wallet
-        </motion.button>
-      </div>
+      <AnimatePresence>
+        {fullscreen && (
+          <motion.div
+            className="fixed inset-0 z-[70] bg-white flex flex-col items-center justify-center gap-6 p-6"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setFullscreen(false)} role="dialog" aria-modal="true" aria-label="Entry pass QR"
+          >
+            {qr(Math.min(320, window.innerWidth - 64))}
+            <div className="text-center text-black">
+              <p className="text-xl font-bold">{cardholder}</p>
+              <p className="text-sm opacity-70">{tier} · refreshes in {left}s · tap to close</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

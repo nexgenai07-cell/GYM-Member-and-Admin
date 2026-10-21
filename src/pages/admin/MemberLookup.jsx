@@ -4,6 +4,10 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/adminService';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
+import { errorMessage } from '../../utils/apiError';
+import QrScanner from '../../components/QrScanner';
+
+const PASS_PREFIX = 'SGPASS:';
 
 const fmtDuration = (seconds) => {
   const h = Math.floor(seconds / 3600);
@@ -19,7 +23,7 @@ export default function MemberLookup() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
-
+  const [scanning, setScanning] = useState(false);
   // Tick every second while a session is running
   useEffect(() => {
     if (!result?.active_check_in) return;
@@ -27,15 +31,19 @@ export default function MemberLookup() {
     return () => clearInterval(t);
   }, [result?.active_check_in]);
 
-  const lookup = async (e) => {
+  // Accepts a typed Iqama number or a scanned digital pass (camera or a USB
+  // scanner typing into the box).
+  const lookup = async (e, value) => {
     e?.preventDefault();
-    const q = iqama.trim();
+    const q = (value ?? iqama).trim();
     if (!q) return;
     setLoading(true);
     setResult(null);
     setError('');
     try {
-      const res = await adminService.lookupMember(q);
+      const res = q.startsWith(PASS_PREFIX)
+        ? await adminService.lookupMemberByPass(q)
+        : await adminService.lookupMember(q);
       setResult(res);
       if (!res.found) {
         setError(
@@ -45,7 +53,10 @@ export default function MemberLookup() {
         );
       }
     } catch (err) {
-      setError(err.message || 'Lookup failed');
+      const body = err?.response?.data;
+      setError(body?.reason === 'not_found' ? 'Member not found.'
+        : body?.reason === 'registration_pending' ? 'This Iqama has a registration waiting for approval.'
+          : errorMessage(err, 'Lookup failed'));
     } finally {
       setLoading(false);
     }
@@ -104,18 +115,30 @@ export default function MemberLookup() {
           Member Lookup
         </h1>
         <p className="font-body-sm text-on-surface-variant text-[13px]">
-          Enter the member's Iqama number at the gym entrance to verify the member and
-          start their session timer.
+          Scan the member's digital pass QR (or type their Iqama number) to verify the
+          membership and start their session timer.
         </p>
       </motion.div>
+
+      <QrScanner
+        open={scanning}
+        title="Scan member pass"
+        manualLabel="Or type the Iqama number"
+        onResult={(code) => { setScanning(false); setIqama(code.startsWith(PASS_PREFIX) ? '' : code); lookup(null, code); }}
+        onClose={() => setScanning(false)}
+      />
 
       {/* Search box */}
       <form onSubmit={lookup} className="flex gap-2 mb-6 max-w-2xl">
         <input
           value={iqama}
-          onChange={(e) => setIqama(e.target.value.replace(/\D/g, '').slice(0, 10))}
-          placeholder="2XXXXXXXXX"
-          inputMode="numeric"
+          onChange={(e) => {
+            const v = e.target.value;
+            // Pass tokens (from a USB scanner) are kept as typed; Iqama numbers are digits only.
+            setIqama(/^s/i.test(v) ? v.trim().slice(0, 400) : v.replace(/\D/g, '').slice(0, 10));
+          }}
+          placeholder="Iqama 2XXXXXXXXX or scan pass"
+          aria-label="Iqama number or pass"
           className="flex-1 bg-[#131316] border border-[#1a1a1e] rounded px-4 py-3 text-[16px] font-mono text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container outline-none"
           autoFocus
         />
@@ -125,6 +148,13 @@ export default function MemberLookup() {
           className="px-6 py-3 rounded bg-primary-container hover:opacity-90 disabled:opacity-40 text-on-primary-container text-[12px] font-bold uppercase tracking-wider"
         >
           {loading ? 'Searching…' : 'Lookup'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setScanning(true)}
+          className="px-4 py-3 rounded bg-[#131316] hover:bg-[#1a1a1e] text-on-surface text-[12px] font-bold uppercase tracking-wider flex items-center gap-1"
+        >
+          <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span> Scan pass
         </button>
         {result && (
           <button

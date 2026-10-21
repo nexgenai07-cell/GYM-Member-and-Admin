@@ -48,10 +48,16 @@ export const catalogService = {
     return data;
   },
 
+  /** Free 60-minute slots for one date (YYYY-MM-DD), from the trainer's availability. */
+  async trainerSlots(trainerId, date) {
+    const { data } = await api.get(`/catalog/trainers/${trainerId}/slots/`, { params: { date } });
+    return data;
+  },
+  /** Reserves the slot (status pending_payment); pay with paymentsService.checkout. */
   async bookSession(payload) {
-  const { data } = await api.post('/catalog/sessions/', payload);
-  return data;
-},
+    const { data } = await api.post('/catalog/sessions/', payload);
+    return data;
+  },
 
   async cancelSession(id) {
     const { data } = await api.post(`/catalog/sessions/${id}/cancel/`);

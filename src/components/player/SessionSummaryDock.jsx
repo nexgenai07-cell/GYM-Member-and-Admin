@@ -1,7 +1,7 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
 
-export default function SessionSummaryDock({ onLog, logged, onSaveDraft }) {
+export default function SessionSummaryDock({ onLog, logged }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -15,23 +15,21 @@ export default function SessionSummaryDock({ onLog, logged, onSaveDraft }) {
         </div>
         <div className="flex flex-col">
           <span className="font-title-md text-title-md text-on-surface">
-            Session Summary Telemetry
+            Train this module
           </span>
           <span className="font-body-md text-body-md text-on-surface-variant">
-            All repetitions will sync directly to your Atlas biometric profile.
+            Start a workout, then log your sets on the dashboard or by scanning each machine.
           </span>
         </div>
       </div>
 
       <div className="flex items-center gap-space-sm w-full sm:w-auto">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={onSaveDraft}
-          className="flex-1 sm:flex-initial px-space-lg py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface transition-colors font-label-lg text-label-lg uppercase"
-          type="button"
+        <Link
+          to="/dashboard/machine-guide"
+          className="flex-1 sm:flex-initial px-space-lg py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface transition-colors font-label-lg text-label-lg uppercase text-center"
         >
-          Save Draft
-        </motion.button>
+          Machine guide
+        </Link>
 
         <motion.button
           whileTap={{ scale: 0.97 }}

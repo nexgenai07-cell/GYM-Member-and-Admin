@@ -13,8 +13,9 @@ export const attendanceService = {
     return data;
   },
 
-  async checkIn(payload) {
-    const { data } = await api.post('/attendance/check-ins/', payload);
+  // Check-ins are recorded at the entrance (face gate / staff scanning the pass).
+  async checkOut(id) {
+    const { data } = await api.post(`/attendance/check-ins/${id}/check-out/`);
     return data;
   },
 

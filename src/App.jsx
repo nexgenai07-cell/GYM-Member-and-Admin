@@ -22,6 +22,7 @@ import Profile from './pages/member/Profile';
 import Payments from './pages/member/Payments';
 import Notifications from './pages/member/Notifications';
 import ChangePassword from './pages/member/ChangePassword';
+import PaymentCallback from './pages/member/PaymentCallback';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -215,6 +216,7 @@ function App() {
                 <Route path="attendance" element={<Attendance />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="payments" element={<Payments />} />
+                <Route path="payments/callback" element={<PaymentCallback />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="change-password" element={<ChangePassword />} />
                 <Route path="*" element={<NotFound />} />

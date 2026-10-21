@@ -96,7 +96,7 @@ export default function CourseHeader({ courseCount = 0, membershipTier }) {
               Membership
             </span>
             <span className="font-title-md text-title-md text-primary leading-tight">
-              {membershipTier || 'Pro Pass'}
+              {membershipTier || 'Member'}
             </span>
           </div>
           <motion.span

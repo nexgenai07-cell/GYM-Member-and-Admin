@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import QrScanner from '../../components/QrScanner';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
@@ -22,6 +24,8 @@ const gridV = {
 };
 
 export default function MachineGuide() {
+  const [params, setParams] = useSearchParams();
+  const [scanning, setScanning] = useState(params.get('scan') === '1');
   const [qrInput, setQrInput] = useState('');
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -91,19 +95,32 @@ export default function MachineGuide() {
     }
   };
 
-  const handleSearch = async () => {
-    if (!qrInput.trim()) return;
+  const lookup = useCallback(async (raw) => {
+    const tag = String(raw || '').trim();
+    if (!tag) return;
+    setScanning(false);
     try {
       setSearching(true);
-      const ex = await workoutsService.exerciseByQR(qrInput.trim());
+      const ex = await workoutsService.exerciseByQR(tag);
       setSelectedExercise(ex);
+      setQrInput(tag);
       toast.success(`Found: ${ex.name}`);
-    } catch (e) {
-      toast.error('No exercise matches that QR tag');
+    } catch {
+      toast.error('No machine matches that code');
     } finally {
       setSearching(false);
     }
-  };
+  }, []);
+
+  const handleSearch = () => lookup(qrInput);
+
+  // Opened from the dashboard scanner: /dashboard/machine-guide?qr=CODE
+  const qrParam = params.get('qr');
+  useEffect(() => {
+    if (!qrParam) return undefined;
+    const id = setTimeout(() => lookup(qrParam), 0);
+    return () => clearTimeout(id);
+  }, [qrParam, lookup]);
 
   const handleSelect = (ex) => {
     setSelectedExercise(ex);
@@ -135,7 +152,16 @@ export default function MachineGuide() {
         qrInput={qrInput}
         setQrInput={setQrInput}
         onSearch={handleSearch}
+        onScan={() => setScanning(true)}
         searching={searching}
+      />
+
+      <QrScanner
+        open={scanning}
+        title="Scan machine QR"
+        manualLabel="Or type the machine code"
+        onResult={(code) => { setParams({ qr: code }); lookup(code); }}
+        onClose={() => { setScanning(false); if (params.get('scan')) setParams({}); }}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-space-lg items-start">
@@ -200,7 +226,7 @@ export default function MachineGuide() {
 /* ============================================================
    MACHINE BANNER
    ============================================================ */
-function MachineBanner({ qrInput, setQrInput, onSearch, searching }) {
+function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
   return (
     <motion.div
       initial="hidden"
@@ -248,15 +274,15 @@ function MachineBanner({ qrInput, setQrInput, onSearch, searching }) {
         className="bg-surface-container rounded-xl p-space-lg"
       >
         <label className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider block mb-2">
-          Enter QR Tag ID
+          Machine code
         </label>
         <div className="flex gap-3">
           <input
             type="text"
             value={qrInput}
-            onChange={(e) => setQrInput(e.target.value.toUpperCase())}
+            onChange={(e) => setQrInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-            placeholder="e.g. TITAN-MCH-0482"
+            placeholder="Printed under the machine's QR"
             className="flex-1 bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
           />
           <motion.button
@@ -269,6 +295,10 @@ function MachineBanner({ qrInput, setQrInput, onSearch, searching }) {
           >
             {searching ? 'Searching...' : 'Lookup'}
           </motion.button>
+          <button type="button" onClick={onScan} aria-label="Scan with camera"
+            className="px-4 rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center">
+            <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+          </button>
         </div>
       </motion.div>
     </motion.div>
@@ -509,14 +539,14 @@ function SeatMemory({ exercise }) {
 }
 
 /* ============================================================
-   AI TRAINING DIRECTIVE — wired to real fields
+   TRAINING TARGETS (set per machine in admin)
    ============================================================ */
 function AITrainingDirective({ exercise }) {
   if (!exercise) return null;
 
   const recommendedWeight = exercise.recommended_weight_kg;
-  const intensity = exercise.target_intensity || 'RPE 8.0';
-  const cadence = exercise.cadence || '3-0-1-0';
+  const intensity = exercise.target_intensity || '—';
+  const cadence = exercise.cadence || '—';
 
   return (
     <motion.div
@@ -527,7 +557,7 @@ function AITrainingDirective({ exercise }) {
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
       <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-        AI Directive
+        Training targets
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-2">
         Training Target

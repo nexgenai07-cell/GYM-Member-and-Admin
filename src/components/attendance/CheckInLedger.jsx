@@ -34,28 +34,15 @@ export default function CheckInLedger() {
     }
   };
 
-  const handleCheckOut = async (id) => {
-    try {
-      await attendanceService.checkIn(null); // placeholder
-      // Or, if you have an active session:
-      // await membersService.checkOut(id);
-      await fetch(`/api/attendance/check-ins/${id}/check-out/`, { method: 'POST' });
-      toast.success('Checked out');
-      refetch();
-    } catch (e) {
-      toast.error('Check-out failed');
-    }
-  };
-
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }} className="flex flex-col gap-space-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
         <div>
           <span className="font-label-md text-label-md uppercase text-primary tracking-widest font-bold">
-            Raw Telemetry
+            History
           </span>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase">
-            Monthly Check-In Ledger
+            Visit log
           </h2>
         </div>
 
@@ -75,7 +62,7 @@ export default function CheckInLedger() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-surface-container-high text-on-surface-variant font-label-md uppercase">
-              {['Date & Status', 'Entry Time', 'Exit Time', 'Total Duration', 'Arena Zones Visited', 'Telemetry Reps'].map((h, i) => (
+              {['Date & Status', 'Entry', 'Exit', 'Duration', 'Zone', 'Logged that day'].map((h, i) => (
                 <th key={h} className={`py-space-sm px-space-md ${i === 5 ? 'text-right' : ''}`}>{h}</th>
               ))}
             </tr>

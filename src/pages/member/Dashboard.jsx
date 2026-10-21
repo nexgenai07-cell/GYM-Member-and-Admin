@@ -35,23 +35,28 @@ export default function Dashboard() {
     () => dashboardService.fetch(),
     []
   );
-
+  // Full recent history for the logs (the dashboard payload only carries 5).
+  const { data: history, refetch: refetchHistory } = useApi(() => workoutsService.list(), [], { showError: false });
   const stats = data?.stats;
   const membership = data?.membership;
-  const workouts = data?.recent_workouts || [];
   const todayWorkout = data?.today_workout;
   const biometric = data?.biometric;
   const directives = data?.directives || [];
   const density = data?.floor_density;
   const user = data?.user || authUser;
 
+  const refreshAll = () => {
+    refetch();
+    refetchHistory();
+  };
+
   const handleStartWorkout = async () => {
     try {
       setStarting(true);
       await workoutsService.start({ name: 'Training Session' });
-      toast.success('Workout started!');
-      refetch();
-    } catch (e) {
+      toast.success('Workout started — log sets below or scan a machine');
+      refreshAll();
+    } catch {
       toast.error('Failed to start workout');
     } finally {
       setStarting(false);
@@ -97,11 +102,7 @@ export default function Dashboard() {
         >
           <motion.div variants={lineUp} className="flex items-center gap-space-sm flex-wrap">
             <span className="px-space-xs py-space-2xs bg-surface-container-high text-on-surface-variant font-label-md text-label-md rounded tracking-widest uppercase">
-              Biometric Pass ID #{passId}-TK
-            </span>
-            <span className="inline-flex items-center gap-space-2xs text-primary font-label-md text-label-md tracking-wider uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-ping" />
-              Facility Synced
+              Member #{passId}
             </span>
           </motion.div>
 
@@ -124,7 +125,7 @@ export default function Dashboard() {
           </motion.p>
         </motion.div>
 
-        <StreakBadge streak={streak} target={12} />
+        <StreakBadge streak={streak} target={7} />
       </section>
 
       {/* Membership time left — counted from the day the registration was approved */}
@@ -164,20 +165,12 @@ export default function Dashboard() {
 
       {/* Bento: Scanner + Workout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
-        <ScannerCard onStartWorkout={handleStartWorkout} starting={starting} />
-        <WorkoutCard workout={todayWorkout} onStartWorkout={handleStartWorkout} starting={starting} />
+        <ScannerCard />
+        <WorkoutCard workout={todayWorkout} onStartWorkout={handleStartWorkout} starting={starting} onChanged={refreshAll} />
       </div>
 
       {/* Biometric Stream */}
-      <BiometricStream
-        calories={biometric?.calories ?? 0}
-        velocity={biometric?.avg_velocity ?? 0}
-        recovery={biometric?.recovery_score ?? 0}
-        heartRate={biometric?.heart_rate ?? 0}
-        heartZone={biometric?.heart_zone}
-        velocityDelta={biometric?.velocity_delta}
-        hrvDelta={biometric?.hrv_delta}
-      />
+      <BiometricStream session={biometric} />
 
       {/* AI + Floor */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
@@ -186,7 +179,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Logs */}
-      <RecentLogs workouts={workouts.slice(0, 5)} loading={loading} />
+      <RecentLogs workouts={(history || []).filter((w) => w.status === 'completed')} loading={loading && !history} />
     </div>
   );
 }

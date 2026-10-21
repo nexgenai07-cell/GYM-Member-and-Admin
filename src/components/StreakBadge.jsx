@@ -3,7 +3,7 @@ import CountUp from './CountUp';
 
 const EASE = [0.22, 1, 0.36, 1];
 
-export default function StreakBadge({ streak = 0, target = 12, lastWorkoutDate }) {
+export default function StreakBadge({ streak = 0, target = 12 }) {
   const percent = Math.min(100, Math.round((streak / target) * 100));
   const dots = 7;
   const activeDots = Math.min(streak, dots);
@@ -100,7 +100,7 @@ export default function StreakBadge({ streak = 0, target = 12, lastWorkoutDate }
           Target {target}D
         </motion.span>
         <span className="font-body-md text-body-md text-on-surface font-bold">
-          <CountUp to={percent} suffix="% TO PR" duration={1.4} delay={0.6} />
+          <CountUp to={percent} suffix="% of goal" duration={1.4} delay={0.6} />
         </span>
       </div>
     </motion.div>

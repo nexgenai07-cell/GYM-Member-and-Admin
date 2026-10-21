@@ -11,7 +11,9 @@ export default function HourlyCurve({ hourly }) {
 
   const memberBuckets = Array.isArray(hourly.member) ? hourly.member : [];
   const campusBuckets = Array.isArray(hourly.campus) ? hourly.campus : [];
-  const peakHour = hourly.peak_hour || 18;
+  const peakHour = hourly.peak_hour;
+  const quiet = hourly.quiet_hour;
+  const pad = (h) => `${String(h).padStart(2, '0')}:00`;
 
   const maxCampus = Math.max(1, ...campusBuckets.map((b) => b.count));
   const maxMember = Math.max(1, ...memberBuckets.map((b) => b.count));
@@ -26,17 +28,17 @@ export default function HourlyCurve({ hourly }) {
       <div>
         <div className="flex items-center justify-between">
           <span className="font-label-md text-label-md uppercase text-primary tracking-wider font-bold">
-            Telemetry Correlation
+            Your timing
           </span>
           <span className="px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface font-label-md text-label-md uppercase">
-            Live Delta
+            Last 90 days
           </span>
         </div>
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
-          Hourly Log vs Campus Load
+          Your visits vs gym load
         </h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          Comparing your check-in timings against arena congestion.
+          Bars: when you check in. Line: when everyone checks in.
         </p>
       </div>
 
@@ -80,7 +82,7 @@ export default function HourlyCurve({ hourly }) {
           })}
 
           {/* Peak marker */}
-          {memberBuckets.some((b) => b.hour === peakHour) && (
+          {peakHour != null && (
             <>
               <circle cx={(peakHour / 23) * 300 + 14} cy={30} fill="#fffcff" r="4" />
               <line stroke="#fffcff" strokeWidth="1.5" x1={(peakHour / 23) * 300 + 14} x2={(peakHour / 23) * 300 + 14} y1={30} y2={15} />
@@ -92,7 +94,7 @@ export default function HourlyCurve({ hourly }) {
           <span>00:00</span>
           <span>06:00</span>
           <span>12:00</span>
-          <span className="text-primary font-bold">{peakHour}:00 (Peak)</span>
+          <span className="text-primary font-bold">{peakHour != null ? `${pad(peakHour)} (you)` : '18:00'}</span>
           <span>23:00</span>
         </div>
       </div>
@@ -103,11 +105,12 @@ export default function HourlyCurve({ hourly }) {
         </span>
         <div className="flex flex-col">
           <span className="font-title-md text-title-md text-on-surface leading-tight">
-            Insight: Optimal Quiet Zone
+            {quiet != null ? 'Quietest time' : 'Not enough data yet'}
           </span>
           <span className="font-body-md text-body-md text-on-surface-variant text-[12px]">
-            Your peak check-in is around {peakHour}:00. Try 06:30 or 13:45 to avoid
-            the crowd.
+            {quiet != null
+              ? `The gym is quietest around ${pad(quiet)}${peakHour != null ? `; you usually arrive around ${pad(peakHour)}` : ''}.`
+              : 'This fills in as members check in over the coming days.'}
           </span>
         </div>
       </div>

@@ -141,16 +141,20 @@ export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
       <div className="p-space-md pt-0">
         <div className="flex items-center justify-between mb-space-sm">
           <span className="font-headline-md text-headline-md text-on-surface tabular-nums">
-            $
-            <CountUp
-              to={Number(course.price) || 0}
-              duration={1.2}
-              delay={0.3 + index * 0.05}
-              decimals={course.price % 1 !== 0 ? 2 : 0}
-            />
+            {course.free_for_me ? 'Free' : (
+              <>
+                SAR{' '}
+                <CountUp
+                  to={Number(course.price) || 0}
+                  duration={1.2}
+                  delay={0.3 + index * 0.05}
+                  decimals={course.price % 1 !== 0 ? 2 : 0}
+                />
+              </>
+            )}
           </span>
           <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-            Lifetime Access
+            {course.free_for_me && Number(course.price) > 0 ? 'Included in your plan' : 'Lifetime access'}
           </span>
         </div>
 
@@ -173,7 +177,7 @@ export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
             {enrolled ? 'check_circle' : 'touch_app'}
           </span>
           <span className="relative z-10">
-            {enrolled ? 'Enrolled' : 'Instant Enroll'}
+            {enrolled ? 'Enrolled' : course.free_for_me ? 'Enroll' : 'Buy & enroll'}
           </span>
         </motion.button>
       </div>

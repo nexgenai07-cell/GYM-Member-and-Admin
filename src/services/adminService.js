@@ -232,6 +232,14 @@ export const adminService = {
     return data;
   },
 
+  /** Resolve a scanned digital-pass QR ("SGPASS:..."). */
+  async lookupMemberByPass(token) {
+    const { data } = await api.get('/admin/registrations-api/members/lookup/', {
+      params: { pass: token },
+    });
+    return data;
+  },
+
   async faceVerify(memberId, { match, confidence }) {
     const { data } = await api.post(
       `/admin/registrations-api/members/${memberId}/face-verify/`,

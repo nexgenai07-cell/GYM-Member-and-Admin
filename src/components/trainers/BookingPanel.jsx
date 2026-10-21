@@ -1,320 +1,241 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// src/components/trainers/BookingPanel.jsx
+// 1:1 booking: free slots come from the trainer's weekly availability (minus
+// booked sessions), the price is the trainer's hourly rate, and the session is
+// confirmed once paid (card / STC Pay / locker credit).
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { catalogService } from '../../services/catalogService';
+import { useApi } from '../../hooks/useApi';
+import PayDialog from '../payments/PayDialog';
+import { errorMessage } from '../../utils/apiError';
+import { formatSAR } from '../../utils/money';
 
-// Generate days for current month
-function generateDays() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon...
-  // Normalize to Monday start
-  const offset = (firstDay + 6) % 7;
+const DAYS_AHEAD = 14;
+const CANCEL_HOURS = 24;
 
-  const days = [];
-  for (let i = 0; i < offset; i++) {
-    days.push({ d: '', disabled: true, empty: true });
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month, d);
-    const isPast = date < new Date(year, month, now.getDate());
-    days.push({ d, disabled: isPast, date });
-  }
-  return { days, year, month };
-}
-
-const SERVICES = [
-  { id: 'technique', name: '60-Min Technique Analysis', description: 'Platform High-Speed Video + VBT', price: 95 },
-  { id: 'biometric', name: 'Biometric Assessment', description: 'Dual Force Plate + Mob Impingement', price: 120 },
-];
-
-const TIME_SLOTS = ['07:00 AM', '09:30 AM', '14:00 PM', '16:30 PM', '18:00 PM'];
+const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const weekdayMon0 = (d) => (d.getDay() + 6) % 7;     // backend: 0 = Monday
 
 export default function BookingPanel({ trainer }) {
-  const { days, year, month } = generateDays();
-  const monthName = new Date(year, month).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-
-  const [selectedService, setSelectedService] = useState('technique');
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [selectedSlot, setSelectedSlot] = useState('09:30 AM');
+  const [days] = useState(() => Array.from({ length: DAYS_AHEAD }, (_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + i);
+    return d;
+  }));
+  const [day, setDay] = useState(null);
+  const [slots, setSlots] = useState(null);
+  const [meta, setMeta] = useState(null);           // { price, accepting, available_weekdays }
+  const [slot, setSlot] = useState(null);
+  const [focus, setFocus] = useState('');
   const [notes, setNotes] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState(false);
+  const [paySession, setPaySession] = useState(null);
 
-  const currentPrice = SERVICES.find((s) => s.id === selectedService)?.price || 95;
+  const { data: sessions, refetch: refetchSessions } = useApi(() => catalogService.mySessions(), [], { showError: false });
+  const mine = useMemo(
+    () => (Array.isArray(sessions) ? sessions : [])
+      .filter((s) => s.trainer === trainer?.id && ['scheduled', 'pending_payment'].includes(s.status))
+      .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
+    [sessions, trainer?.id],
+  );
 
-  const handleConfirm = async () => {
-    if (!selectedDay) {
-      toast.error('Select a date first');
-      return;
-    }
-    if (!trainer) {
-      toast.error('Trainer not loaded');
-      return;
-    }
+  // First load: which weekdays the trainer works and the price.
+  useEffect(() => {
+    if (!trainer?.id) return undefined;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await catalogService.trainerSlots(trainer.id, isoDate(days[0]));
+        if (!alive) return;
+        setMeta(res);
+        const first = days.find((d) => res.available_weekdays.includes(weekdayMon0(d)));
+        setDay(first ? isoDate(first) : null);
+      } catch (e) {
+        if (alive) toast.error(errorMessage(e, 'Could not load availability'));
+      }
+    })();
+    return () => { alive = false; };
+  }, [trainer?.id, days]);
 
+  useEffect(() => {
+    if (!trainer?.id || !day) return undefined;
+    let alive = true;
+    (async () => {
+      setSlots(null);
+      setSlot(null);
+      try {
+        const res = await catalogService.trainerSlots(trainer.id, day);
+        if (alive) setSlots(res.slots);
+      } catch {
+        if (alive) setSlots([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [trainer?.id, day]);
+
+  const reloadSlots = async () => {
+    if (!day) return;
+    try { setSlots((await catalogService.trainerSlots(trainer.id, day)).slots); } catch { /* keep */ }
+  };
+
+  const book = async () => {
+    if (!slot) return;
+    setBooking(true);
     try {
-      setLoading(true);
-
-      // Build scheduled_at datetime
-      const [time, period] = selectedSlot.split(' ');
-      let [hours, minutes] = time.split(':').map(Number);
-      if (period === 'PM' && hours !== 12) hours += 12;
-      if (period === 'AM' && hours === 12) hours = 0;
-
-      const scheduledAt = new Date(year, month, selectedDay, hours, minutes);
-
-      await catalogService.bookSession({
+      const session = await catalogService.bookSession({
         trainer_id: trainer.id,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_minutes: 60,
-        focus_area: SERVICES.find((s) => s.id === selectedService)?.name,
+        scheduled_at: slot.start,
+        focus_area: focus,
         notes,
       });
-
-      toast.success('Session booked!');
-      setConfirmed(true);
+      setPaySession(session);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to book session');
+      toast.error(errorMessage(e, 'Could not book that slot'));
+      reloadSlots();
     } finally {
-      setLoading(false);
+      setBooking(false);
     }
   };
+
+  const cancel = async (s) => {
+    const paid = s.status === 'scheduled';
+    const msg = paid
+      ? `Cancel this session? ${formatSAR(s.amount_charged)} goes back to your locker credit.`
+      : 'Cancel this unpaid booking?';
+    if (!window.confirm(msg)) return;
+    try {
+      await catalogService.cancelSession(s.id);
+      toast.success('Session cancelled');
+      refetchSessions();
+      reloadSlots();
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not cancel'));
+    }
+  };
+
+  const specialties = Array.isArray(trainer?.specialties) ? trainer.specialties : [];
+  const accepting = meta ? meta.accepting : trainer?.is_accepting_clients;
 
   return (
     <div className="flex flex-col">
       <div className="sticky top-20 bg-surface-container-lowest rounded-xl p-space-lg shadow-2xl flex flex-col gap-space-md">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col">
-            <span className="font-label-md text-label-md text-primary tracking-widest uppercase flex items-center gap-space-2xs">
-              <span className="w-2 h-2 rounded-full bg-primary-container" />
-              Live Telemetry Scheduling
-            </span>
-            <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">
-              Book 1-On-1 Session
-            </h2>
+            <span className="font-label-md text-label-md text-primary tracking-widest uppercase">1-on-1 session</span>
+            <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">Book a session</h2>
           </div>
-          <span className="material-symbols-outlined text-headline-md text-on-surface-variant">
-            calendar_clock
+          <span className="font-title-md text-title-md text-on-surface whitespace-nowrap">
+            {formatSAR(meta?.price ?? trainer?.hourly_rate)}<span className="text-on-surface-variant text-[11px]"> / 60 min</span>
           </span>
         </div>
 
-        {!confirmed ? (
-          <div className="flex flex-col gap-space-md">
-            {/* Service Selection */}
-            <div className="flex flex-col gap-space-2xs">
-              <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                Step 1: Select Protocol Service
-              </label>
-              <div className="grid grid-cols-1 gap-space-xs">
-                {SERVICES.map((svc) => {
-                  const active = selectedService === svc.id;
-                  return (
-                    <motion.button
-                      key={svc.id}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedService(svc.id)}
-                      className={`relative flex items-center justify-between p-space-sm rounded-lg cursor-pointer transition-all text-left ${
-                        active ? 'bg-surface-container-low' : 'bg-surface-container-low hover:bg-surface-container'
-                      }`}
-                      type="button"
-                    >
-                      <div className="flex items-center gap-space-sm">
-                        <div
-                          className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                            active ? 'bg-primary-container' : 'bg-surface-container-highest'
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              active ? 'bg-on-primary-container' : 'bg-transparent'
-                            }`}
-                          />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-title-md text-title-md text-on-surface leading-tight">
-                            {svc.name}
-                          </span>
-                          <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                            {svc.description}
-                          </span>
-                        </div>
-                      </div>
-                      <span
-                        className={`font-headline-md text-headline-md ${
-                          active ? 'text-primary' : 'text-on-surface'
-                        }`}
-                      >
-                        ${svc.price}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Calendar */}
-            <div className="flex flex-col gap-space-2xs">
-              <div className="flex items-center justify-between">
-                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                  Step 2: Choose Platform Date
-                </label>
-                <span className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider">
-                  {monthName}
-                </span>
-              </div>
-
-              <div className="bg-surface-container-low rounded-lg p-space-sm">
-                <div className="grid grid-cols-7 gap-1 text-center font-label-md text-label-md text-on-surface-variant uppercase mb-space-2xs">
-                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span>
-                  <span>Fr</span><span>Sa</span><span>Su</span>
-                </div>
-                <div className="grid grid-cols-7 gap-1 text-center font-label-lg text-label-lg">
-                  {days.map((day, i) => {
-                    if (day.empty) return <span key={i} />;
-                    if (day.disabled) {
-                      return (
-                        <span key={i} className="py-2 text-surface-variant opacity-40">
-                          {day.d}
-                        </span>
-                      );
-                    }
-                    const isSelected = selectedDay === day.d;
-                    return (
-                      <motion.button
-                        key={i}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setSelectedDay(day.d)}
-                        className={`py-2 rounded transition-colors ${
-                          isSelected
-                            ? 'bg-primary-container text-on-primary-container font-extrabold shadow-md'
-                            : 'text-on-surface-variant hover:bg-surface-container-high'
-                        }`}
-                        type="button"
-                      >
-                        {day.d}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Time Slots */}
-            <div className="flex flex-col gap-space-2xs">
-              <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                Step 3: Available Slot {selectedDay ? `(Day ${selectedDay})` : ''}
-              </label>
-              <div className="grid grid-cols-3 gap-space-xs">
-                {TIME_SLOTS.map((time) => {
-                  const isSelected = selectedSlot === time;
-                  return (
-                    <motion.button
-                      key={time}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedSlot(time)}
-                      className={`py-space-xs px-space-2xs rounded font-label-lg text-label-lg transition-colors ${
-                        isSelected
-                          ? 'bg-primary-container text-on-primary-container shadow-md'
-                          : 'bg-surface-container-low hover:bg-surface-container text-on-surface'
-                      }`}
-                      type="button"
-                    >
-                      {time}
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="flex flex-col gap-space-2xs">
-              <label
-                className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
-                htmlFor="athlete-notes"
-              >
-                Step 4: Objective & Injury Flags
-              </label>
-              <textarea
-                id="athlete-notes"
-                rows="3"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Target raw squat sticking point at 210kg."
-                className="w-full bg-surface-container-low text-on-surface rounded-lg p-space-sm font-body-md text-body-md focus:outline-none focus:bg-surface-container placeholder:text-outline/70 resize-none"
-              />
-            </div>
-
-            {/* Price Summary */}
-            <div className="bg-surface-container rounded-lg p-space-sm flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                  Platform Fee Total
-                </span>
-                <span className="font-label-lg text-label-lg text-primary uppercase">
-                  No Cancellation Fee &gt;24h
-                </span>
-              </div>
-              <div className="flex items-baseline gap-space-2xs">
-                <span className="font-headline-lg text-headline-lg text-on-surface">
-                  ${currentPrice}
-                </span>
-                <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                  USD
-                </span>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <motion.button
-              whileTap={{ scale: 0.99 }}
-              onClick={handleConfirm}
-              disabled={loading || !selectedDay}
-              className={`w-full py-space-md font-label-lg text-label-lg uppercase tracking-widest rounded transition-all flex items-center justify-center gap-space-xs disabled:opacity-50 ${
-                loading
-                  ? 'bg-surface-container-high text-primary cursor-wait'
-                  : 'bg-primary-container hover:bg-secondary-container text-on-primary-container shadow-[0_0_24px_rgba(229,25,55,0.35)]'
-              }`}
-              type="button"
-            >
-              <span className="material-symbols-outlined text-title-md">
-                {loading ? 'sync' : 'electric_bolt'}
-              </span>
-              {loading ? 'Booking...' : 'Confirm 1-On-1 Booking'}
-            </motion.button>
-          </div>
+        {!accepting ? (
+          <p className="text-on-surface-variant text-[13px]">This trainer isn’t taking new 1-on-1 bookings right now.</p>
+        ) : meta && meta.available_weekdays.length === 0 ? (
+          <p className="text-on-surface-variant text-[13px]">No booking hours have been set for this trainer yet.</p>
         ) : (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-lg bg-surface-container p-space-md flex flex-col gap-space-2xs"
-            >
-              <div className="flex items-center gap-space-xs text-primary">
-                <span className="material-symbols-outlined text-title-md">
-                  check_circle
-                </span>
-                <span className="font-label-lg text-label-lg uppercase tracking-wider">
-                  Slot Confirmed &amp; Synchronized
-                </span>
+          <>
+            <div className="flex flex-col gap-space-xs">
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Day</span>
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {days.map((d) => {
+                  const works = meta?.available_weekdays.includes(weekdayMon0(d));
+                  const id = isoDate(d);
+                  return (
+                    <button key={id} type="button" disabled={!works} onClick={() => setDay(id)}
+                      className={`shrink-0 w-14 py-2 rounded flex flex-col items-center text-[11px] font-bold uppercase transition-colors ${
+                        day === id ? 'bg-primary-container text-on-primary-container'
+                          : works ? 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
+                            : 'bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed'}`}>
+                      <span>{d.toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                      <span className="text-[14px]">{d.getDate()}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <p className="font-body-md text-body-md text-on-surface">
-                Session booked with {trainer?.user?.full_name || 'your trainer'} for{' '}
-                <strong className="text-primary font-bold">
-                  Day {selectedDay} at {selectedSlot}
-                </strong>
-                .
-              </p>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+
+            <div className="flex flex-col gap-space-xs">
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Time</span>
+              {slots === null ? (
+                <div className="h-10 bg-surface-container rounded animate-pulse" />
+              ) : slots.length === 0 ? (
+                <p className="text-on-surface-variant text-[12px]">No free slots that day — try another day.</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-1">
+                  {slots.map((s) => (
+                    <button key={s.start} type="button" onClick={() => setSlot(s)}
+                      className={`py-2 rounded text-[12px] font-bold ${slot?.start === s.start ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}`}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {specialties.length > 0 && (
+              <div className="flex flex-col gap-space-xs">
+                <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Focus (optional)</span>
+                <div className="flex flex-wrap gap-1">
+                  {specialties.map((sp) => (
+                    <button key={sp} type="button" onClick={() => setFocus(focus === sp ? '' : sp)}
+                      className={`px-2 py-1 rounded text-[11px] font-bold uppercase ${focus === sp ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                      {sp}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500}
+              placeholder="Anything the trainer should know (injuries, goals)…"
+              className="w-full bg-surface-container text-on-surface px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary text-[13px]" />
+
+            <button type="button" onClick={book} disabled={!slot || booking}
+              className="w-full py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-bold uppercase tracking-wider text-[12px] disabled:opacity-50">
+              {booking ? 'Reserving…' : slot ? `Book ${slot.label} · ${formatSAR(meta?.price ?? trainer?.hourly_rate)}` : 'Pick a time'}
+            </button>
+            <p className="text-on-surface-variant text-[11px]">
+              Cancel up to {CANCEL_HOURS} hours before for a full refund to your locker credit.
+            </p>
+          </>
+        )}
+
+        {mine.length > 0 && (
+          <div className="flex flex-col gap-space-xs border-t border-surface-container-high pt-space-md">
+            <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Your sessions</span>
+            {mine.map((s) => (
+              <div key={s.id} className="flex items-center justify-between gap-2 bg-surface-container rounded px-3 py-2">
+                <div className="flex flex-col">
+                  <span className="text-on-surface text-[13px] font-bold">
+                    {new Date(s.scheduled_at).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase ${s.status === 'scheduled' ? 'text-emerald-400' : 'text-primary'}`}>
+                    {s.status === 'scheduled' ? 'Confirmed' : 'Awaiting payment'}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {s.status === 'pending_payment' && (
+                    <button type="button" onClick={() => setPaySession(s)}
+                      className="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">Pay</button>
+                  )}
+                  <button type="button" onClick={() => cancel(s)}
+                    className="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">Cancel</button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      <PayDialog
+        request={paySession ? { purpose: 'trainer_session', session_id: paySession.id } : null}
+        title={paySession ? `Session with ${trainer?.user?.full_name || 'trainer'}` : ''}
+        allowCredit
+        onPaid={() => { toast.success('Session confirmed!'); setNotes(''); setFocus(''); }}
+        onClose={() => { setPaySession(null); refetchSessions(); reloadSlots(); }}
+      />
     </div>
   );
 }

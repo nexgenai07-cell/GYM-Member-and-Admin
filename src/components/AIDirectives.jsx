@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -67,6 +67,7 @@ function DirectiveCard({ tag, tagClass, icon, title, body, footer, cta, delay = 
 }
 
 export default function AIDirectives({ directives = [] }) {
+  const navigate = useNavigate();
   const safeDirectives = Array.isArray(directives) ? directives : [];
 
   return (
@@ -87,11 +88,11 @@ export default function AIDirectives({ directives = [] }) {
             auto_awesome
           </motion.span>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider m-0">
-            Adaptive AI Directives
+            For you today
           </h3>
         </div>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">
-          Curated for You
+          Based on your activity
         </span>
       </motion.div>
 
@@ -111,7 +112,7 @@ export default function AIDirectives({ directives = [] }) {
             body={d.body}
             footer={d.footer}
             cta={d.cta}
-            onClick={() => toast.success(`Opening: ${d.title}`)}
+            onClick={() => navigate(d.link || '/dashboard')}
           />
         ))}
       </div>

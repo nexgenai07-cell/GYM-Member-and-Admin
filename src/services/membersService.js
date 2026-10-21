@@ -16,8 +16,9 @@ export const membersService = {
     return data;
   },
 
-  async checkIn(payload = {}) {
-    const { data } = await api.post('/members/check-ins/', payload);
+  /** Signed, short-lived QR token for the digital pass (staff scan it at the desk). */
+  async pass() {
+    const { data } = await api.get('/members/pass/');
     return data;
   },
 

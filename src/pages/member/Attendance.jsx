@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
@@ -13,8 +14,7 @@ import ArenaSnapshots from '../../components/attendance/ArenaSnapshots';
 const EASE = [0.22, 1, 0.36, 1];
 
 export default function Attendance() {
-  const [checkingIn, setCheckingIn] = useState(false);
-
+  const [checkingOut, setCheckingOut] = useState(false);
   const { data: summary, refetch: refetchSummary } = useApi(
     () => attendanceService.summary(),
     []
@@ -28,21 +28,25 @@ export default function Attendance() {
   const { data: hourly } = useApi(() => attendanceService.hourly(), []);
   const { data: arenas } = useApi(() => attendanceService.arenas(), []);
 
-  const handleCheckIn = async () => {
+  // Check-ins happen at the entrance (face gate / staff scanning the pass).
+  // Members can see whether they're in, and check out when they leave.
+  const { data: checkIns, refetch: refetchCheckIns } = useApi(() => attendanceService.checkIns(), [], { showError: false });
+  const open = (Array.isArray(checkIns) ? checkIns : []).find((c) => !c.check_out_time);
+  const [ledgerKey, setLedgerKey] = useState(0);
+
+  const handleCheckOut = async () => {
+    if (!open) return;
     try {
-      setCheckingIn(true);
-      await attendanceService.checkIn({
-        facility: 'Metro Station Core 01',
-        zone: 'Heavy Iron Arena',
-      });
-      toast.success('Checked in successfully!');
+      setCheckingOut(true);
+      const res = await attendanceService.checkOut(open.id);
+      toast.success(`Checked out — ${res.duration_minutes ?? 0} min session`);
+      refetchCheckIns();
       refetchSummary();
-      refetchMilestones();
+      setLedgerKey((k) => k + 1);
     } catch (e) {
-      const msg = e.response?.data?.detail || 'Check-in failed';
-      toast.error(msg);
+      toast.error(e.response?.data?.detail || 'Check-out failed');
     } finally {
-      setCheckingIn(false);
+      setCheckingOut(false);
     }
   };
 
@@ -67,42 +71,46 @@ export default function Attendance() {
           <div className="flex items-center gap-space-xs text-primary">
             <span className="material-symbols-outlined text-[16px]">verified_user</span>
             <span className="font-label-md text-label-md uppercase tracking-widest">
-              Biometric Check-In Matrix
+              Attendance
             </span>
           </div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wide leading-none m-0">
-            Attendance &{' '}
+            Your{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
-              Gym Telemetry
+              Gym Visits
             </span>
           </h1>
         </div>
 
         <div className="flex items-center gap-space-sm self-start md:self-auto">
           <div className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-surface-container shadow-sm">
-            <span className="relative flex w-2.5 h-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-container" />
-            </span>
-            <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-              Active NFC:
-            </span>
-            <span className="font-title-md text-title-md text-on-surface tracking-wider">
-              GATE-04 ALPHA
+            <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-emerald-400 animate-pulse' : 'bg-surface-container-highest'}`} />
+            <span className="font-title-md text-title-md text-on-surface">
+              {open
+                ? `In the gym since ${new Date(open.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Not checked in'}
             </span>
           </div>
 
-          <button
-            onClick={handleCheckIn}
-            disabled={checkingIn}
-            className="relative flex items-center gap-space-xs px-space-md py-space-xs rounded bg-primary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider hover:bg-secondary-container transition-colors shadow-[0_0_20px_rgba(229,25,55,0.4)] disabled:opacity-60"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {checkingIn ? 'sync' : 'contactless'}
-            </span>
-            <span>{checkingIn ? 'Checking In...' : 'Instant Check-In'}</span>
-          </button>
+          {open ? (
+            <button
+              onClick={handleCheckOut}
+              disabled={checkingOut}
+              className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-primary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider hover:bg-secondary-container transition-colors disabled:opacity-60"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+              <span>{checkingOut ? 'Checking out…' : 'Check out'}</span>
+            </button>
+          ) : (
+            <Link
+              to="/dashboard/profile#pass"
+              className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-primary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider hover:bg-secondary-container transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">qr_code_2</span>
+              <span>Show entry pass</span>
+            </Link>
+          )}
         </div>
       </motion.div>
 
@@ -129,7 +137,7 @@ export default function Attendance() {
       />
 
       {/* Ledger */}
-      <CheckInLedger />
+      <CheckInLedger key={ledgerKey} />
 
       {/* Arenas */}
       <ArenaSnapshots arenas={arenas} />

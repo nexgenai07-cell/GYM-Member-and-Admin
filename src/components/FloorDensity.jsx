@@ -13,8 +13,9 @@ const rowV = {
 };
 
 export default function FloorDensity({ density }) {
-  const overall = density?.overall_percent ?? 68;
-  const label = density?.label ?? 'Moderate Peak';
+  const overall = density?.overall_percent ?? 0;
+  const label = density?.label ?? '—';
+  const hasCapacity = !!density?.capacity;
   const zones = Array.isArray(density?.zones) ? density.zones : [];
 
   return (
@@ -27,16 +28,16 @@ export default function FloorDensity({ density }) {
       <div className="flex flex-col gap-space-sm">
         <div className="flex items-center justify-between">
           <span className="font-label-md text-label-md uppercase tracking-widest text-primary">
-            Floor Live Load
+            Gym right now
           </span>
           <span className="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse shadow-[0_0_10px_rgba(229,25,55,0.6)]" />
         </div>
         <div>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide leading-none m-0">
-            {density?.facility || 'District 01 HQ Status'}
+            {density ? `${density.current} member${density.current === 1 ? '' : 's'} checked in` : 'Loading…'}
           </h3>
           <span className="font-body-md text-body-md text-on-surface-variant block mt-1">
-            {density?.location || 'Metro Station Sub-Level Alpha'}
+            {density?.peak_window ? `Usually busiest ${density.peak_window}` : 'Busiest hours appear once there is enough data'}
           </span>
         </div>
 
@@ -47,7 +48,7 @@ export default function FloorDensity({ density }) {
             transition={{ duration: 0.5, delay: 0.4, ease: EASE }}
             className="font-display-xl text-display-xl text-on-surface leading-none tabular-nums"
           >
-            <CountUp to={overall} suffix="%" duration={1.6} delay={0.5} />
+            {hasCapacity ? <CountUp to={overall} suffix="%" duration={1.6} delay={0.5} /> : (density?.current ?? 0)}
           </motion.span>
           <span className="font-label-lg text-label-lg text-primary tracking-widest uppercase">
             {label}
@@ -60,7 +61,7 @@ export default function FloorDensity({ density }) {
               <div className="flex items-center justify-between">
                 <span className="text-on-surface-variant">{z.label}</span>
                 <span className={`font-label-md text-label-md ${z.accent ? 'text-primary' : 'text-on-surface'} font-bold tabular-nums`}>
-                  {z.percent}% Cap
+                  {z.count} here
                 </span>
               </div>
               <div className="relative w-full bg-surface-container h-1.5 rounded-full overflow-hidden mt-1">

@@ -1,58 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { notificationsService } from '../services/notificationsService';
+import { dashboardService } from '../services/dashboardService';
+import { membersService } from '../services/membersService';
 
-/* ============================================================
-   NOTIFICATIONS DATA
-   ============================================================ */
-const initialNotifications = [
-  {
-    id: 1,
-    type: 'workout',
-    icon: 'fitness_center',
-    title: 'Workout Ready',
-    message: 'Chest & Triceps hypertrophy session is queued.',
-    time: '2 min ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'course',
-    icon: 'school',
-    title: 'New Course Available',
-    message: 'Velocity-Based Training by Coach Marcus just dropped.',
-    time: '1 hour ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    type: 'recovery',
-    icon: 'ac_unit',
-    title: 'Recovery Alert',
-    message: 'Cryo Pod session recommended — HRV drop detected.',
-    time: '3 hours ago',
-    unread: true,
-  },
-  {
-    id: 4,
-    type: 'payment',
-    icon: 'credit_card',
-    title: 'Invoice Paid',
-    message: 'October renewal ($79.00) processed successfully.',
-    time: 'Yesterday',
-    unread: false,
-  },
-  {
-    id: 5,
-    type: 'achievement',
-    icon: 'emoji_events',
-    title: 'New PR Unlocked',
-    message: 'Bench Press 315 lbs — 100% completion milestone.',
-    time: '2 days ago',
-    unread: false,
-  },
-];
+const POLL_MS = 60_000;
+const PUBLIC_SITE = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://smart-gym-three.vercel.app';
 
+function timeAgo(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 172800) return 'yesterday';
+  return new Date(iso).toLocaleDateString();
+}
 /* ============================================================
    HOOK: Click outside to close
    ============================================================ */
@@ -76,16 +40,41 @@ function useClickOutside(ref, handler) {
    ============================================================ */
 export default function Header() {
   const navigate = useNavigate();
-
+  const { user, logout } = useAuth();
   const [openDropdown, setOpenDropdown] = useState(null); // 'notifications' | 'profile' | 'quick'
-  const [notifications, setNotifications] = useState(initialNotifications);
-
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [occupancy, setOccupancy] = useState(null);
+  const [tier, setTier] = useState('');
   const notificationsRef = useRef(null);
   const profileRef = useRef(null);
   const quickRef = useRef(null);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const displayName = user?.full_name || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || 'Member';
+  const initials = displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const avatar = user?.avatar_url || user?.avatar || null;
 
+  // Notifications + live occupancy, refreshed every minute.
+  const loadLive = useCallback(async () => {
+    const [list, count, occ] = await Promise.allSettled([
+      notificationsService.list(),
+      notificationsService.unreadCount(),
+      dashboardService.occupancy(),
+    ]);
+    if (list.status === 'fulfilled') setNotifications((Array.isArray(list.value) ? list.value : []).slice(0, 6));
+    if (count.status === 'fulfilled') setUnreadCount(count.value?.unread_count ?? 0);
+    if (occ.status === 'fulfilled') setOccupancy(occ.value);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => { if (alive) await loadLive(); })();
+    const id = setInterval(loadLive, POLL_MS);
+    membersService.myMembership()
+      .then((m) => { if (alive) setTier(m?.plan?.display_name || ''); })
+      .catch(() => {});
+    return () => { alive = false; clearInterval(id); };
+  }, [loadLive]);
   // Close dropdowns on outside click
   useClickOutside(notificationsRef, () =>
     openDropdown === 'notifications' && setOpenDropdown(null)
@@ -110,19 +99,32 @@ export default function Header() {
     setOpenDropdown((prev) => (prev === name ? null : name));
   };
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const markAllRead = async () => {
+    try {
+      await notificationsService.markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch { /* keep as is */ }
   };
 
-  const markOneRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
-    );
-  };
-
-  const handleLogout = () => {
+  const openNotification = async (n) => {
     setOpenDropdown(null);
-    navigate('/login');
+    if (!n.is_read) {
+      try {
+        await notificationsService.markRead(n.id);
+        setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+        setUnreadCount((c) => Math.max(0, c - 1));
+      } catch { /* ignore */ }
+    }
+    navigate(n.action_path || '/dashboard/notifications');
+  };
+
+  const go = (path) => { navigate(path); setOpenDropdown(null); };
+
+  // Clears the tokens server- and client-side before leaving.
+  const handleLogout = async () => {
+    setOpenDropdown(null);
+    try { await logout(); } finally { navigate('/login', { replace: true }); }
   };
 
   return (
@@ -136,21 +138,22 @@ export default function Header() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-container" />
             </span>
             <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
-              Occupancy:
+              Gym now:
             </span>
             <span className="font-title-md text-title-md text-on-surface">
-              64%
+              {occupancy ? (occupancy.capacity ? `${occupancy.percent}%` : occupancy.current) : '—'}
             </span>
-            <span className="font-label-md text-label-md text-primary">
-              (Optimal Zone)
-            </span>
+            {occupancy && (
+              <span className="font-label-md text-label-md text-primary">
+                ({occupancy.label}{occupancy.capacity ? '' : ' · checked in'})
+              </span>
+            )}
           </div>
-
           <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md uppercase">
             <span className="material-symbols-outlined text-[16px] text-primary">
               schedule
             </span>
-            <span>Peak Hours: 17:00 - 20:00</span>
+            <span>Busiest: {occupancy?.peak_window || 'not enough data yet'}</span>
           </div>
         </div>
 
@@ -223,15 +226,15 @@ export default function Header() {
                       notifications.map((n) => (
                         <button
                           key={n.id}
-                          onClick={() => markOneRead(n.id)}
+                          onClick={() => openNotification(n)}
                           className={`w-full text-left flex items-start gap-space-sm px-space-md py-space-sm hover:bg-surface-container-high transition-colors border-b border-surface-container-high/50 last:border-b-0 ${
-                            n.unread ? 'bg-primary-container/5' : ''
+                            !n.is_read ? 'bg-primary-container/5' : ''
                           }`}
                           type="button"
                         >
                           <div
                             className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                              n.unread
+                              !n.is_read
                                 ? 'bg-primary-container/20 text-primary'
                                 : 'bg-surface-container-high text-on-surface-variant'
                             }`}
@@ -244,12 +247,12 @@ export default function Header() {
                             <div className="flex items-center justify-between gap-2">
                               <span
                                 className={`font-title-md text-title-md truncate ${
-                                  n.unread ? 'text-on-surface' : 'text-on-surface-variant'
+                                  !n.is_read ? 'text-on-surface' : 'text-on-surface-variant'
                                 }`}
                               >
                                 {n.title}
                               </span>
-                              {n.unread && (
+                              {!n.is_read && (
                                 <span className="w-2 h-2 rounded-full bg-primary-container shrink-0" />
                               )}
                             </div>
@@ -257,7 +260,7 @@ export default function Header() {
                               {n.message}
                             </p>
                             <span className="font-label-md text-label-md text-on-surface-variant/70 uppercase mt-1 inline-block">
-                              {n.time}
+                              {timeAgo(n.created_at)}
                             </span>
                           </div>
                         </button>
@@ -268,7 +271,7 @@ export default function Header() {
                   {/* Footer */}
                   <div className="p-space-xs border-t border-surface-container-high">
                     <Link
-                      to="/notifications"
+                      to="/dashboard/notifications"
                       onClick={() => setOpenDropdown(null)}
                       className="w-full block text-center py-space-xs rounded font-label-md text-label-md text-primary uppercase tracking-wider hover:bg-surface-container-high transition-colors"
                     >
@@ -311,22 +314,12 @@ export default function Header() {
                   </div>
 
                   <div className="p-space-xs">
-                    <QuickAction icon="qr_code_scanner" label="Scan Machine QR" onClick={() => { navigate('/machine-guide'); setOpenDropdown(null); }} />
-                    <QuickAction icon="play_circle" label="Resume Workout" onClick={() => { navigate('/player'); setOpenDropdown(null); }} />
-                    <QuickAction icon="restaurant" label="Log Meal" onClick={() => { navigate('/nutritionists'); setOpenDropdown(null); }} />
-                    <QuickAction icon="shopping_bag" label="Open Shop" onClick={() => { navigate('/shop'); setOpenDropdown(null); }} />
-                  </div>
-
-                  <div className="px-space-md py-space-xs border-y border-surface-container-high">
-                    <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                      Preferences
-                    </span>
-                  </div>
-
-                  <div className="p-space-xs">
-                    <QuickAction icon="dark_mode" label="Theme: Dark" onClick={() => setOpenDropdown(null)} />
-                    <QuickAction icon="language" label="Language: EN" onClick={() => setOpenDropdown(null)} />
-                    <QuickAction icon="settings" label="Settings" onClick={() => setOpenDropdown(null)} />
+                    <QuickAction icon="qr_code_scanner" label="Scan Machine QR" onClick={() => go('/dashboard/machine-guide?scan=1')} />
+                    <QuickAction icon="badge" label="Show My Pass" onClick={() => go('/dashboard/profile#pass')} />
+                    <QuickAction icon="play_circle" label="Course Player" onClick={() => go('/dashboard/player')} />
+                    <QuickAction icon="restaurant" label="Log Meal" onClick={() => go('/dashboard/nutritionists')} />
+                    <QuickAction icon="shopping_bag" label="Open Shop" onClick={() => go('/dashboard/shop')} />
+                    <QuickAction icon="account_balance_wallet" label="Top Up Credit" onClick={() => go('/dashboard/payments')} />
                   </div>
                 </DropdownPanel>
               )}
@@ -344,17 +337,13 @@ export default function Header() {
             >
               <div className="flex flex-col text-right">
                 <span className="font-title-md text-title-md text-on-surface leading-snug">
-                  Alex Mercer
+                  {displayName}
                 </span>
                 <span className="font-label-md text-label-md text-primary uppercase tracking-wider font-bold">
-                  Pro Athlete
+                  {tier || 'Member'}
                 </span>
               </div>
-              <img
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container/30"
-                src="https://lh3.googleusercontent.com/aida/AEtjO1VWw2EoNgLdLezRog8td7sOxrm9KrXDhDgTEC3tqr-igzosY5k2clK9rwS9aFMIKBVVhwA1nOsSma0_YzMh_TuKmnp10nokuuuCGClI2fcIdr4SlgA3WxLTPel09IKPHNUHQRdNZdZnY8O0myeYIdedBcLLDUeK90iu9sgrE7AjScMVQ2TnHWZc9uEDCYMtv4_YUfDwt-liAn3Le_bHxS2FxT4L2rGB8P_O2FWD2TtmKbyM1CePPewIhj6alGAYoI7OctGUavMHJC8"
-              />
+              <Avatar src={avatar} initials={initials} size="w-8 h-8" />
             </button>
 
             <AnimatePresence>
@@ -369,38 +358,35 @@ export default function Header() {
                   {/* Profile header */}
                   <div className="px-space-md py-space-md border-b border-surface-container-high">
                     <div className="flex items-center gap-space-sm">
-                      <img
-                        alt="Profile"
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-container/40"
-                        src="https://lh3.googleusercontent.com/aida/AEtjO1VWw2EoNgLdLezRog8td7sOxrm9KrXDhDgTEC3tqr-igzosY5k2clK9rwS9aFMIKBVVhwA1nOsSma0_YzMh_TuKmnp10nokuuuCGClI2fcIdr4SlgA3WxLTPel09IKPHNUHQRdNZdZnY8O0myeYIdedBcLLDUeK90iu9sgrE7AjScMVQ2TnHWZc9uEDCYMtv4_YUfDwt-liAn3Le_bHxS2FxT4L2rGB8P_O2FWD2TtmKbyM1CePPewIhj6alGAYoI7OctGUavMHJC8"
-                      />
-                      <div className="flex flex-col">
-                        <span className="font-title-md text-title-md text-on-surface">
-                          Alex Mercer
+                      <Avatar src={avatar} initials={initials} size="w-12 h-12" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-title-md text-title-md text-on-surface truncate">
+                          {displayName}
                         </span>
-                        <span className="font-label-md text-label-md text-on-surface-variant">
-                          alex.mercer@smartgym.com
+                        <span className="font-label-md text-label-md text-on-surface-variant truncate">
+                          {user?.email}
                         </span>
-                        <span className="mt-1 inline-block px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-md text-label-md uppercase tracking-wider font-bold w-fit">
-                          Pro Athlete · Tier #8841-TK
-                        </span>
+                        {tier && (
+                          <span className="mt-1 inline-block px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-md text-label-md uppercase tracking-wider font-bold w-fit">
+                            {tier}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Links */}
                   <div className="p-space-xs">
-                    <DropdownLink icon="person" label="My Profile" onClick={() => { navigate('/dashboard/profile'); setOpenDropdown(null); }} />
-                    <DropdownLink icon="lock_reset" label="Change Password" onClick={() => { navigate('/dashboard/change-password'); setOpenDropdown(null); }} />
-                    <DropdownLink icon="credit_card" label="Membership" onClick={() => { navigate('/dashboard/payments'); setOpenDropdown(null); }} />
-                    <DropdownLink icon="receipt_long" label="Payments & Invoices" onClick={() => { navigate('/dashboard/payments'); setOpenDropdown(null); }} />
-                    <DropdownLink icon="event_available" label="Attendance History" onClick={() => { navigate('/dashboard/attendance'); setOpenDropdown(null); }} />
-                    <DropdownLink icon="emoji_events" label="Achievements" onClick={() => { navigate('/dashboard/profile'); setOpenDropdown(null); }} />
+                    <DropdownLink icon="person" label="My Profile" onClick={() => go('/dashboard/profile')} />
+                    <DropdownLink icon="badge" label="Digital Pass" onClick={() => go('/dashboard/profile#pass')} />
+                    <DropdownLink icon="lock_reset" label="Change Password" onClick={() => go('/dashboard/change-password')} />
+                    <DropdownLink icon="credit_card" label="Membership & Payments" onClick={() => go('/dashboard/payments')} />
+                    <DropdownLink icon="event_available" label="Attendance History" onClick={() => go('/dashboard/attendance')} />
+                    <DropdownLink icon="notifications" label="Notifications" onClick={() => go('/dashboard/notifications')} />
                   </div>
 
                   <div className="p-space-xs border-t border-surface-container-high">
-                    <DropdownLink icon="settings" label="Settings" onClick={() => setOpenDropdown(null)} />
-                    <DropdownLink icon="help" label="Help & Support" onClick={() => setOpenDropdown(null)} />
+                    <DropdownLink icon="help" label="Help & Support" onClick={() => { setOpenDropdown(null); window.open(`${PUBLIC_SITE}/contact`, '_blank', 'noopener'); }} />
                   </div>
 
                   {/* Logout */}
@@ -439,6 +425,16 @@ function DropdownPanel({ children, className = '', ...motionProps }) {
     >
       {children}
     </motion.div>
+  );
+}
+
+function Avatar({ src, initials, size }) {
+  return src ? (
+    <img alt="" className={`${size} rounded-full object-cover ring-2 ring-primary-container/30`} src={src} />
+  ) : (
+    <span className={`${size} rounded-full bg-primary-container/20 text-primary ring-2 ring-primary-container/30 flex items-center justify-center font-bold text-[12px]`}>
+      {initials}
+    </span>
   );
 }
 

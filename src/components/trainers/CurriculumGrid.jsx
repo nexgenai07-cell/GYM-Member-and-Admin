@@ -24,7 +24,7 @@ export default function CurriculumGrid({ courses = [] }) {
     <div className="flex flex-col gap-space-md">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider">
-          Official Titan Curriculum
+          Courses by this trainer
         </h2>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase">
           {courses.length} Programs Active

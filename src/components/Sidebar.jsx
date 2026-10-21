@@ -56,7 +56,7 @@ export default function Sidebar() {
             Smart Gym
           </span>
           <span className="font-label-md text-[10px] text-primary tracking-widest uppercase">
-            Titan Core
+            Member Portal
           </span>
         </div>
       </motion.div>

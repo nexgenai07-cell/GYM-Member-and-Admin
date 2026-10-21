@@ -9,7 +9,7 @@ import CourseHeader from '../../components/courses/CourseHeader';
 import FeaturedCourse from '../../components/courses/FeaturedCourse';
 import CourseFilters from '../../components/courses/CourseFilters';
 import CourseCard from '../../components/courses/CourseCard';
-import CurriculumFeatures from '../../components/courses/CurriculumFeatures';
+import PayDialog from '../../components/payments/PayDialog';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -86,14 +86,22 @@ export default function Courses() {
 
   const featured = list.find((c) => c.is_featured) || list[0];
 
+  const [buying, setBuying] = useState(null);
+
+  // Free (or included-in-plan) courses enrol directly; paid ones are enrolled by the payment.
   const handleEnroll = async (course) => {
+    if (!course.free_for_me) {
+      setBuying(course);
+      return;
+    }
     try {
       await catalogService.enroll(course.id);
       toast.success(`Enrolled in ${course.title}! Opening player...`);
       refetchEnrollments();
       setTimeout(() => navigate(`/dashboard/player/${course.id}`), 800);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to enroll');
+      if (e.response?.status === 402) setBuying(course);
+      else toast.error(e.response?.data?.detail || 'Failed to enroll');
     }
   };
 
@@ -122,7 +130,7 @@ export default function Courses() {
 
       <CourseHeader
         courseCount={list.length}
-        membershipTier={membership?.plan?.name}
+        membershipTier={membership?.plan?.display_name}
       />
 
       {featured && (
@@ -189,7 +197,18 @@ export default function Courses() {
         </motion.div>
       )}
 
-      <CurriculumFeatures />
+      <PayDialog
+        request={buying ? { purpose: 'course', course_id: buying.id } : null}
+        title={buying ? buying.title : ''}
+        allowCredit
+        onPaid={() => {
+          const id = buying?.id;
+          toast.success('Enrolled! Opening player...');
+          refetchEnrollments();
+          setTimeout(() => navigate(`/dashboard/player/${id}`), 800);
+        }}
+        onClose={() => { setBuying(null); refetchEnrollments(); }}
+      />
     </div>
   );
 }

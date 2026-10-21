@@ -414,7 +414,7 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
             </span>
           </div>
           <span className="font-headline-md text-headline-md text-primary font-bold">
-            ${Number(n.hourly_rate).toFixed(0)}
+            SAR {Number(n.hourly_rate).toFixed(0)}
             <span className="font-label-md text-[10px] text-on-surface-variant ml-1">
               /hr
             </span>
@@ -533,7 +533,7 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-title-md text-title-md text-primary font-bold">
-                    ${Number(n.hourly_rate).toFixed(0)}/hr
+                    SAR {Number(n.hourly_rate).toFixed(0)}/hr
                   </span>
                   <motion.button
                     whileHover={{ scale: 1.05 }}

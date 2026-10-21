@@ -1,12 +1,13 @@
 // src/components/profile/ProfileBanner.jsx
 import { motion } from 'framer-motion';
-
+import { formatRemaining } from '../../utils/membershipTime';
 export default function ProfileBanner({
   displayName,
   initials,
   user,
   membership,
   stats,
+  onExport,
 }) {
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', {
@@ -92,19 +93,19 @@ export default function ProfileBanner({
         <div className="flex items-center gap-space-md w-full xl:w-auto justify-start xl:justify-end border-t xl:border-t-0 border-surface-container-high pt-space-md xl:pt-0">
           <div className="px-space-md py-space-sm rounded bg-surface-container-lowest flex flex-col min-w-[120px]">
             <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-              Bio-Age Delta
+              Membership left
             </span>
             <span className="font-headline-md text-headline-md text-primary tracking-wide">
-              -4.8 YRS
+              {formatRemaining(membership?.time_remaining)}
             </span>
           </div>
 
           <div className="px-space-md py-space-sm rounded bg-surface-container-lowest flex flex-col min-w-[120px]">
             <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-              Neural Freshness
+              Visits
             </span>
             <span className="font-headline-md text-headline-md text-on-surface tracking-wide">
-              98%
+              {membership?.total_check_ins ?? 0}
             </span>
           </div>
 
@@ -113,9 +114,10 @@ export default function ProfileBanner({
             whileTap={{ scale: 0.97 }}
             className="px-space-lg py-space-sm rounded bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider font-bold shadow-[0_0_16px_rgba(229,25,55,0.4)] transition-all flex items-center gap-space-xs self-stretch xl:self-auto justify-center"
             type="button"
+            onClick={onExport}
           >
-            <span className="material-symbols-outlined text-[18px]">share</span>
-            Export Dossier
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Download my data
           </motion.button>
         </div>
       </div>

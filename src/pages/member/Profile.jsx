@@ -1,4 +1,4 @@
-// src/pages/member/Profile.jsx — TOP SECTION ONLY (replace the hooks)
+// src/pages/member/Profile.jsx
 import { motion } from 'framer-motion';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
@@ -37,6 +37,24 @@ export default function Profile() {
   });
 
   const displayName = user?.full_name || user?.username || 'Athlete';
+  // Everything this page shows, as a JSON file the member keeps.
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify({
+      exported_at: new Date().toISOString(),
+      profile: { name: displayName, email: user?.email, phone: user?.phone, member_since: user?.created_at },
+      membership,
+      workout_stats: stats,
+      personal_records: prs,
+      body_scans: dexaHistory,
+    }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `smart-gym-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const initials = displayName
     .split(' ')
     .map((n) => n[0])
@@ -52,8 +70,8 @@ export default function Profile() {
         user={user}
         membership={membership}
         stats={stats}
+        onExport={exportData}
       />
-
       <ProfileStatsGrid dexa={dexa} stats={stats} />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-xl mb-space-xl">

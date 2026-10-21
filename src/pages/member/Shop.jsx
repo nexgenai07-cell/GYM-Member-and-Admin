@@ -1,14 +1,36 @@
 // src/pages/member/Shop.jsx
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { shopService } from '../../services/shopService';
+import PayDialog from '../../components/payments/PayDialog';
+import { errorMessage } from '../../utils/apiError';
+import { formatSAR } from '../../utils/money';
+
+const ORDER_STATUS = {
+  pending: { label: 'Awaiting payment', cls: 'bg-primary-container/20 text-primary' },
+  paid: { label: 'Paid — preparing', cls: 'bg-emerald-400/15 text-emerald-400' },
+  preparing: { label: 'Preparing', cls: 'bg-emerald-400/15 text-emerald-400' },
+  ready: { label: 'Ready for pickup', cls: 'bg-emerald-400/25 text-emerald-300' },
+  dispatched: { label: 'In your locker', cls: 'bg-emerald-400/25 text-emerald-300' },
+  completed: { label: 'Collected', cls: 'bg-surface-container-high text-on-surface-variant' },
+  cancelled: { label: 'Cancelled', cls: 'bg-surface-container-high text-on-surface-variant' },
+  refunded: { label: 'Refunded', cls: 'bg-error/20 text-error' },
+};
 
 export default function Shop() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'orders' ? 'orders' : 'products';
+  const setTab = (t) => setParams(t === 'orders' ? { tab: 'orders' } : {});
+  const [delivery, setDelivery] = useState('locker');
+  const [promoInput, setPromoInput] = useState('');
+  const [promo, setPromo] = useState(null);          // { code, discount_percent }
+  const [payOrder, setPayOrder] = useState(null);    // order awaiting payment
 
   // ---- API ----
   const {
@@ -35,6 +57,9 @@ export default function Shop() {
   const itemCount = cart?.item_count || 0;
 
   const loading = prodLoading || catLoading;
+
+  const { data: orders, loading: ordersLoading, refetch: refetchOrders } =
+    useApi(() => shopService.myOrders(), [], { showError: false });
 
   // ---- Filter ----
   const filtered = useMemo(() => {
@@ -85,24 +110,53 @@ export default function Shop() {
 
   const [checkingOut, setCheckingOut] = useState(false);
 
+  const applyPromo = async () => {
+    if (!promoInput.trim()) return;
+    try {
+      const res = await shopService.applyPromo(promoInput.trim());
+      setPromo(res);
+      toast.success(`${res.code}: ${res.discount_percent}% off`);
+    } catch (e) {
+      setPromo(null);
+      toast.error(errorMessage(e, 'Invalid promo code'));
+    }
+  };
+
+  // Place the order (reserves stock), then pay for it.
   const checkout = async () => {
     setCheckingOut(true);
     try {
-      // Auto-apply PRO15 if it exists (frontend demo convenience)
       const order = await shopService.checkout({
-        delivery_method: 'locker',
-        promo_code: 'PRO15',
+        delivery_method: delivery,
+        promo_code: promo?.code || '',
       });
-      toast.success(`Order ${order.order_number} placed!`);
       setCartOpen(false);
+      setPromo(null);
+      setPromoInput('');
       refetchCart();
       refetchProducts();
+      refetchOrders();
+      setPayOrder(order);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Checkout failed');
+      toast.error(errorMessage(e, 'Checkout failed'));
     } finally {
       setCheckingOut(false);
     }
   };
+
+  const cancelOrder = async (order) => {
+    if (!window.confirm(`Cancel order ${order.order_number}?`)) return;
+    try {
+      await shopService.cancelOrder(order.order_number);
+      toast.success('Order cancelled');
+      refetchOrders();
+      refetchProducts();
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not cancel'));
+    }
+  };
+
+  const discount = promo ? (cartSubtotal * Number(promo.discount_percent)) / 100 : 0;
 
   return (
     <div className="w-full flex flex-col">
@@ -112,14 +166,14 @@ export default function Shop() {
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 text-primary mb-2">
               <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-                Apothecary & Equipment Ordnance
+                Gym Shop
               </span>
             </div>
             <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-              Titan Apothecary & Gear
+              Supplements & Gear
             </h1>
             <p className="font-body-lg text-body-lg text-on-surface-variant mt-2">
-              Bio-calibrated supplements and elite gear — locker delivery in 10 min.
+              Order here, pay by card, STC Pay or locker credit, and collect from your locker or the front desk.
             </p>
           </div>
 
@@ -140,10 +194,10 @@ export default function Shop() {
             </div>
             <div>
               <span className="font-label-md text-[10px] uppercase text-primary font-bold">
-                Locker Pickup
+                Your cart
               </span>
               <div className="font-body-md text-body-md text-on-surface-variant">
-                {itemCount} items · ${cartSubtotal.toFixed(2)}
+                {itemCount} items · {formatSAR(cartSubtotal)}
               </div>
             </div>
             <span className="material-symbols-outlined text-primary">
@@ -153,6 +207,54 @@ export default function Shop() {
         </div>
       </section>
 
+      <div className="px-space-xl flex gap-1" role="tablist">
+        {[['products', 'Products'], ['orders', `My orders${orders?.length ? ` (${orders.length})` : ''}`]].map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+            className={`px-4 py-2 rounded-t text-[11px] font-bold uppercase tracking-wider ${tab === id ? 'bg-surface-container text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'orders' && (
+        <section className="px-space-xl py-space-lg flex flex-col gap-3">
+          {ordersLoading ? (
+            <div className="h-24 bg-surface-container rounded-xl animate-pulse" />
+          ) : !orders?.length ? (
+            <div className="text-center py-16 bg-surface-container-low rounded-xl">
+              <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">receipt_long</span>
+              <p className="font-title-md text-title-md text-on-surface mt-3">No orders yet</p>
+            </div>
+          ) : orders.map((o) => {
+            const st = ORDER_STATUS[o.status] || { label: o.status, cls: 'bg-surface-container-high text-on-surface-variant' };
+            return (
+              <div key={o.id} className="bg-surface-container rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="font-title-md text-title-md text-on-surface">{o.order_number}</span>
+                  <span className="text-on-surface-variant text-[12px]">
+                    {new Date(o.created_at).toLocaleString()} · {o.item_count} item{o.item_count === 1 ? '' : 's'} ·{' '}
+                    {o.delivery_method === 'counter' ? 'Front desk pickup' : `Locker ${o.locker_number || ''}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="font-title-md text-title-md text-on-surface">{formatSAR(o.total)}</span>
+                  <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${st.cls}`}>{st.label}</span>
+                  {o.status === 'pending' && (
+                    <>
+                      <button type="button" onClick={() => setPayOrder(o)}
+                        className="px-3 py-1.5 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">Pay</button>
+                      <button type="button" onClick={() => cancelOrder(o)}
+                        className="px-3 py-1.5 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">Cancel</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      {tab === 'products' && (<>
       {/* ============ FILTER BAR ============ */}
       <section className="px-space-xl py-4 bg-surface sticky top-16 z-30 shadow-md">
         <div className="flex items-center gap-3 flex-wrap">
@@ -232,7 +334,7 @@ export default function Shop() {
             </p>
             <p className="font-body-md text-body-md text-on-surface-variant">
               {list.length === 0
-                ? 'Run: python manage.py seed_shop'
+                ? 'The shop has no products yet — check back soon.'
                 : 'Try a different filter or search.'}
             </p>
           </div>
@@ -248,7 +350,7 @@ export default function Shop() {
               >
                 <div className="relative h-72 overflow-hidden">
                   <img
-                    src={p.image_url || 'https://via.placeholder.com/400x400?text=No+Image'}
+                    src={p.image_url || undefined}
                     alt={p.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                   />
@@ -334,11 +436,11 @@ export default function Shop() {
                     <div className="flex flex-col">
                       <div className="flex items-baseline gap-2">
                         <span className="font-headline-md text-headline-md text-on-surface">
-                          ${Number(p.price).toFixed(2)}
+                          {formatSAR(p.price)}
                         </span>
                         {p.original_price && (
                           <span className="font-label-md text-[10px] text-on-surface-variant line-through">
-                            ${Number(p.original_price).toFixed(2)}
+                            {formatSAR(p.original_price)}
                           </span>
                         )}
                       </div>
@@ -376,6 +478,8 @@ export default function Shop() {
         )}
       </section>
 
+      </>)}
+
       {/* ============ CART DRAWER ============ */}
       <AnimatePresence>
         {cartOpen && (
@@ -397,10 +501,10 @@ export default function Shop() {
               <div className="p-5 bg-surface-container-low flex items-center justify-between">
                 <div>
                   <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-                    Active Cart
+                    Your cart
                   </span>
                   <h3 className="font-headline-md text-headline-md text-on-surface uppercase">
-                    Locker Dispatch
+                    Checkout
                   </h3>
                 </div>
                 <button
@@ -435,7 +539,7 @@ export default function Shop() {
                           {item.product.name}
                         </span>
                         <span className="font-label-md text-[10px] text-primary uppercase font-bold">
-                          ${Number(item.product.price).toFixed(2)} each
+                          {formatSAR(item.product.price)} each
                         </span>
                         <div className="flex items-center gap-2 mt-2">
                           <button
@@ -472,7 +576,7 @@ export default function Shop() {
                         </div>
                       </div>
                       <span className="font-title-md text-title-md text-on-surface">
-                        ${Number(item.line_total).toFixed(2)}
+                        {formatSAR(item.line_total)}
                       </span>
                     </div>
                   ))
@@ -480,16 +584,27 @@ export default function Shop() {
               </div>
 
               {cartItems.length > 0 && (
-                <div className="p-5 bg-surface-container-low border-t border-surface-container-high flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-title-md text-title-md text-on-surface-variant">
-                      Subtotal
-                    </span>
-                    <span className="font-title-lg text-title-lg text-on-surface">
-                      ${cartSubtotal.toFixed(2)}
-                    </span>
+                <div className="p-5 bg-surface-container-low border-t border-surface-container-high flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <input value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                      placeholder="Promo code" aria-label="Promo code"
+                      className="flex-1 bg-surface-container-lowest text-on-surface px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary uppercase" />
+                    <button type="button" onClick={applyPromo}
+                      className="px-3 rounded bg-surface-container-high text-on-surface text-[10px] font-bold uppercase">Apply</button>
                   </div>
-
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Pickup">
+                    {[['locker', 'Locker pickup'], ['counter', 'Front desk']].map(([id, label]) => (
+                      <button key={id} type="button" role="radio" aria-checked={delivery === id} onClick={() => setDelivery(id)}
+                        className={`py-2 rounded text-[10px] font-bold uppercase ${delivery === id ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-1 text-[13px]">
+                    <div className="flex justify-between text-on-surface-variant"><span>Subtotal</span><span>{formatSAR(cartSubtotal)}</span></div>
+                    {promo && <div className="flex justify-between text-primary"><span>{promo.code}</span><span>-{formatSAR(discount)}</span></div>}
+                    <div className="flex justify-between text-on-surface-variant"><span>VAT</span><span>added at checkout</span></div>
+                  </div>
                   <button
                     onClick={checkout}
                     disabled={checkingOut}
@@ -500,7 +615,7 @@ export default function Shop() {
                     }`}
                     type="button"
                   >
-                    {checkingOut ? 'Placing Order...' : 'Confirm Order'}
+                    {checkingOut ? 'Placing order…' : 'Place order & pay'}
                   </button>
                 </div>
               )}
@@ -508,6 +623,14 @@ export default function Shop() {
           </>
         )}
       </AnimatePresence>
+
+      <PayDialog
+        request={payOrder ? { purpose: 'shop_order', order_number: payOrder.order_number } : null}
+        title={payOrder ? `Order ${payOrder.order_number}` : ''}
+        allowCredit
+        onPaid={() => { toast.success('Order paid — we’re preparing it'); refetchOrders(); }}
+        onClose={() => { setPayOrder(null); refetchOrders(); setTab('orders'); }}
+      />
     </div>
   );
 }
