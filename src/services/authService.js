@@ -9,14 +9,6 @@ export const authService = {
     return data;
   },
 
-  async register(payload) {
-    const { data } = await api.post('/auth/register/', payload);
-    localStorage.setItem('access_token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    return data;
-  },
-
   async logout() {
     const refresh = localStorage.getItem('refresh_token');
     try {

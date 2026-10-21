@@ -599,6 +599,15 @@ function MacroSyncPanel({
         </h3>
       </div>
 
+      {plan && (
+        <p className={`text-[12px] ${plan.reviewed_at ? 'text-on-surface-variant' : 'text-amber-300'}`}>
+          {plan.reviewed_at
+            ? `Targets set by ${plan.nutritionist_name || 'your nutritionist'}.`
+            : `Starter targets for your goal — ${plan.nutritionist_name || 'your nutritionist'} will review them shortly.`}
+          {plan.notes && <span className="block mt-1 text-on-surface">{plan.notes}</span>}
+        </p>
+      )}
+
       {!plan ? (
         <div className="text-center py-8 bg-surface-container-lowest rounded-lg">
           <span className="material-symbols-outlined text-3xl text-on-surface-variant/40">

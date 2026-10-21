@@ -42,7 +42,9 @@ const navGroups = [
     items: [
       { path: '/admin/members', label: 'Members', icon: 'groups' },
       { path: '/admin/trainers', label: 'Trainers & Courses', icon: 'school' },
+      { path: '/admin/nutrition', label: 'Nutrition', icon: 'restaurant' },
       { path: '/admin/staff', label: 'Staff', icon: 'badge' },
+      { path: '/admin/shop', label: 'Shop Products', icon: 'storefront' },
       { path: '/admin/shop-orders', label: 'Shop Orders', icon: 'shopping_bag' },
       { path: '/admin/trainer-hours', label: 'Trainer Hours', icon: 'schedule' },
     ],

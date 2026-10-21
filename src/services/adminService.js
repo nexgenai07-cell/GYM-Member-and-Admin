@@ -194,6 +194,87 @@ export const adminService = {
     return data;
   },
 
+  // Nutrition
+  async nutritionists(params = {}) {
+    const { data } = await api.get('/admin/nutrition/nutritionists/', { params });
+    return data;
+  },
+  async createNutritionist(payload) {
+    const { data } = await api.post('/admin/nutrition/nutritionists/', payload);
+    return data;
+  },
+  async updateNutritionist(id, payload) {
+    const { data } = await api.patch(`/admin/nutrition/nutritionists/${id}/`, payload);
+    return data;
+  },
+  async uploadNutritionistPhoto(id, file) {
+    const form = new FormData();
+    form.append('image', file);
+    const { data } = await api.post(`/admin/nutrition/nutritionists/${id}/photo/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return data;
+  },
+  async nutritionPlans(params = {}) {
+    const { data } = await api.get('/admin/nutrition/plans/', { params });
+    return data;
+  },
+  async updateNutritionPlan(id, payload) {
+    const { data } = await api.patch(`/admin/nutrition/plans/${id}/`, payload);
+    return data;
+  },
+  async memberScans(memberId) {
+    const { data } = await api.get(`/admin/nutrition/members/${memberId}/scans/`);
+    return data;
+  },
+  async addMemberScan(memberId, payload) {
+    const { data } = await api.post(`/admin/nutrition/members/${memberId}/scans/`, payload);
+    return data;
+  },
+
+  // Shop catalogue (products, categories, promo codes)
+  async shopProducts(params = {}) {
+    const { data } = await api.get('/admin/shop/products/', { params });
+    return data;
+  },
+  async shopStats() {
+    const { data } = await api.get('/admin/shop/stats/');
+    return data;
+  },
+  async saveProduct(id, payload) {
+    const { data } = id ? await api.patch(`/admin/shop/products/${id}/`, payload) : await api.post('/admin/shop/products/', payload);
+    return data;
+  },
+  async deleteProduct(id) {
+    await api.delete(`/admin/shop/products/${id}/`);
+  },
+  async uploadProductImage(id, file) {
+    const form = new FormData();
+    form.append('image', file);
+    const { data } = await api.post(`/admin/shop/products/${id}/image/`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return data;
+  },
+  async shopCategories() {
+    const { data } = await api.get('/admin/shop/categories/');
+    return data;
+  },
+  async saveCategory(id, payload) {
+    const { data } = id ? await api.patch(`/admin/shop/categories/${id}/`, payload) : await api.post('/admin/shop/categories/', payload);
+    return data;
+  },
+  async deleteCategory(id) {
+    await api.delete(`/admin/shop/categories/${id}/`);
+  },
+  async shopPromos() {
+    const { data } = await api.get('/admin/shop/promos/');
+    return data;
+  },
+  async savePromo(id, payload) {
+    const { data } = id ? await api.patch(`/admin/shop/promos/${id}/`, payload) : await api.post('/admin/shop/promos/', payload);
+    return data;
+  },
+  async deletePromo(id) {
+    await api.delete(`/admin/shop/promos/${id}/`);
+  },
+
   async createMachine(payload) {
     const { data } = await api.post('/admin/machines/', payload);
     return data;
