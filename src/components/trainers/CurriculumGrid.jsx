@@ -71,7 +71,7 @@ export default function CurriculumGrid({ courses = [] }) {
 
               <div className="mt-space-sm flex items-center justify-between pt-space-xs">
                 <span className="font-headline-md text-headline-md text-on-surface">
-                  ${c.price}
+                  {Number(c.price) > 0 ? `SAR ${Number(c.price).toFixed(0)}` : 'Free'}
                 </span>
                 <span className="font-label-md text-label-md text-primary flex items-center gap-space-2xs group-hover:translate-x-1 transition-transform">
                   View Syllabus

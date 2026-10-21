@@ -18,6 +18,8 @@ const navGroups = [
       { path: '/admin/members', label: 'Members', icon: 'groups' },
       { path: '/admin/trainers', label: 'Trainers & Courses', icon: 'school' },
       { path: '/admin/staff', label: 'Staff', icon: 'badge' },
+      { path: '/admin/shop-orders', label: 'Shop Orders', icon: 'shopping_bag' },
+      { path: '/admin/trainer-hours', label: 'Trainer Hours', icon: 'schedule' },
     ],
   },
     {
@@ -48,6 +50,7 @@ const navGroups = [
       { path: '/admin/site-content', label: 'Site Content', icon: 'web' },
       { path: '/admin/site-lists', label: 'Facilities & Articles', icon: 'view_list' },
       { path: '/admin/site-plans', label: 'Membership Plans', icon: 'sell' },
+      { path: '/admin/facility-pricing', label: 'Facility Pricing', icon: 'pool' },
       { path: '/admin/site-inbox', label: 'Website Inbox', icon: 'inbox' },
     ],
   },

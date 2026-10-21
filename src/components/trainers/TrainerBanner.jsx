@@ -134,15 +134,17 @@ export default function TrainerBanner({ trainer }) {
             </div>
             <div className="mt-space-sm flex flex-col">
               <span className="font-title-lg text-title-lg text-primary leading-tight font-bold">
-                ${trainer.hourly_rate}
+                SAR {Number(trainer.hourly_rate).toFixed(2)}
               </span>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                Per Session
+                Per 60-min session
               </span>
             </div>
-            <span className="font-label-md text-label-md text-on-surface-variant uppercase mt-space-2xs">
-              Verified Coach
-            </span>
+            {trainer.is_verified && (
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase mt-space-2xs">
+                Verified Coach
+              </span>
+            )}
           </motion.div>
         </div>
       </div>

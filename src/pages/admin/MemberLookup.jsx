@@ -246,6 +246,15 @@ export default function MemberLookup() {
               />
             </div>
 
+            {/* Paid facility add-ons (pool, courts, ...) */}
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mr-1">Facilities</span>
+              {result.facilities?.length ? result.facilities.map((f) => (
+                <span key={f.name} className="px-2 py-1 rounded bg-emerald-500/15 text-emerald-400 text-[11px] font-bold">
+                  {f.name} · until {formatDate(f.expires_on)}
+                </span>
+              )) : <span className="text-[12px] text-on-surface-variant">None — gym floor only</span>}
+            </div>
             {/* Session timer */}
             <div className="border-t border-[#1a1a1e] pt-6">
               {result.active_check_in ? (

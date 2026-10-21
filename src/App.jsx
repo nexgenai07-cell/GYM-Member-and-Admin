@@ -43,6 +43,9 @@ import SiteContent from './pages/admin/SiteContent';
 import SiteLists from './pages/admin/SiteLists';
 import SitePlans from './pages/admin/SitePlans';
 import SiteInbox from './pages/admin/SiteInbox';
+import FacilityPricing from './pages/admin/FacilityPricing';
+import ShopOrders from './pages/admin/ShopOrders';
+import TrainerHours from './pages/admin/TrainerHours';
 
 // Shared
 import Login from './pages/Login';
@@ -194,6 +197,9 @@ function App() {
         <Route path="site-lists" element={<SiteLists />} />
         <Route path="site-plans" element={<SitePlans />} />
         <Route path="site-inbox" element={<SiteInbox />} />
+        <Route path="shop-orders" element={<ShopOrders />} />
+        <Route path="trainer-hours" element={<TrainerHours />} />
+        <Route path="facility-pricing" element={<FacilityPricing />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 

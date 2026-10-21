@@ -35,6 +35,7 @@ export default function Payments() {
   const { data: methods } = useApi(() => paymentsService.paymentMethods(), [], { showError: false });
   const { data: membership, refetch: refetchMembership } = useApi(() => membersService.myMembership(), [], { showError: false });
   const { data: plans } = useApi(() => membersService.plans(), [], { showError: false });
+  const { data: facilities, refetch: refetchFacilities } = useApi(() => membersService.facilities(), [], { showError: false });
 
   const list = transactions || [];
   const filtered = search
@@ -53,6 +54,15 @@ export default function Payments() {
     refetchSummary();
     refetchTx();
     refetchMembership();
+    refetchFacilities();
+  };
+
+  const startFacility = (f) => {
+    setPay({
+      request: { purpose: 'facility_addon', facility_id: f.id },
+      title: `${f.name} · ${f.months_remaining} mo`,
+      allowCredit: true,
+    });
   };
 
   const startTopup = (amount) => {
@@ -140,6 +150,38 @@ export default function Payments() {
               </div>
             )}
           </Card>
+
+          {/* Facility add-ons */}
+          {Array.isArray(facilities) && facilities.length > 0 && (
+            <Card label="Facility add-ons">
+              <div className="flex flex-col gap-2">
+                {facilities.map((f) => (
+                  <div key={f.id} className="flex items-center justify-between gap-2 bg-surface-container-low rounded px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="text-on-surface text-[13px] font-bold truncate">{f.name}</div>
+                      <div className="text-on-surface-variant text-[11px]">
+                        {f.owned ? `Included until ${formatDate(f.expires_on)}` : `${formatSAR(f.monthly_price)} / month`}
+                      </div>
+                    </div>
+                    {f.owned ? (
+                      <span className="px-2 py-1 rounded bg-emerald-400/15 text-emerald-400 text-[10px] font-bold uppercase">Active</span>
+                    ) : f.addon_price ? (
+                      <button type="button" onClick={() => startFacility(f)}
+                        className="px-3 py-1.5 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase whitespace-nowrap">
+                        Add · {formatSAR(f.addon_price)}
+                      </button>
+                    ) : (
+                      <span className="text-on-surface-variant text-[10px] uppercase">Renew first</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-on-surface-variant text-[11px] mt-3">
+                Added facilities cost the monthly price × months left on your membership (a started month counts),
+                and end when your membership does.
+              </p>
+            </Card>
+          )}
 
           {/* Locker credit */}
           <Card label="Locker credit">

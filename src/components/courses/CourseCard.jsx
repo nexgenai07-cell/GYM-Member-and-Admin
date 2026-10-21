@@ -6,8 +6,8 @@ const EASE = [0.22, 1, 0.36, 1];
 export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
   // Backend uses `cover_image_url` / `trainer_name` / `duration_weeks` / `level`
   const image = course.cover_image_url || course.image;
-  const trainer = course.trainer_name || course.author || 'Elite Coach';
-  const trainerRole = course.trainer_role || 'Elite Coach';
+  const trainer = course.trainer_name || course.author || 'Smart Gym';
+  const trainerRole = course.trainer_title || course.trainer_role || '';
   const duration = course.duration_weeks
     ? `${course.duration_weeks} Weeks`
     : course.duration;

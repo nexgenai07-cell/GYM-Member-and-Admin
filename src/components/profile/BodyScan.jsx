@@ -50,8 +50,7 @@ export default function BodyScan({ dexa }) {
         </div>
 
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Photogrammetry + bio-impedance mapped over baseline. Crimson nodes identify
-          regions with &gt;1.5kg hypertrophy in current 12-week block.
+          From your latest body-composition (DEXA) scan, recorded by your nutritionist.
         </p>
       </div>
 

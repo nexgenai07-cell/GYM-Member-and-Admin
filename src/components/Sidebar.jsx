@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import CountUp from './CountUp';
+import { dashboardService } from '../services/dashboardService';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'grid_view', end: true },
@@ -20,6 +21,16 @@ const EASE = [0.22, 1, 0.36, 1];
 const SPRING = { type: 'spring', stiffness: 380, damping: 32 };
 
 export default function Sidebar() {
+  // Live load from open check-ins, refreshed every minute.
+  const [occ, setOcc] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => dashboardService.occupancy().then((o) => { if (alive) setOcc(o); }).catch(() => {});
+    load();
+    const id = setInterval(load, 60_000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest z-50 flex flex-col py-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
       {/* Brand hairline */}
@@ -124,15 +135,15 @@ export default function Sidebar() {
         <div className="bg-surface-container-low rounded-lg px-3 py-2 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider">
-              Facility Status
+              Gym right now
             </span>
             <span className="font-title-md text-[12px] text-primary flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse" />
-              Online
+              {occ ? occ.label : '—'}
             </span>
           </div>
           <span className="font-headline-md text-[20px] text-on-surface leading-none">
-            <CountUp to={84} suffix="%" duration={1.6} delay={0.7} />
+            {occ ? (occ.capacity ? `${occ.percent}%` : occ.current) : '—'}
           </span>
         </div>
         {/* Capacity meter */}
@@ -140,7 +151,7 @@ export default function Sidebar() {
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-primary-container to-primary shadow-[0_0_8px_rgba(229,25,55,0.5)]"
             initial={{ width: 0 }}
-            animate={{ width: '84%' }}
+            animate={{ width: `${occ?.percent ?? 0}%` }}
             transition={{ duration: 1.2, delay: 0.8, ease: EASE }}
           />
         </div>

@@ -9,6 +9,7 @@ import { useApi } from '../../hooks/useApi';
 import PayDialog from '../payments/PayDialog';
 import { errorMessage } from '../../utils/apiError';
 import { formatSAR } from '../../utils/money';
+import { formatGymDateTime } from '../../utils/gymTime';
 
 const DAYS_AHEAD = 14;
 const CANCEL_HOURS = 24;
@@ -209,7 +210,7 @@ export default function BookingPanel({ trainer }) {
               <div key={s.id} className="flex items-center justify-between gap-2 bg-surface-container rounded px-3 py-2">
                 <div className="flex flex-col">
                   <span className="text-on-surface text-[13px] font-bold">
-                    {new Date(s.scheduled_at).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {formatGymDateTime(s.scheduled_at)}
                   </span>
                   <span className={`text-[10px] font-bold uppercase ${s.status === 'scheduled' ? 'text-emerald-400' : 'text-primary'}`}>
                     {s.status === 'scheduled' ? 'Confirmed' : 'Awaiting payment'}

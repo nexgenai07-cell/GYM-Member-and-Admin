@@ -45,9 +45,6 @@ export default function ProfileBanner({
                 {initials}
               </div>
             )}
-            <span className="absolute -bottom-2 -right-2 px-space-xs py-0.5 rounded bg-primary-container text-on-primary-container font-label-md text-label-md uppercase tracking-widest shadow-[0_0_12px_rgba(229,25,55,0.6)]">
-              Live Sync
-            </span>
           </div>
 
           <div className="flex flex-col">

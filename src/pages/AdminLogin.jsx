@@ -1,34 +1,40 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { login, logout } = useAuth();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
+    e.preventDefault();
+    if (loading) return;
     setLoading(true);
-    const result = await login(email, password);
-
-    // Verify admin role
-    if (!['admin', 'manager'].includes(result.user?.role)) {
-      toast.error('Admin access required');
-      await logout();
-      return;
+    try {
+      const result = await login(email, password);
+      // Only admins and managers may use the console.
+      if (!['admin', 'manager'].includes(result.user?.role)) {
+        await logout();
+        toast.error('This account doesn’t have admin access.');
+        return;
+      }
+      if (result.user?.must_change_password) {
+        navigate('/dashboard/change-password', { replace: true });
+        return;
+      }
+      toast.success('Signed in');
+      navigate('/admin', { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Invalid email or password');
+    } finally {
+      setLoading(false);
     }
-
-    toast.success('Admin access granted');
-    navigate('/admin');
-  } catch (e) {
-    toast.error(e.response?.data?.detail || 'Invalid credentials');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#08080a] flex items-center justify-center p-6 relative overflow-hidden">
@@ -50,7 +56,7 @@ export default function AdminLogin() {
             <span className="absolute inset-0 rounded-2xl ring-2 ring-primary-container/40 animate-ping" />
           </div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-widest">Admin Console</h1>
-          <p className="font-label-md text-[11px] text-primary uppercase tracking-[0.3em] mt-1 font-bold">Level 5 Clearance Required</p>
+          <p className="font-label-md text-[11px] text-primary uppercase tracking-[0.3em] mt-1 font-bold">Staff sign-in</p>
         </div>
 
         {/* Form */}
@@ -79,33 +85,20 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input type="checkbox" className="peer sr-only" />
-              <span className="w-4 h-4 rounded border-2 border-[#1a1a1e] bg-[#0a0a0c] flex items-center justify-center peer-checked:bg-primary-container peer-checked:border-primary-container transition-all" />
-              <span className="font-body-md text-[12px] text-on-surface-variant">Keep me signed in</span>
-            </label>
-            <button type="button" className="font-label-md text-[10px] text-primary uppercase tracking-wider hover:underline">Need help?</button>
-          </div>
-
-          <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} type="submit"
-            className="w-full bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-widest py-3.5 rounded-lg shadow-[0_0_24px_rgba(229,25,55,0.5)] transition-all flex items-center justify-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">lock_open</span>
-            <span>Enter Command Center</span>
+          <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading}
+            className="disabled:opacity-60 w-full bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-widest py-3.5 rounded-lg shadow-[0_0_24px_rgba(229,25,55,0.5)] transition-all flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">{loading ? 'sync' : 'lock_open'}</span>
+            <span>{loading ? 'Signing in…' : 'Sign in'}</span>
           </motion.button>
 
-          <div className="flex items-center justify-center gap-2 pt-4 border-t border-[#1a1a1e]">
-            <span className="material-symbols-outlined text-primary text-[14px]">verified_user</span>
-            <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">Hardware Key Required on First Login</span>
-          </div>
+          <p className="text-center font-body-md text-[12px] text-on-surface-variant pt-4 border-t border-[#1a1a1e]">
+            Forgot your password? Ask another admin to reset it from Admin → Members.
+          </p>
         </form>
 
         {/* Footer links */}
         <div className="mt-6 flex items-center justify-between font-label-md text-[10px] uppercase tracking-wider text-on-surface-variant">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            All Systems Online
-          </span>
+          <span />
           <Link to="/login" className="text-primary hover:underline">Member Login →</Link>
         </div>
       </motion.div>
