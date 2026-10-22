@@ -10,12 +10,12 @@ import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls } from '../../components/site/siteStyles';
 
 const TABS = [
+  { id: '', label: 'All' },
   { id: 'open', label: 'To fulfil' },
   { id: 'pending', label: 'Awaiting payment' },
   { id: 'completed', label: 'Collected' },
   { id: 'refunded', label: 'Refunded' },
   { id: 'cancelled', label: 'Cancelled' },
-  { id: '', label: 'All' },
   { id: 'review', label: 'Payments to review' },
 ];
 
@@ -39,7 +39,7 @@ const sar = (v) => `SAR ${Number(v || 0).toFixed(2)}`;
 
 export default function ShopOrders() {
   const [params] = useSearchParams();             // ?q=ORD-… from the header search
-  const [tab, setTab] = useState(params.get('q') ? '' : 'open');
+  const [tab, setTab] = useState('');
   const [q, setQ] = useState(params.get('q') || '');
   const [data, setData] = useState({ counts: {}, results: [] });
   const [review, setReview] = useState([]);

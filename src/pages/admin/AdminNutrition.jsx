@@ -17,7 +17,7 @@ const NUTRITIONIST_API = {
 };
 const GOALS = [['hypertrophy', 'Build muscle'], ['fat_loss', 'Fat loss'], ['recomp', 'Recomposition'],
   ['maintenance', 'Maintenance'], ['endurance', 'Endurance']];
-const PLAN_FILTERS = [['to_review', 'To review'], ['active', 'Active'], ['all', 'All']];
+const PLAN_FILTERS = [['all', 'All'], ['to_review', 'To review'], ['active', 'Active']];
 const NEW_PERSON = {
   email: '', first_name: '', last_name: '', phone: '', title: '', credentials: '', bio: '', specialties: [],
   years_experience: 0, hourly_rate: '', is_verified: false, is_accepting_clients: true, is_active: true,
@@ -77,7 +77,7 @@ function People() {
 }
 
 function Plans() {
-  const [status, setStatus] = useState('to_review');
+  const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState(null);
   const { data, loading, refetch } = useApi(() => adminService.nutritionPlans({ status, q: q || undefined }), [status, q]);

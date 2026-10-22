@@ -256,7 +256,11 @@ function Categories({ categories, onChanged }) {
 
   const add = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      toast.error('Type a category name first');
+      document.getElementById('new-category-name')?.focus();
+      return;
+    }
     setBusy(true);
     try {
       await adminService.saveCategory(null, { name: name.trim() });
@@ -302,8 +306,8 @@ function Categories({ categories, onChanged }) {
   return (
     <div className="flex flex-col gap-3 max-w-3xl">
       <form onSubmit={add} className="flex gap-2">
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="New category, e.g. Protein" aria-label="New category name" />
-        <button type="submit" className={btn.primary} disabled={busy || !name.trim()}>Add</button>
+        <input id="new-category-name" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="New category, e.g. Protein" aria-label="New category name" />
+        <button type="submit" className={btn.primary} disabled={busy}>{busy ? 'Adding…' : '+ Add category'}</button>
       </form>
       {categories.length === 0 ? <Empty>No categories yet.</Empty> : categories.map((c, i) => (
         <div key={c.id} className="flex items-center gap-2 bg-[#0e0e0f] border border-[#1a1a1e] rounded px-3 py-2 text-[13px]">
