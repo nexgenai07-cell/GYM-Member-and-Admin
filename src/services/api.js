@@ -37,6 +37,13 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // A staff screen refused: the stored sign-in is no longer a staff account (usually a member
+    // signed in in another tab of this browser — both portals share one sign-in). AuthContext
+    // re-checks who is signed in and the route guards move the screen along.
+    if (error.response?.status === 403 && (originalRequest?.url || '').startsWith('/admin/')) {
+      window.dispatchEvent(new Event('auth:forbidden'));
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
