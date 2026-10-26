@@ -7,8 +7,9 @@ import { errorMessage } from '../../utils/apiError';
 import { BilingualField, Empty, ImageUploader, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import { tl } from '../../i18n';
+import { describeKey, groupBySection } from './siteTextLabels';
 
-const SEARCH_LIMIT = 100;
+const SEARCH_LIMIT = 150;   // only applies when listing every page at once
 
 export default function SiteContent() {
   const [pages, setPages] = useState([]);
@@ -99,7 +100,7 @@ function TextsPanel({ page, onChanged }) {
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const params = { q: q.trim() || undefined, customized: onlyEdited ? 'true' : undefined };
+        const params = { customized: onlyEdited ? 'true' : undefined };
         if (!allPages) params.page = page;
         setRows(await api.texts(params));
       } catch (err) {
@@ -109,7 +110,7 @@ function TextsPanel({ page, onChanged }) {
       }
     }, 250);
     return () => clearTimeout(t);
-  }, [page, q, allPages, onlyEdited]);
+  }, [page, allPages, onlyEdited]);
 
   // Don't lose unsaved edits on refresh / tab close.
   useEffect(() => {
@@ -160,7 +161,7 @@ function TextsPanel({ page, onChanged }) {
   };
 
   const reset = async (row) => {
-    if (!window.confirm(tl("Reset \"{0}\" to the original English and Arabic text?", { 0: row.key }))) return;
+    if (!window.confirm(tl("Reset \"{0}\" to the original English and Arabic text?", { 0: describeKey(row.key).label }))) return;
     setBusyKey(row.key);
     try {
       applyRow(await api.resetText(row.key));
@@ -173,14 +174,26 @@ function TextsPanel({ page, onChanged }) {
     }
   };
 
-  const shown = useMemo(() => rows.slice(0, SEARCH_LIMIT), [rows]);
+  // The server searches keys and text; also match the readable labels shown here.
+  const matched = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter((r) => {
+      const d = describeKey(r.key);
+      return `${r.key} ${r.en} ${r.ar} ${d.section} ${d.label}`.toLowerCase().includes(needle);
+    });
+  }, [rows, q]);
+  const limit = allPages ? SEARCH_LIMIT : Infinity;
+  const shown = useMemo(() => matched.slice(0, limit), [matched, limit]);
+  const groups = useMemo(() => groupBySection(shown, allPages), [shown, allPages]);
+  const anchor = (name) => `sec-${name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col md:flex-row gap-2 md:items-center">
         <input
           className={`${inputCls} md:w-80`}
-          placeholder={tl("Search text or key (English or Arabic)")}
+          placeholder={tl("Search by section, label or text (English or Arabic)")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           aria-label={tl("Search texts")}
@@ -199,16 +212,31 @@ function TextsPanel({ page, onChanged }) {
 
       {loading ? (
         <Empty>{tl("Loading…")}</Empty>
-      ) : rows.length === 0 ? (
+      ) : matched.length === 0 ? (
         <Empty>{tl("No texts match.")}</Empty>
       ) : (
         <>
-          {rows.length > SEARCH_LIMIT && (
+          {matched.length > limit && (
             <p className="text-[11px] text-on-surface-variant">
-              {tl("Showing the first")}{' '}{SEARCH_LIMIT} of {rows.length}{' '}{tl("— narrow the search to see the rest.")}
+              {tl("Showing the first")}{' '}{SEARCH_LIMIT} of {matched.length}{' '}{tl("— narrow the search to see the rest.")}
             </p>
           )}
-          {shown.map((row) => {
+          {groups.length > 1 && (
+            <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
+              {tl("Jump to section")}
+              <select className={`${inputCls} md:w-80`} value="" aria-label={tl("Jump to section")}
+                onChange={(e) => document.getElementById(e.target.value)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                <option value="">{tl("Choose…")}</option>
+                {groups.map(([name, list]) => <option key={name} value={anchor(name)}>{name} ({list.length})</option>)}
+              </select>
+            </label>
+          )}
+          {groups.map(([name, list]) => (
+          <section key={name} id={anchor(name)} className="flex flex-col gap-2 scroll-mt-24">
+            <h3 className="mt-3 text-[12px] font-bold uppercase tracking-widest text-primary">
+              {name}{' '}<span className="text-on-surface-variant font-normal normal-case tracking-normal">· {list.length}</span>
+            </h3>
+          {list.map((row) => {
             const dirty = !!edits[row.key];
             const long = Math.max(row.default_en.length, row.en.length) > 80;
             return (
@@ -217,7 +245,8 @@ function TextsPanel({ page, onChanged }) {
                 className={`bg-[#0e0e0f] border rounded-lg p-4 flex flex-col gap-2 ${dirty ? 'border-primary-container/60' : 'border-[#1a1a1e]'}`}
               >
                 <div className="flex items-center gap-2 flex-wrap">
-                  <code className="text-[11px] text-on-surface-variant">{row.key}</code>
+                  <span className="text-[13px] font-bold text-on-surface">{row._label}</span>
+                  <code className="text-[10px] text-on-surface-variant/60" title={tl("Internal key")}>{row.key}</code>
                   {row.is_customized && (
                     <span className="px-1.5 py-0.5 rounded bg-primary-container/20 text-primary text-[9px] font-bold uppercase tracking-widest">{tl("Edited")}</span>
                   )}
@@ -243,6 +272,8 @@ function TextsPanel({ page, onChanged }) {
               </div>
             );
           })}
+          </section>
+          ))}
         </>
       )}
     </div>
