@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function PhilosophyCard({ bio, title }) {
   if (!bio) return null;
@@ -12,7 +13,7 @@ export default function PhilosophyCard({ bio, title }) {
     >
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider">
-          {title || 'Coaching Philosophy'}
+          {title || tl("Coaching Philosophy")}
         </h2>
       </div>
 

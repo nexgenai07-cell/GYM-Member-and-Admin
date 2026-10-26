@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../../hooks/useApi';
 import { catalogService } from '../../services/catalogService';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -75,15 +76,14 @@ export default function Trainers() {
         <div className="flex items-center gap-2 text-primary mb-2">
           <span className="material-symbols-outlined text-[16px]">group</span>
           <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Elite Coaching Network
+            {tl("Elite Coaching Network")}
           </span>
         </div>
         <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          Elite Trainers
+          {tl("Elite Trainers")}
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          World-class specialists in VBT, powerlifting, biomechanics, and recovery.
-          Click a trainer to view their full profile and book a session.
+          {tl("World-class specialists in VBT, powerlifting, biomechanics, and recovery. Click a trainer to view their full profile and book a session.")}
         </p>
       </motion.div>
 
@@ -99,7 +99,7 @@ export default function Trainers() {
             }`}
             type="button"
           >
-            All Trainers ({list.length})
+            {tl("All Trainers (")}{list.length})
           </button>
           <button
             onClick={() => setVerifiedOnly(true)}
@@ -111,7 +111,7 @@ export default function Trainers() {
             type="button"
           >
             <span className="material-symbols-outlined text-[14px]">verified</span>
-            Verified ({list.filter((t) => t.is_verified).length})
+            {tl("Verified (")}{list.filter((t) => t.is_verified).length})
           </button>
         </div>
 
@@ -121,7 +121,7 @@ export default function Trainers() {
           </span>
           <input
             type="text"
-            placeholder="Search by name, title, or specialty..."
+            placeholder={tl("Search by name, title, or specialty...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-surface-container-lowest text-on-surface text-body-md pl-10 pr-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"
@@ -142,10 +142,10 @@ export default function Trainers() {
             person_search
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-3">
-            No trainers found
+            {tl("No trainers found")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Try a different search or filter.
+            {tl("Try a different search or filter.")}
           </p>
         </div>
       ) : (
@@ -183,7 +183,7 @@ export default function Trainers() {
                   {t.is_verified && (
                     <span className="absolute top-3 left-3 px-2 py-1 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                       <span className="material-symbols-outlined text-[12px]">verified</span>
-                      Verified
+                      {tl("Verified")}
                     </span>
                   )}
                   <span className="absolute bottom-3 right-3 bg-surface-container-lowest/90 backdrop-blur px-2 py-1 rounded text-[10px] flex items-center gap-1">
@@ -193,7 +193,7 @@ export default function Trainers() {
                     >
                       star
                     </span>
-                    {t.rating || 'New'}
+                    {t.rating || tl("New")}
                   </span>
                 </div>
 
@@ -225,14 +225,14 @@ export default function Trainers() {
                   <div className="flex items-center justify-between pt-3 border-t border-surface-container-high">
                     <div>
                       <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider block">
-                        Rate
+                        {tl("Rate")}
                       </span>
                       <span className="font-title-md text-title-md text-primary font-bold">
                         ${t.hourly_rate}/hr
                       </span>
                     </div>
                     <span className="px-4 py-2 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group-hover:bg-secondary-container transition-colors">
-                      View Profile
+                      {tl("View Profile")}
                       <span className="material-symbols-outlined text-[14px]">
                         arrow_forward
                       </span>

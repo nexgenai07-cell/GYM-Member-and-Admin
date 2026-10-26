@@ -8,15 +8,16 @@ import { opsService as api } from '../../services/opsService';
 import { errorMessage } from '../../utils/apiError';
 import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls } from '../../components/site/siteStyles';
+import { tl, locale } from '../../i18n';
 
 const TABS = [
-  { id: '', label: 'All' },
-  { id: 'open', label: 'To fulfil' },
-  { id: 'pending', label: 'Awaiting payment' },
-  { id: 'completed', label: 'Collected' },
-  { id: 'refunded', label: 'Refunded' },
-  { id: 'cancelled', label: 'Cancelled' },
-  { id: 'review', label: 'Payments to review' },
+  { id: '', label: tl("All") },
+  { id: 'open', label: tl("To fulfil") },
+  { id: 'pending', label: tl("Awaiting payment") },
+  { id: 'completed', label: tl("Collected") },
+  { id: 'refunded', label: tl("Refunded") },
+  { id: 'cancelled', label: tl("Cancelled") },
+  { id: 'review', label: tl("Payments to review") },
 ];
 
 const STATUS = {
@@ -76,7 +77,7 @@ export default function ShopOrders() {
   };
 
   const move = async (row, status) => {
-    if (status === 'cancelled' && !window.confirm(`Cancel ${row.order_number}? Stock is put back.`)) return;
+    if (status === 'cancelled' && !window.confirm(tl("Cancel {0}? Stock is put back.", { 0: row.order_number }))) return;
     setBusy(true);
     try {
       await api.setOrderStatus(row.order_number, status);
@@ -96,19 +97,19 @@ export default function ShopOrders() {
     setBusy(true);
     try {
       await api.refundOrder(row.order_number, { reason });
-      toast.success('Refunded');
+      toast.success(tl("Refunded"));
       setOpen(null);
       load();
     } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
   };
 
   const refundIntent = async (i) => {
-    const reason = window.prompt(`Refund ${sar(i.amount)} to ${i.member.name}?\n${i.description}\n\nReason (optional):`, '');
+    const reason = window.prompt(tl("Refund {0} to {1}?\n{2}\n\nReason (optional):", { 0: sar(i.amount), 1: i.member.name, 2: i.description }), '');
     if (reason === null) return;
     setBusy(true);
     try {
       await api.refundPayment(i.id, { reason });
-      toast.success('Refunded');
+      toast.success(tl("Refunded"));
       load();
     } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
   };
@@ -116,8 +117,8 @@ export default function ShopOrders() {
   return (
     <div className="p-8 bg-background min-h-screen">
       <PageHeader
-        title="Shop Orders"
-        subtitle="Prepare and hand over paid orders. Members are notified at each step. Refunds go back to the card (Moyasar) or to locker credit, whichever was used."
+        title={tl("Shop Orders")}
+        subtitle={tl("Prepare and hand over paid orders. Members are notified at each step. Refunds go back to the card (Moyasar) or to locker credit, whichever was used.")}
       />
 
       <div className="flex gap-1 mb-4 flex-wrap" role="tablist">
@@ -130,36 +131,36 @@ export default function ShopOrders() {
       </div>
 
       {tab !== 'review' && (
-        <input className={`${inputCls} max-w-sm mb-4`} placeholder="Search order number or member…" value={q}
-          onChange={(e) => setQ(e.target.value)} aria-label="Search orders" />
+        <input className={`${inputCls} max-w-sm mb-4`} placeholder={tl("Search order number or member…")} value={q}
+          onChange={(e) => setQ(e.target.value)} aria-label={tl("Search orders")} />
       )}
 
-      {loading ? <Empty>Loading…</Empty> : tab === 'review' ? (
-        !review.length ? <Empty>Nothing to review — every payment was delivered.</Empty> : (
+      {loading ? <Empty>{tl("Loading…")}</Empty> : tab === 'review' ? (
+        !review.length ? <Empty>{tl("Nothing to review — every payment was delivered.")}</Empty> : (
           <div className="flex flex-col gap-2">
             {review.map((i) => (
               <div key={i.id} className="bg-[#0e0e0f] border border-amber-500/30 rounded-lg p-4 flex flex-col md:flex-row md:items-center gap-3 justify-between">
                 <div className="min-w-0">
                   <div className="text-on-surface font-bold">{i.description}</div>
-                  <div className="text-[12px] text-on-surface-variant">{i.member.name} · {i.member.email} · {new Date(i.created_at).toLocaleString()}</div>
+                  <div className="text-[12px] text-on-surface-variant">{i.member.name} · {i.member.email} · {new Date(i.created_at).toLocaleString(locale)}</div>
                   <div className="text-[12px] text-amber-300 mt-1">{i.failure_reason}</div>
                   {i.moyasar_payment_id && <code className="text-[10px] text-on-surface-variant">{i.moyasar_payment_id}</code>}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-on-surface font-bold">{sar(i.amount)}</span>
-                  <button type="button" className={btn.danger} disabled={busy} onClick={() => refundIntent(i)}>Refund</button>
+                  <button type="button" className={btn.danger} disabled={busy} onClick={() => refundIntent(i)}>{tl("Refund")}</button>
                 </div>
               </div>
             ))}
           </div>
         )
-      ) : !data.results.length ? <Empty>No orders here.</Empty> : (
+      ) : !data.results.length ? <Empty>{tl("No orders here.")}</Empty> : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-[#1a1a1e]">
-                <th className="p-3">Order</th><th className="p-3">Member</th><th className="p-3">Pickup</th>
-                <th className="p-3">Total</th><th className="p-3">Status</th><th className="p-3" />
+                <th className="p-3">{tl("Order")}</th><th className="p-3">{tl("Member")}</th><th className="p-3">{tl("Pickup")}</th>
+                <th className="p-3">{tl("Total")}</th><th className="p-3">{tl("Status")}</th><th className="p-3" />
               </tr>
             </thead>
             <tbody>
@@ -169,11 +170,11 @@ export default function ShopOrders() {
                   <tr key={o.order_number} className="border-b border-[#1a1a1e] last:border-0 hover:bg-[#131316] cursor-pointer" onClick={() => openOrder(o)}>
                     <td className="p-3">
                       <div className="text-on-surface font-bold">{o.order_number}</div>
-                      <div className="text-[11px] text-on-surface-variant">{new Date(o.created_at).toLocaleString()} · {o.item_count} item{o.item_count === 1 ? '' : 's'}</div>
+                      <div className="text-[11px] text-on-surface-variant">{new Date(o.created_at).toLocaleString(locale)} · {o.item_count} item{o.item_count === 1 ? '' : 's'}</div>
                     </td>
                     <td className="p-3"><div className="text-on-surface">{o.member.name}</div><div className="text-[11px] text-on-surface-variant">{o.member.email}</div></td>
-                    <td className="p-3 text-on-surface-variant">{o.delivery_method === 'counter' ? 'Front desk' : `Locker ${o.locker_number}`}</td>
-                    <td className="p-3 text-on-surface">{sar(o.total)}<div className="text-[11px] text-on-surface-variant">{o.paid_with === 'locker_credit' ? 'Locker credit' : o.paid_with ? 'Card / STC Pay' : ''}</div></td>
+                    <td className="p-3 text-on-surface-variant">{o.delivery_method === 'counter' ? tl("Front desk") : tl("Locker {0}", { 0: o.locker_number })}</td>
+                    <td className="p-3 text-on-surface">{sar(o.total)}<div className="text-[11px] text-on-surface-variant">{o.paid_with === 'locker_credit' ? tl("Locker credit") : o.paid_with ? tl("Card / STC Pay") : ''}</div></td>
                     <td className="p-3"><span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${cls}`}>{label}</span></td>
                     <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 justify-end flex-wrap">
@@ -202,7 +203,7 @@ export default function ShopOrders() {
                 {NEXT_LABEL[s]}
               </button>
             ))}
-            {open.refundable && <button type="button" className={btn.danger} disabled={busy} onClick={() => refund(open)}>Refund</button>}
+            {open.refundable && <button type="button" className={btn.danger} disabled={busy} onClick={() => refund(open)}>{tl("Refund")}</button>}
           </div>
         )}
       >
@@ -210,7 +211,7 @@ export default function ShopOrders() {
           <div className="flex flex-col gap-4 text-[13px]">
             <div className="flex gap-2 items-center flex-wrap">
               <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${(STATUS[open.status] || [])[1]}`}>{(STATUS[open.status] || [open.status])[0]}</span>
-              <span className="text-on-surface-variant">{open.delivery_method === 'counter' ? 'Front desk pickup' : `Locker ${open.locker_number}`}</span>
+              <span className="text-on-surface-variant">{open.delivery_method === 'counter' ? tl("Front desk pickup") : tl("Locker {0}", { 0: open.locker_number })}</span>
             </div>
             <table className="w-full">
               <tbody>
@@ -223,12 +224,12 @@ export default function ShopOrders() {
               </tbody>
             </table>
             <div className="flex flex-col gap-1">
-              <Line label="Subtotal" value={sar(open.detail.subtotal)} />
-              {Number(open.detail.discount) > 0 && <Line label={`Promo ${open.detail.promo_code}`} value={`-${sar(open.detail.discount)}`} />}
-              <Line label="VAT" value={sar(open.detail.tax)} />
-              <Line label="Total" value={sar(open.detail.total)} bold />
+              <Line label={tl("Subtotal")} value={sar(open.detail.subtotal)} />
+              {Number(open.detail.discount) > 0 && <Line label={tl("Promo {0}", { 0: open.detail.promo_code })} value={`-${sar(open.detail.discount)}`} />}
+              <Line label={tl("VAT")} value={sar(open.detail.tax)} />
+              <Line label={tl("Total")} value={sar(open.detail.total)} bold />
             </div>
-            {open.detail.notes && <p className="text-on-surface-variant whitespace-pre-wrap">Note: {open.detail.notes}</p>}
+            {open.detail.notes && <p className="text-on-surface-variant whitespace-pre-wrap">{tl("Note:")}{' '}{open.detail.notes}</p>}
           </div>
         )}
       </Drawer>

@@ -10,6 +10,7 @@ import PayDialog from '../payments/PayDialog';
 import { errorMessage } from '../../utils/apiError';
 import { formatSAR } from '../../utils/money';
 import { formatGymDateTime } from '../../utils/gymTime';
+import { tl } from '../../i18n';
 
 const DAYS_AHEAD = 14;
 const CANCEL_HOURS = 24;
@@ -53,7 +54,7 @@ export default function BookingPanel({ trainer }) {
         const first = days.find((d) => res.available_weekdays.includes(weekdayMon0(d)));
         setDay(first ? isoDate(first) : null);
       } catch (e) {
-        if (alive) toast.error(errorMessage(e, 'Could not load availability'));
+        if (alive) toast.error(errorMessage(e, tl("Could not load availability")));
       }
     })();
     return () => { alive = false; };
@@ -92,7 +93,7 @@ export default function BookingPanel({ trainer }) {
       });
       setPaySession(session);
     } catch (e) {
-      toast.error(errorMessage(e, 'Could not book that slot'));
+      toast.error(errorMessage(e, tl("Could not book that slot")));
       reloadSlots();
     } finally {
       setBooking(false);
@@ -107,11 +108,11 @@ export default function BookingPanel({ trainer }) {
     if (!window.confirm(msg)) return;
     try {
       await catalogService.cancelSession(s.id);
-      toast.success('Session cancelled');
+      toast.success(tl("Session cancelled"));
       refetchSessions();
       reloadSlots();
     } catch (e) {
-      toast.error(errorMessage(e, 'Could not cancel'));
+      toast.error(errorMessage(e, tl("Could not cancel")));
     }
   };
 
@@ -123,8 +124,8 @@ export default function BookingPanel({ trainer }) {
       <div className="sticky top-20 bg-surface-container-lowest rounded-xl p-space-lg shadow-2xl flex flex-col gap-space-md">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col">
-            <span className="font-label-md text-label-md text-primary tracking-widest uppercase">1-on-1 session</span>
-            <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">Book a session</h2>
+            <span className="font-label-md text-label-md text-primary tracking-widest uppercase">{tl("1-on-1 session")}</span>
+            <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">{tl("Book a session")}</h2>
           </div>
           <span className="font-title-md text-title-md text-on-surface whitespace-nowrap">
             {formatSAR(meta?.price ?? trainer?.hourly_rate)}<span className="text-on-surface-variant text-[11px]"> / 60 min</span>
@@ -132,13 +133,13 @@ export default function BookingPanel({ trainer }) {
         </div>
 
         {!accepting ? (
-          <p className="text-on-surface-variant text-[13px]">This trainer isn’t taking new 1-on-1 bookings right now.</p>
+          <p className="text-on-surface-variant text-[13px]">{tl("This trainer isn’t taking new 1-on-1 bookings right now.")}</p>
         ) : meta && meta.available_weekdays.length === 0 ? (
-          <p className="text-on-surface-variant text-[13px]">No booking hours have been set for this trainer yet.</p>
+          <p className="text-on-surface-variant text-[13px]">{tl("No booking hours have been set for this trainer yet.")}</p>
         ) : (
           <>
             <div className="flex flex-col gap-space-xs">
-              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Day</span>
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{tl("Day")}</span>
               <div className="flex gap-1 overflow-x-auto pb-1">
                 {days.map((d) => {
                   const works = meta?.available_weekdays.includes(weekdayMon0(d));
@@ -158,11 +159,11 @@ export default function BookingPanel({ trainer }) {
             </div>
 
             <div className="flex flex-col gap-space-xs">
-              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Time</span>
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{tl("Time")}</span>
               {slots === null ? (
                 <div className="h-10 bg-surface-container rounded animate-pulse" />
               ) : slots.length === 0 ? (
-                <p className="text-on-surface-variant text-[12px]">No free slots that day — try another day.</p>
+                <p className="text-on-surface-variant text-[12px]">{tl("No free slots that day — try another day.")}</p>
               ) : (
                 <div className="grid grid-cols-3 gap-1">
                   {slots.map((s) => (
@@ -177,7 +178,7 @@ export default function BookingPanel({ trainer }) {
 
             {specialties.length > 0 && (
               <div className="flex flex-col gap-space-xs">
-                <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Focus (optional)</span>
+                <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{tl("Focus (optional)")}</span>
                 <div className="flex flex-wrap gap-1">
                   {specialties.map((sp) => (
                     <button key={sp} type="button" onClick={() => setFocus(focus === sp ? '' : sp)}
@@ -190,22 +191,22 @@ export default function BookingPanel({ trainer }) {
             )}
 
             <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500}
-              placeholder="Anything the trainer should know (injuries, goals)…"
+              placeholder={tl("Anything the trainer should know (injuries, goals)…")}
               className="w-full bg-surface-container text-on-surface px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary text-[13px]" />
 
             <button type="button" onClick={book} disabled={!slot || booking}
               className="w-full py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-bold uppercase tracking-wider text-[12px] disabled:opacity-50">
-              {booking ? 'Reserving…' : slot ? `Book ${slot.label} · ${formatSAR(meta?.price ?? trainer?.hourly_rate)}` : 'Pick a time'}
+              {booking ? tl("Reserving…") : slot ? tl("Book {0} · {1}", { 0: slot.label, 1: formatSAR(meta?.price ?? trainer?.hourly_rate) }) : tl("Pick a time")}
             </button>
             <p className="text-on-surface-variant text-[11px]">
-              Cancel up to {CANCEL_HOURS} hours before for a full refund to your locker credit.
+              {tl("Cancel up to")}{' '}{CANCEL_HOURS}{' '}{tl("hours before for a full refund to your locker credit.")}
             </p>
           </>
         )}
 
         {mine.length > 0 && (
           <div className="flex flex-col gap-space-xs border-t border-surface-container-high pt-space-md">
-            <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Your sessions</span>
+            <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{tl("Your sessions")}</span>
             {mine.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-2 bg-surface-container rounded px-3 py-2">
                 <div className="flex flex-col">
@@ -213,16 +214,16 @@ export default function BookingPanel({ trainer }) {
                     {formatGymDateTime(s.scheduled_at)}
                   </span>
                   <span className={`text-[10px] font-bold uppercase ${s.status === 'scheduled' ? 'text-emerald-400' : 'text-primary'}`}>
-                    {s.status === 'scheduled' ? 'Confirmed' : 'Awaiting payment'}
+                    {s.status === 'scheduled' ? tl("Confirmed") : tl("Awaiting payment")}
                   </span>
                 </div>
                 <div className="flex gap-1">
                   {s.status === 'pending_payment' && (
                     <button type="button" onClick={() => setPaySession(s)}
-                      className="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">Pay</button>
+                      className="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">{tl("Pay")}</button>
                   )}
                   <button type="button" onClick={() => cancel(s)}
-                    className="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">Cancel</button>
+                    className="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">{tl("Cancel")}</button>
                 </div>
               </div>
             ))}
@@ -232,9 +233,9 @@ export default function BookingPanel({ trainer }) {
 
       <PayDialog
         request={paySession ? { purpose: 'trainer_session', session_id: paySession.id } : null}
-        title={paySession ? `Session with ${trainer?.user?.full_name || 'trainer'}` : ''}
+        title={paySession ? tl("Session with {0}", { 0: trainer?.user?.full_name || 'trainer' }) : ''}
         allowCredit
-        onPaid={() => { toast.success('Session confirmed!'); setNotes(''); setFocus(''); }}
+        onPaid={() => { toast.success(tl("Session confirmed!")); setNotes(''); setFocus(''); }}
         onClose={() => { setPaySession(null); refetchSessions(); reloadSlots(); }}
       />
     </div>

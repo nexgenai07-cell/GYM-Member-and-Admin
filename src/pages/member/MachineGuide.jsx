@@ -6,6 +6,7 @@ import { machineTagFrom } from '../../utils/machineQr';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -83,9 +84,9 @@ export default function MachineGuide() {
       });
 
       if (result.pr_achieved) {
-        toast.success('🏆 NEW PERSONAL RECORD!');
+        toast.success(tl("🏆 NEW PERSONAL RECORD!"));
       } else {
-        toast.success(`Set ${result.set_number} logged`);
+        toast.success(tl("Set {0} logged", { 0: result.set_number }));
       }
 
       // Reset timer for rest
@@ -105,9 +106,9 @@ export default function MachineGuide() {
       const ex = await workoutsService.exerciseByQR(tag);
       setSelectedExercise(ex);
       setQrInput(tag);
-      toast.success(`Found: ${ex.name}`);
+      toast.success(tl("Found: {0}", { 0: ex.name }));
     } catch {
-      toast.error('No machine matches that code');
+      toast.error(tl("No machine matches that code"));
     } finally {
       setSearching(false);
     }
@@ -159,8 +160,8 @@ export default function MachineGuide() {
 
       <QrScanner
         open={scanning}
-        title="Scan machine QR"
-        manualLabel="Or type the machine code"
+        title={tl("Scan machine QR")}
+        manualLabel={tl("Or type the machine code")}
         onResult={(code) => { setParams({ qr: code }); lookup(code); }}
         onClose={() => { setScanning(false); if (params.get('scan')) setParams({}); }}
       />
@@ -247,7 +248,7 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
             precision_manufacturing
           </span>
           <span className="font-label-md text-label-md uppercase tracking-widest font-bold">
-            Machine QR Guide
+            {tl("Machine QR Guide")}
           </span>
         </motion.div>
 
@@ -255,9 +256,9 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
           variants={lineUp}
           className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider leading-none m-0"
         >
-          Exercise{' '}
+          {tl("Exercise")}{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
-            Catalog
+            {tl("Catalog")}
           </span>
         </motion.h1>
 
@@ -265,8 +266,7 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
           variants={lineUp}
           className="font-body-md text-body-md text-on-surface-variant mt-space-xs max-w-2xl"
         >
-          Scan a machine's QR code or search to view usage instructions,
-          technique cues, and video tutorials.
+          {tl("Scan a machine's QR code or search to view usage instructions, technique cues, and video tutorials.")}
         </motion.p>
       </div>
 
@@ -275,7 +275,7 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
         className="bg-surface-container rounded-xl p-space-lg"
       >
         <label className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider block mb-2">
-          Machine code
+          {tl("Machine code")}
         </label>
         <div className="flex gap-3">
           <input
@@ -283,7 +283,7 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
             value={qrInput}
             onChange={(e) => setQrInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-            placeholder="Printed under the machine's QR"
+            placeholder={tl("Printed under the machine's QR")}
             className="flex-1 bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
           />
           <motion.button
@@ -294,9 +294,9 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
             className="px-6 py-3 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
             type="button"
           >
-            {searching ? 'Searching...' : 'Lookup'}
+            {searching ? tl("Searching...") : tl("Lookup")}
           </motion.button>
-          <button type="button" onClick={onScan} aria-label="Scan with camera"
+          <button type="button" onClick={onScan} aria-label={tl("Scan with camera")}
             className="px-4 rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center">
             <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
           </button>
@@ -336,7 +336,7 @@ function VideoTutorial({ exercise }) {
               play_circle
             </span>
             <span className="font-label-lg text-label-lg uppercase tracking-wider">
-              Watch Tutorial
+              {tl("Watch Tutorial")}
             </span>
           </a>
         ) : (
@@ -345,7 +345,7 @@ function VideoTutorial({ exercise }) {
               videocam_off
             </span>
             <span className="font-label-lg uppercase tracking-wider">
-              No Video Available
+              {tl("No Video Available")}
             </span>
           </div>
         )}
@@ -386,10 +386,10 @@ function ExecutionPhases({ exercise }) {
       className="bg-surface-container rounded-xl p-space-lg shadow-md"
     >
       <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-        Execution Protocol
+        {tl("Execution Protocol")}
       </span>
       <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-space-md">
-        Technique Phases
+        {tl("Technique Phases")}
       </h2>
 
       <motion.ol
@@ -407,7 +407,7 @@ function ExecutionPhases({ exercise }) {
               >
                 <div className="flex items-center justify-between text-primary">
                   <span className="font-label-md text-[10px] uppercase tracking-wider font-bold">
-                    {p.num || `Phase 0${i + 1}`}
+                    {p.num || tl("Phase 0{0}", { 0: i + 1 })}
                   </span>
                 </div>
                 <span className="font-title-md text-title-md text-on-surface uppercase">
@@ -448,7 +448,7 @@ function TargetBiomechanics({ exercise }) {
           accessibility_new
         </span>
         <p className="font-body-md text-body-md text-on-surface-variant mt-2">
-          Select an exercise to view biomechanics.
+          {tl("Select an exercise to view biomechanics.")}
         </p>
       </div>
     );
@@ -462,16 +462,16 @@ function TargetBiomechanics({ exercise }) {
       className="bg-surface-container rounded-xl p-space-lg shadow-md"
     >
       <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-        Biomechanical Target
+        {tl("Biomechanical Target")}
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-space-md">
-        Muscle Activation
+        {tl("Muscle Activation")}
       </h3>
 
       <div className="flex flex-col gap-3">
         <div>
           <span className="font-label-md text-[9px] text-on-surface-variant uppercase block mb-2">
-            Primary
+            {tl("Primary")}
           </span>
           <span className="px-3 py-1 rounded bg-primary-container/20 text-primary text-[11px] font-bold uppercase tracking-wider inline-block">
             {exercise.primary_muscle || '—'}
@@ -481,7 +481,7 @@ function TargetBiomechanics({ exercise }) {
         {Array.isArray(exercise.secondary_muscles) && exercise.secondary_muscles.length > 0 && (
           <div>
             <span className="font-label-md text-[9px] text-on-surface-variant uppercase block mb-2">
-              Secondary
+              {tl("Secondary")}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {exercise.secondary_muscles.map((m) => (
@@ -503,7 +503,7 @@ function TargetBiomechanics({ exercise }) {
             }`}
           />
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-            {exercise.is_compound ? 'Compound Movement' : 'Isolation Movement'}
+            {exercise.is_compound ? tl("Compound Movement") : tl("Isolation Movement")}
           </span>
         </div>
       </div>
@@ -525,10 +525,10 @@ function SeatMemory({ exercise }) {
       className="bg-surface-container rounded-xl p-space-lg shadow-md"
     >
       <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-        Setup Memory
+        {tl("Setup Memory")}
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-2">
-        QR Tag
+        {tl("QR Tag")}
       </h3>
       <div className="p-3 rounded bg-surface-container-lowest">
         <span className="font-mono text-[12px] text-primary block">
@@ -558,25 +558,25 @@ function AITrainingDirective({ exercise }) {
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
       <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-        Training targets
+        {tl("Training targets")}
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-2">
-        Training Target
+        {tl("Training Target")}
       </h3>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-surface-container-lowest rounded-lg p-3">
           <span className="font-label-md text-[9px] text-on-surface-variant uppercase block">
-            Recommended
+            {tl("Recommended")}
           </span>
           <span className="font-headline-md text-headline-md text-on-surface block mt-1">
             {recommendedWeight ? `${Number(recommendedWeight).toFixed(1)}` : '—'}{' '}
-            <span className="font-label-md text-[10px] text-primary font-bold">KG</span>
+            <span className="font-label-md text-[10px] text-primary font-bold">{tl("KG")}</span>
           </span>
         </div>
         <div className="bg-surface-container-lowest rounded-lg p-3">
           <span className="font-label-md text-[9px] text-on-surface-variant uppercase block">
-            Intensity
+            {tl("Intensity")}
           </span>
           <span className="font-title-md text-title-md text-primary block mt-1">
             {intensity}
@@ -589,7 +589,7 @@ function AITrainingDirective({ exercise }) {
           <span className="material-symbols-outlined text-primary text-sm">
             bolt
           </span>
-          Cadence: {cadence}
+          {tl("Cadence:")}{' '}{cadence}
         </span>
         {exercise.equipment_type && (
           <span className="font-label-md text-[10px] text-primary uppercase font-bold">
@@ -629,10 +629,10 @@ function RestTimer({ seconds, total, running, onToggle, onReset, onAdd }) {
 
       <div>
         <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-          Recovery Protocol
+          {tl("Recovery Protocol")}
         </span>
         <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
-          Rest Timer
+          {tl("Rest Timer")}
         </h3>
       </div>
 
@@ -664,7 +664,7 @@ function RestTimer({ seconds, total, running, onToggle, onReset, onAdd }) {
             {mins}:{secs.toString().padStart(2, '0')}
           </span>
           <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider mt-1">
-            {running ? 'Active' : 'Paused'}
+            {running ? tl("Active") : tl("Paused")}
           </span>
         </div>
       </div>
@@ -680,7 +680,7 @@ function RestTimer({ seconds, total, running, onToggle, onReset, onAdd }) {
           <span className="material-symbols-outlined text-[16px]">
             {running ? 'pause' : 'play_arrow'}
           </span>
-          {running ? 'Pause' : 'Start'}
+          {running ? tl("Pause") : tl("Start")}
         </motion.button>
         <motion.button
           whileHover={{ y: -2 }}
@@ -751,16 +751,16 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
 
       <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-        Session Log
+        {tl("Session Log")}
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 mb-space-md">
-        Log a Set
+        {tl("Log a Set")}
       </h3>
 
       {!exercise ? (
         <div className="text-center py-4">
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Select an exercise to log sets.
+            {tl("Select an exercise to log sets.")}
           </p>
         </div>
       ) : (
@@ -768,7 +768,7 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="font-label-md text-[10px] text-on-surface-variant uppercase block mb-1">
-                Weight (kg)
+                {tl("Weight (kg)")}
               </label>
               <input
                 type="number"
@@ -780,7 +780,7 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
             </div>
             <div>
               <label className="font-label-md text-[10px] text-on-surface-variant uppercase block mb-1">
-                Reps
+                {tl("Reps")}
               </label>
               <input
                 type="number"
@@ -803,7 +803,7 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
             <span className="material-symbols-outlined text-[16px]">
               {loading ? 'sync' : 'check_circle'}
             </span>
-            {loading ? 'Logging...' : 'Log Set & Start Rest'}
+            {loading ? tl("Logging...") : tl("Log Set & Start Rest")}
           </motion.button>
         </>
       )}
@@ -823,7 +823,7 @@ function ExerciseList({ exercises, loading, selectedExercise, onSelect }) {
       className="bg-surface-container rounded-xl p-space-lg shadow-md"
     >
       <h2 className="font-headline-md text-headline-md text-on-surface uppercase mb-space-md">
-        All Exercises ({exercises?.length || 0})
+        {tl("All Exercises (")}{exercises?.length || 0})
       </h2>
 
       {loading ? (
@@ -841,10 +841,10 @@ function ExerciseList({ exercises, loading, selectedExercise, onSelect }) {
             fitness_center
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-3">
-            No exercises yet
+            {tl("No exercises yet")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Add exercises via the admin panel.
+            {tl("Add exercises via the admin panel.")}
           </p>
         </div>
       ) : (
@@ -910,10 +910,10 @@ function NoSelection() {
         touch_app
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mb-2 relative z-10">
-        Select an Exercise
+        {tl("Select an Exercise")}
       </h3>
       <p className="font-body-md text-on-surface-variant relative z-10">
-        Choose from the list below or scan a QR tag to load machine telemetry.
+        {tl("Choose from the list below or scan a QR tag to load machine telemetry.")}
       </p>
     </motion.div>
   );

@@ -1,31 +1,32 @@
 // src/components/profile/ProfileStatsGrid.jsx
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function ProfileStatsGrid({ dexa, stats }) {
   const cards = [
     {
-      label: 'Weight',
+      label: tl("Weight"),
       value: dexa?.weight_kg ?? '—',
       unit: 'KG',
       icon: 'accessibility_new',
       accent: false,
     },
     {
-      label: 'Body Fat',
+      label: tl("Body Fat"),
       value: dexa?.body_fat_percent ? Number(dexa.body_fat_percent).toFixed(1) : '—',
       unit: '%',
       icon: 'monitor_weight',
       accent: true,
     },
     {
-      label: 'Lean Mass',
+      label: tl("Lean Mass"),
       value: dexa?.lean_mass_kg ? Number(dexa.lean_mass_kg).toFixed(1) : '—',
       unit: 'KG',
       icon: 'fitness_center',
       accent: false,
     },
     {
-      label: 'Total Tonnage',
+      label: tl("Total Tonnage"),
       value: Math.round((stats?.total_tonnage_all_time ?? 0) / 1000),
       unit: 'K kg',
       icon: 'bolt',

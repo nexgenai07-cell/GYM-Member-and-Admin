@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import CountUp from '../CountUp';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -35,16 +36,16 @@ export default function CourseHeader({ courseCount = 0, membershipTier }) {
             verified
           </motion.span>
           <span className="font-label-md text-label-md tracking-widest uppercase text-primary">
-            Elite Performance Marketplace
+            {tl("Elite Performance Marketplace")}
           </span>
         </motion.div>
         <motion.h1
           variants={lineUp}
           className="font-headline-lg text-headline-lg uppercase text-on-surface tracking-wider leading-none m-0"
         >
-          Trainer Protocols &amp;{' '}
+          {tl("Trainer Protocols &")}{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
-            Course Marketplace
+            {tl("Course Marketplace")}
           </span>
         </motion.h1>
         <motion.span
@@ -54,8 +55,7 @@ export default function CourseHeader({ courseCount = 0, membershipTier }) {
           transition={{ duration: 0.9, delay: 0.5, ease: EASE }}
         />
         <motion.p variants={lineUp} className="font-body-md text-body-md text-on-surface-variant mt-space-xs">
-          Structured periodized training programs published by world-class coaches and
-          sports scientists.
+          {tl("Structured periodized training programs published by world-class coaches and sports scientists.")}
         </motion.p>
       </div>
 
@@ -75,7 +75,7 @@ export default function CourseHeader({ courseCount = 0, membershipTier }) {
           </motion.span>
           <div className="flex flex-col">
             <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-              Available Courses
+              {tl("Available Courses")}
             </span>
             <span className="font-title-md text-title-md text-on-surface leading-tight tabular-nums">
               <CountUp to={courseCount} duration={1.4} delay={0.5} suffix=" Protocols" />
@@ -93,10 +93,10 @@ export default function CourseHeader({ courseCount = 0, membershipTier }) {
           </span>
           <div className="flex flex-col">
             <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-              Membership
+              {tl("Membership")}
             </span>
             <span className="font-title-md text-title-md text-primary leading-tight">
-              {membershipTier || 'Member'}
+              {membershipTier || tl("Member")}
             </span>
           </div>
           <motion.span

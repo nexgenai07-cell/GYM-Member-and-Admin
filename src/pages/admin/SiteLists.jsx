@@ -8,6 +8,7 @@ import { siteContentService as api } from '../../services/siteContentService';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { BilingualField, Drawer, Empty, ImageUploader, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { tl, locale } from '../../i18n';
 
 const emptyValue = (fd) => (fd.i18n ? { en: '', ar: '' } : '');
 
@@ -87,11 +88,11 @@ export default function SiteLists() {
 
   const remove = async (item) => {
     const title = item.data?.title?.en || `#${item.id}`;
-    if (!window.confirm(`Delete "${title}" permanently? To take it off the website temporarily, hide it instead.`)) return;
+    if (!window.confirm(tl("Delete \"{0}\" permanently? To take it off the website temporarily, hide it instead.", { 0: title }))) return;
     try {
       await api.deleteItem(active, item.id);
       setItems((all) => all.filter((i) => i.id !== item.id));
-      toast.success('Deleted');
+      toast.success(tl("Deleted"));
     } catch (err) { toast.error(errorMessage(err)); }
   };
 
@@ -100,10 +101,10 @@ export default function SiteLists() {
   return (
     <div className="p-8 bg-background min-h-screen">
       <PageHeader
-        title="Website Lists"
-        subtitle="Facilities and Insights articles shown on the public website. Hidden items stay here but disappear from the site."
+        title={tl("Website Lists")}
+        subtitle={tl("Facilities and Insights articles shown on the public website. Hidden items stay here but disappear from the site.")}
       >
-        {schema && <button type="button" className={btn.primary} onClick={() => setEditing({})}>+ Add {schema.label.replace(/s$/, '').toLowerCase()}</button>}
+        {schema && <button type="button" className={btn.primary} onClick={() => setEditing({})}>{tl("+ Add")}{' '}{schema.label.replace(/s$/, '').toLowerCase()}</button>}
       </PageHeader>
 
       <div className="flex gap-1 mb-5" role="tablist">
@@ -124,30 +125,30 @@ export default function SiteLists() {
       </div>
 
       {loading ? (
-        <Empty>Loading…</Empty>
+        <Empty>{tl("Loading…")}</Empty>
       ) : !items.length ? (
-        <Empty>Nothing here yet.</Empty>
+        <Empty>{tl("Nothing here yet.")}</Empty>
       ) : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
-                <th className="px-4 py-3">Order</th>
-                {schema?.has_image && <th className="px-4 py-3">Image</th>}
-                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">{tl("Order")}</th>
+                {schema?.has_image && <th className="px-4 py-3">{tl("Image")}</th>}
+                <th className="px-4 py-3">{tl("Title")}</th>
                 {choiceField && <th className="px-4 py-3">{choiceField.label.replace(/ \(.*\)/, '')}</th>}
-                <th className="px-4 py-3">On website</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{tl("On website")}</th>
+                <th className="px-4 py-3 text-right">{tl("Actions")}</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, i) => (
                 <tr key={item.id} className={`border-b border-[#1a1a1e] last:border-0 ${item.is_active ? '' : 'opacity-50'}`}>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <button type="button" aria-label="Move up" className="px-1 text-on-surface-variant disabled:opacity-20" disabled={busy || i === 0} onClick={() => move(i, -1)}>
+                    <button type="button" aria-label={tl("Move up")} className="px-1 text-on-surface-variant disabled:opacity-20" disabled={busy || i === 0} onClick={() => move(i, -1)}>
                       <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
                     </button>
-                    <button type="button" aria-label="Move down" className="px-1 text-on-surface-variant disabled:opacity-20" disabled={busy || i === items.length - 1} onClick={() => move(i, 1)}>
+                    <button type="button" aria-label={tl("Move down")} className="px-1 text-on-surface-variant disabled:opacity-20" disabled={busy || i === items.length - 1} onClick={() => move(i, 1)}>
                       <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
                     </button>
                   </td>
@@ -171,12 +172,12 @@ export default function SiteLists() {
                         item.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'
                       }`}
                     >
-                      {item.is_active ? 'Visible' : 'Hidden'}
+                      {item.is_active ? tl("Visible") : tl("Hidden")}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <button type="button" className={`${btn.ghost} mr-2`} onClick={() => setEditing(item)}>Edit</button>
-                    <button type="button" className={btn.danger} onClick={() => remove(item)}>Delete</button>
+                    <button type="button" className={`${btn.ghost} mr-2`} onClick={() => setEditing(item)}>{tl("Edit")}</button>
+                    <button type="button" className={btn.danger} onClick={() => remove(item)}>{tl("Delete")}</button>
                   </td>
                 </tr>
               ))}
@@ -226,39 +227,39 @@ function ItemEditor({ schema, item, onClose, onSaved }) {
       toast.success(isNew ? 'Added — you can upload an image now' : 'Saved');
     } catch (err) {
       setErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Please fix the highlighted fields.'));
+      toast.error(errorMessage(err, tl("Please fix the highlighted fields.")));
     } finally {
       setSaving(false);
     }
   };
 
   const upload = async (file) => {
-    try { onSaved(await api.uploadItemImage(schema.name, item.id, file)); toast.success('Image updated'); }
+    try { onSaved(await api.uploadItemImage(schema.name, item.id, file)); toast.success(tl("Image updated")); }
     catch (err) { toast.error(errorMessage(err)); throw err; }
   };
   const resetImage = async () => {
-    try { onSaved(await api.resetItemImage(schema.name, item.id)); toast.success('Image reset'); }
+    try { onSaved(await api.resetItemImage(schema.name, item.id)); toast.success(tl("Image reset")); }
     catch (err) { toast.error(errorMessage(err)); }
   };
 
   return (
     <Drawer
       open
-      title={isNew ? `New ${schema.label.replace(/s$/, '').toLowerCase()}` : (item.data?.title?.en || 'Edit')}
-      subtitle={isNew ? 'English is required for required fields; Arabic is shown to visitors who switch language.' : `Last changed ${new Date(item.updated_at).toLocaleString()}${item.updated_by_email ? ` by ${item.updated_by_email}` : ''}`}
+      title={isNew ? tl("New {0}", { 0: schema.label.replace(/s$/, '').toLowerCase() }) : (item.data?.title?.en || tl("Edit"))}
+      subtitle={isNew ? tl("English is required for required fields; Arabic is shown to visitors who switch language.") : tl("Last changed {0}{1}", { 0: new Date(item.updated_at).toLocaleString(locale), 1: item.updated_by_email ? ` by ${item.updated_by_email}` : '' })}
       onClose={onClose}
       footer={(
         <>
-          <button type="button" className={btn.ghost} onClick={onClose}>Close</button>
+          <button type="button" className={btn.ghost} onClick={onClose}>{tl("Close")}</button>
           <button type="button" className={btn.primary} disabled={saving} onClick={save}>
-            {saving ? 'Saving…' : isNew ? 'Create' : 'Save changes'}
+            {saving ? tl("Saving…") : isNew ? tl("Create") : tl("Save changes")}
           </button>
         </>
       )}
     >
       {schema.has_image && (
         isNew ? (
-          <p className="text-[12px] text-on-surface-variant">Create the item first, then upload its image here.</p>
+          <p className="text-[12px] text-on-surface-variant">{tl("Create the item first, then upload its image here.")}</p>
         ) : (
           <div className="max-w-md">
             <ImageUploader url={item.image_url} customized={!!item.uploaded_image_url} onUpload={upload} onReset={resetImage} />
@@ -268,9 +269,9 @@ function ItemEditor({ schema, item, onClose, onSaved }) {
 
       {schema.has_slug && !isNew && (
         <label className="flex flex-col gap-1">
-          <span className={labelCls}>Web address (slug)</span>
+          <span className={labelCls}>{tl("Web address (slug)")}</span>
           <input className={inputCls} value={slug} onChange={(e) => setSlug(e.target.value)} />
-          <span className="text-[10px] text-on-surface-variant/60">Changing it breaks links people already shared.</span>
+          <span className="text-[10px] text-on-surface-variant/60">{tl("Changing it breaks links people already shared.")}</span>
           {errors.slug && <span className="text-[11px] text-rose-400">{errors.slug}</span>}
         </label>
       )}
@@ -302,7 +303,7 @@ function Field({ fd, value, onChange, error }) {
     control = (
       <select {...common} onChange={(e) => onChange(e.target.value)}>
         {!fd.required && <option value="">—</option>}
-        {fd.required && !value && <option value="">Choose…</option>}
+        {fd.required && !value && <option value="">{tl("Choose…")}</option>}
         {fd.choices.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
     );

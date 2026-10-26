@@ -1,10 +1,11 @@
 // src/components/admin/Scorecards.jsx
 import { motion } from 'framer-motion';
 import { formatSAR } from '../../utils/money';
+import { tl } from '../../i18n';
 export default function Scorecards({ overview, loading }) {
   const cards = [
     {
-      label: 'Revenue received',
+      label: tl("Revenue received"),
       value: overview ? formatSAR(overview.revenue.last_30d) : '—',
       icon: 'payments',
       accent: true,
@@ -12,7 +13,7 @@ export default function Scorecards({ overview, loading }) {
       footerRight: overview?.revenue?.range_label || '',
     },
     {
-      label: 'Active Memberships',
+      label: tl("Active Memberships"),
       value: overview?.members?.active_memberships ?? 0,
       suffix: `/ ${overview?.members?.total ?? 0}`,
       icon: 'stadium',
@@ -30,13 +31,13 @@ export default function Scorecards({ overview, loading }) {
       footerRight: '',
     },
     {
-      label: 'Content Pipeline',
+      label: tl("Content Pipeline"),
       value: overview?.content?.active_courses ?? 0,
       icon: 'school',
       accent: false,
       breakdown2: [
-        { label: 'Live Courses', value: overview?.content?.active_courses ?? 0, accent: false },
-        { label: 'Pending', value: overview?.content?.pending_approvals ?? 0, accent: true },
+        { label: tl("Live Courses"), value: overview?.content?.active_courses ?? 0, accent: false },
+        { label: tl("Pending"), value: overview?.content?.pending_approvals ?? 0, accent: true },
       ],
       footerLeft:
         (overview?.content?.pending_approvals ?? 0) > 0
@@ -45,13 +46,13 @@ export default function Scorecards({ overview, loading }) {
       footerRight: '',
     },
     {
-      label: 'Member activity',
+      label: tl("Member activity"),
       value: overview?.activity?.workouts_30d ?? 0,
       icon: 'fitness_center',
       accent: true,
       dualMetric: [
-        { label: 'Workouts (30d)', value: overview?.activity?.workouts_30d ?? 0, accent: false },
-        { label: 'Shop Orders', value: overview?.activity?.orders_30d ?? 0, accent: true },
+        { label: tl("Workouts (30d)"), value: overview?.activity?.workouts_30d ?? 0, accent: false },
+        { label: tl("Shop Orders"), value: overview?.activity?.orders_30d ?? 0, accent: true },
       ],
       footerLeft: `${overview?.activity?.check_ins_today ?? 0} check-ins today`,
       footerRight: '',

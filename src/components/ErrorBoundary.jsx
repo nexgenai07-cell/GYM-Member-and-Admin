@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { tl } from '../i18n';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -24,10 +25,10 @@ export default class ErrorBoundary extends Component {
             </span>
           </div>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">
-            Something went wrong
+            {tl("Something went wrong")}
           </h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-md">
-            {this.state.error?.message || 'An unexpected error occurred.'}
+            {this.state.error?.message || tl("An unexpected error occurred.")}
           </p>
           <button
             onClick={() => {
@@ -37,7 +38,7 @@ export default class ErrorBoundary extends Component {
             className="mt-6 px-6 py-2 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg uppercase tracking-wider font-bold transition-all"
             type="button"
           >
-            Reload Page
+            {tl("Reload Page")}
           </button>
         </div>
       );

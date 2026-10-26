@@ -9,15 +9,16 @@ import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import PersonEditor from '../../components/admin/PersonEditor';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
+import { tl, locale } from '../../i18n';
 
 const NUTRITIONIST_API = {
   create: (b) => adminService.createNutritionist(b),
   update: (id, b) => adminService.updateNutritionist(id, b),
   upload: (id, f) => adminService.uploadNutritionistPhoto(id, f),
 };
-const GOALS = [['hypertrophy', 'Build muscle'], ['fat_loss', 'Fat loss'], ['recomp', 'Recomposition'],
-  ['maintenance', 'Maintenance'], ['endurance', 'Endurance']];
-const PLAN_FILTERS = [['all', 'All'], ['to_review', 'To review'], ['active', 'Active']];
+const GOALS = [['hypertrophy', tl("Build muscle")], ['fat_loss', tl("Fat loss")], ['recomp', tl("Recomposition")],
+  ['maintenance', tl("Maintenance")], ['endurance', tl("Endurance")]];
+const PLAN_FILTERS = [['all', tl("All")], ['to_review', tl("To review")], ['active', tl("Active")]];
 const NEW_PERSON = {
   email: '', first_name: '', last_name: '', phone: '', title: '', credentials: '', bio: '', specialties: [],
   years_experience: 0, hourly_rate: '', is_verified: false, is_accepting_clients: true, is_active: true,
@@ -27,9 +28,9 @@ export default function AdminNutrition() {
   const [tab, setTab] = useState('plans');
   return (
     <div className="p-6 md:p-8 flex flex-col gap-6">
-      <PageHeader title="Nutrition" subtitle="Members request a plan from a nutritionist and get starter targets straight away; review them here." />
+      <PageHeader title={tl("Nutrition")} subtitle={tl("Members request a plan from a nutritionist and get starter targets straight away; review them here.")} />
       <div className="flex gap-1 bg-[#0e0e0f] border border-[#1a1a1e] p-1 rounded-lg w-fit" role="tablist">
-        {[['plans', 'Plans'], ['people', 'Nutritionists']].map(([id, label]) => (
+        {[['plans', tl("Plans")], ['people', tl("Nutritionists")]].map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={`px-4 py-2 rounded text-[11px] font-bold uppercase tracking-wider ${
               tab === id ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'}`}>
@@ -50,11 +51,11 @@ function People() {
   return (
     <>
       <div className="flex gap-3">
-        <input className={`${inputCls} md:w-72`} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" aria-label="Search nutritionists" />
+        <input className={`${inputCls} md:w-72`} value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tl("Search…")} aria-label={tl("Search nutritionists")} />
         <div className="flex-1" />
-        <button type="button" className={btn.primary} onClick={() => setEditing(NEW_PERSON)}>+ Add nutritionist</button>
+        <button type="button" className={btn.primary} onClick={() => setEditing(NEW_PERSON)}>{tl("+ Add nutritionist")}</button>
       </div>
-      {loading ? <div className="h-40 bg-[#0e0e0f] rounded-lg animate-pulse" /> : list.length === 0 ? <Empty>No nutritionists yet.</Empty> : (
+      {loading ? <div className="h-40 bg-[#0e0e0f] rounded-lg animate-pulse" /> : list.length === 0 ? <Empty>{tl("No nutritionists yet.")}</Empty> : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {list.map((n) => (
             <button key={n.id} type="button" onClick={() => setEditing(n)}
@@ -64,8 +65,8 @@ function People() {
               <div className="min-w-0 flex-1">
                 <div className="text-on-surface font-bold truncate">{n.user_name}{n.is_verified && ' ✓'}</div>
                 <div className="text-[11px] text-on-surface-variant truncate">{n.title}</div>
-                <div className="text-[11px] text-on-surface-variant">{n.active_plans} active plan{n.active_plans === 1 ? '' : 's'}
-                  {!n.is_active ? ' · hidden' : !n.is_accepting_clients ? ' · not taking clients' : ''}</div>
+                <div className="text-[11px] text-on-surface-variant">{n.active_plans}{' '}{tl("active plan")}{n.active_plans === 1 ? '' : 's'}
+                  {!n.is_active ? tl(" · hidden") : !n.is_accepting_clients ? tl(" · not taking clients") : ''}</div>
               </div>
             </button>
           ))}
@@ -95,17 +96,17 @@ function Plans() {
           ))}
         </div>
         <div className="flex-1" />
-        <input className={`${inputCls} md:w-64`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search member…" aria-label="Search plans" />
+        <input className={`${inputCls} md:w-64`} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tl("Search member…")} aria-label={tl("Search plans")} />
       </div>
       {loading ? <div className="h-40 bg-[#0e0e0f] rounded-lg animate-pulse" /> : list.length === 0 ? (
-        <Empty>{status === 'to_review' ? 'Nothing to review — every plan has been checked.' : 'No plans.'}</Empty>
+        <Empty>{status === 'to_review' ? tl("Nothing to review — every plan has been checked.") : tl("No plans.")}</Empty>
       ) : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
-                <th className="px-4 py-3">Member</th><th className="px-4 py-3">Nutritionist</th><th className="px-4 py-3">Goal</th>
-                <th className="px-4 py-3">Daily targets</th><th className="px-4 py-3">Requested</th><th className="px-4 py-3">Review</th>
+                <th className="px-4 py-3">{tl("Member")}</th><th className="px-4 py-3">{tl("Nutritionist")}</th><th className="px-4 py-3">{tl("Goal")}</th>
+                <th className="px-4 py-3">{tl("Daily targets")}</th><th className="px-4 py-3">{tl("Requested")}</th><th className="px-4 py-3">{tl("Review")}</th>
               </tr>
             </thead>
             <tbody>
@@ -113,12 +114,12 @@ function Plans() {
                 <tr key={p.id} onClick={() => setEditing(p)} className="border-b border-[#1a1a1e] last:border-0 hover:bg-[#131316] cursor-pointer">
                   <td className="px-4 py-3"><div className="text-on-surface">{p.member}</div><div className="text-[11px] text-on-surface-variant">{p.member_email}</div></td>
                   <td className="px-4 py-3 text-on-surface-variant">{p.nutritionist}</td>
-                  <td className="px-4 py-3">{p.goal_label}</td>
-                  <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{p.target_calories} kcal · {p.target_protein_g} g P</td>
-                  <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">{tl(p.goal_label)}</td>
+                  <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{p.target_calories}{' '}{tl("kcal ·")}{' '}{p.target_protein_g}{' '}{tl("g P")}</td>
+                  <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{new Date(p.created_at).toLocaleDateString(locale)}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${p.reviewed_at ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-300'}`}>
-                      {p.reviewed_at ? 'Reviewed' : 'Starter targets'}</span>
+                      {p.reviewed_at ? tl("Reviewed") : tl("Starter targets")}</span>
                   </td>
                 </tr>
               ))}
@@ -160,12 +161,12 @@ function PlanEditor({ plan, onClose, onSaved }) {
         target_carbs_g: f.target_carbs_g, target_fats_g: f.target_fats_g, target_water_ml: f.target_water_ml,
         cycle_weeks: f.cycle_weeks, notes: f.notes,
       });
-      toast.success('Plan saved — the member has been notified');
+      toast.success(tl("Plan saved — the member has been notified"));
       onSaved();
       onClose();
     } catch (err) {
       setErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Could not save the plan'));
+      toast.error(errorMessage(err, tl("Could not save the plan")));
     } finally {
       setBusy(false);
     }
@@ -176,51 +177,51 @@ function PlanEditor({ plan, onClose, onSaved }) {
     setScanErrors({});
     try {
       await adminService.addMemberScan(plan.member_id, scan);
-      toast.success('Scan saved — the member can see it now');
+      toast.success(tl("Scan saved — the member can see it now"));
       setScan({ weight_kg: '', body_fat_percent: '', lean_mass_kg: '', fat_mass_kg: '', visceral_fat_kg: '', notes: '' });
       refetchScans();
     } catch (err) {
       setScanErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Could not save the scan'));
+      toast.error(errorMessage(err, tl("Could not save the scan")));
     }
   };
 
   return (
-    <Drawer open title={plan.member} onClose={onClose} subtitle={`${plan.goal_label} · with ${plan.nutritionist}`}
+    <Drawer open title={plan.member} onClose={onClose} subtitle={tl("{0} · with {1}", { 0: plan.goal_label, 1: plan.nutritionist })}
       footer={<>
-        <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? 'Saving…' : plan.reviewed_at ? 'Save' : 'Save & mark reviewed'}</button>
+        <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
+        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : plan.reviewed_at ? tl("Save") : tl("Save & mark reviewed")}</button>
       </>}>
-      {!plan.reviewed_at && <p className="text-[12px] text-amber-300">These are the starter targets for the goal. Adjust them for this member and save.</p>}
+      {!plan.reviewed_at && <p className="text-[12px] text-amber-300">{tl("These are the starter targets for the goal. Adjust them for this member and save.")}</p>}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <Field label="Goal" error={errors.goal}><select className={inputCls} value={f.goal} onChange={set('goal')}>{GOALS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
-        <Field label="Calories / day" error={errors.target_calories}><input className={inputCls} type="number" value={f.target_calories} onChange={set('target_calories')} /></Field>
-        <Field label="Protein g" error={errors.target_protein_g}><input className={inputCls} type="number" value={f.target_protein_g} onChange={set('target_protein_g')} /></Field>
-        <Field label="Carbs g" error={errors.target_carbs_g}><input className={inputCls} type="number" value={f.target_carbs_g} onChange={set('target_carbs_g')} /></Field>
-        <Field label="Fats g" error={errors.target_fats_g}><input className={inputCls} type="number" value={f.target_fats_g} onChange={set('target_fats_g')} /></Field>
-        <Field label="Water ml" error={errors.target_water_ml}><input className={inputCls} type="number" value={f.target_water_ml} onChange={set('target_water_ml')} /></Field>
-        <Field label="Weeks" error={errors.cycle_weeks}><input className={inputCls} type="number" value={f.cycle_weeks} onChange={set('cycle_weeks')} /></Field>
-        <Field label="Status" error={errors.status}>
+        <Field label={tl("Goal")} error={errors.goal}><select className={inputCls} value={f.goal} onChange={set('goal')}>{GOALS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+        <Field label={tl("Calories / day")} error={errors.target_calories}><input className={inputCls} type="number" value={f.target_calories} onChange={set('target_calories')} /></Field>
+        <Field label={tl("Protein g")} error={errors.target_protein_g}><input className={inputCls} type="number" value={f.target_protein_g} onChange={set('target_protein_g')} /></Field>
+        <Field label={tl("Carbs g")} error={errors.target_carbs_g}><input className={inputCls} type="number" value={f.target_carbs_g} onChange={set('target_carbs_g')} /></Field>
+        <Field label={tl("Fats g")} error={errors.target_fats_g}><input className={inputCls} type="number" value={f.target_fats_g} onChange={set('target_fats_g')} /></Field>
+        <Field label={tl("Water ml")} error={errors.target_water_ml}><input className={inputCls} type="number" value={f.target_water_ml} onChange={set('target_water_ml')} /></Field>
+        <Field label={tl("Weeks")} error={errors.cycle_weeks}><input className={inputCls} type="number" value={f.cycle_weeks} onChange={set('cycle_weeks')} /></Field>
+        <Field label={tl("Status")} error={errors.status}>
           <select className={inputCls} value={f.status} onChange={set('status')}>
-            {[['active', 'Active'], ['paused', 'Paused'], ['completed', 'Completed'], ['archived', 'Archived']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            {[['active', tl("Active")], ['paused', tl("Paused")], ['completed', tl("Completed")], ['archived', tl("Archived")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select></Field>
-        <Field label="Notes for the member" error={errors.notes} className="col-span-2 md:col-span-3">
+        <Field label={tl("Notes for the member")} error={errors.notes} className="col-span-2 md:col-span-3">
           <textarea className={inputCls} rows={3} value={f.notes} onChange={set('notes')} /></Field>
       </div>
 
       <form onSubmit={addScan} className="flex flex-col gap-3 border-t border-[#1a1a1e] pt-4">
-        <span className={labelCls}>Body scans</span>
+        <span className={labelCls}>{tl("Body scans")}</span>
         {(scans || []).length > 0 && (
           <div className="flex flex-col gap-1 text-[12px] text-on-surface-variant">
-            {scans.map((s) => <div key={s.id}>{s.scan_date}: {s.weight_kg} kg · {s.body_fat_percent}% fat · {s.lean_mass_kg} kg lean</div>)}
+            {scans.map((s) => <div key={s.id}>{s.scan_date}: {s.weight_kg}{' '}{tl("kg ·")}{' '}{s.body_fat_percent}{tl("% fat ·")}{' '}{s.lean_mass_kg}{' '}{tl("kg lean")}</div>)}
           </div>
         )}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {[['weight_kg', 'Weight kg'], ['body_fat_percent', 'Body fat %'], ['lean_mass_kg', 'Lean kg'], ['fat_mass_kg', 'Fat kg'], ['visceral_fat_kg', 'Visceral kg']].map(([k, l]) => (
+          {[['weight_kg', tl("Weight kg")], ['body_fat_percent', tl("Body fat %")], ['lean_mass_kg', tl("Lean kg")], ['fat_mass_kg', tl("Fat kg")], ['visceral_fat_kg', tl("Visceral kg")]].map(([k, l]) => (
             <Field key={k} label={l} error={scanErrors[k]}><input className={inputCls} inputMode="decimal" value={scan[k]} onChange={setS(k)} /></Field>
           ))}
         </div>
-        <button type="submit" className={`${btn.ghost} w-fit`}>Add scan result</button>
+        <button type="submit" className={`${btn.ghost} w-fit`}>{tl("Add scan result")}</button>
       </form>
     </Drawer>
   );

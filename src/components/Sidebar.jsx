@@ -2,20 +2,21 @@ import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { dashboardService } from '../services/dashboardService';
+import { tl } from '../i18n';
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'grid_view', end: true },
-  { path: '/dashboard/notifications', label: 'Notifications', icon: 'notifications' },
-  { path: '/dashboard/machine-guide', label: 'Machine Guide', icon: 'precision_manufacturing' },
-  { path: '/dashboard/classes', label: 'Classes', icon: 'event' },
-  { path: '/dashboard/courses', label: 'Courses', icon: 'sports_gymnastics' },
-  { path: '/dashboard/player', label: 'Player', icon: 'play_circle' },
-  { path: '/dashboard/trainers', label: 'Trainers', icon: 'group' },
-  { path: '/dashboard/nutritionists', label: 'Nutritionists', icon: 'restaurant' },
-  { path: '/dashboard/shop', label: 'Shop', icon: 'shopping_bag' },
-  { path: '/dashboard/attendance', label: 'Attendance', icon: 'event_available' },
-  { path: '/dashboard/profile', label: 'Profile', icon: 'account_circle' },
-  { path: '/dashboard/payments', label: 'Payments', icon: 'credit_card' },
+  { path: '/dashboard', label: tl("Dashboard"), icon: 'grid_view', end: true },
+  { path: '/dashboard/notifications', label: tl("Notifications"), icon: 'notifications' },
+  { path: '/dashboard/machine-guide', label: tl("Machine Guide"), icon: 'precision_manufacturing' },
+  { path: '/dashboard/classes', label: tl("Classes"), icon: 'event' },
+  { path: '/dashboard/courses', label: tl("Courses"), icon: 'sports_gymnastics' },
+  { path: '/dashboard/player', label: tl("Player"), icon: 'play_circle' },
+  { path: '/dashboard/trainers', label: tl("Trainers"), icon: 'group' },
+  { path: '/dashboard/nutritionists', label: tl("Nutritionists"), icon: 'restaurant' },
+  { path: '/dashboard/shop', label: tl("Shop"), icon: 'shopping_bag' },
+  { path: '/dashboard/attendance', label: tl("Attendance"), icon: 'event_available' },
+  { path: '/dashboard/profile', label: tl("Profile"), icon: 'account_circle' },
+  { path: '/dashboard/payments', label: tl("Payments"), icon: 'credit_card' },
 ];
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -65,10 +66,10 @@ export default function Sidebar() {
         </div>
         <div className="flex flex-col">
           <span className="font-headline-md text-[18px] tracking-wider text-on-surface uppercase leading-none">
-            Smart Gym
+            {tl("Smart Gym")}
           </span>
           <span className="font-label-md text-[10px] text-primary tracking-widest uppercase">
-            Member Portal
+            {tl("Member Portal")}
           </span>
         </div>
       </motion.div>
@@ -136,7 +137,7 @@ export default function Sidebar() {
         <div className="bg-surface-container-low rounded-lg px-3 py-2 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider">
-              Gym right now
+              {tl("Gym right now")}
             </span>
             <span className="font-title-md text-[12px] text-primary flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse" />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useApi } from '../../hooks/useApi';
 import { attendanceService } from '../../services/attendanceService';
+import { tl } from '../../i18n';
 
 const levelColors = [
   'bg-surface-container-low',
@@ -35,15 +36,15 @@ export default function YearHeatmap() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
         <div>
           <span className="font-label-md text-label-md uppercase text-primary tracking-wider font-bold">
-            Discipline Mapping
+            {tl("Discipline Mapping")}
           </span>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase">
-            Full Year Attendance Heatmap
+            {tl("Full Year Attendance Heatmap")}
           </h2>
         </div>
         <div className="flex items-center gap-space-xs">
           <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-            Filter:
+            {tl("Filter:")}
           </span>
           <button
             onClick={() => setYear(currentYear)}
@@ -54,7 +55,7 @@ export default function YearHeatmap() {
             }`}
             type="button"
           >
-            {currentYear} (YTD)
+            {currentYear}{' '}{tl("(YTD)")}
           </button>
           <button
             onClick={() => setYear(currentYear - 1)}
@@ -98,7 +99,7 @@ export default function YearHeatmap() {
                         className={`w-[10px] h-[10px] rounded-sm ${levelColors[day.level]} hover:ring-2 hover:ring-primary-container transition-all cursor-pointer ${
                           !day.is_future && wIdx >= 48 ? 'animate-pulse' : ''
                         }`}
-                        title={`${day.date} — ${day.count} check-in(s)`}
+                        title={tl("{0} — {1} check-in(s)", { 0: day.date, 1: day.count })}
                       />
                     ))}
                   </div>
@@ -110,13 +111,13 @@ export default function YearHeatmap() {
       )}
 
       <div className="flex items-center justify-between pt-space-xs text-on-surface-variant font-label-md text-label-md mt-space-md">
-        <span>Year: {year}</span>
+        <span>{tl("Year:")}{' '}{year}</span>
         <div className="flex items-center gap-1.5">
-          <span>Less</span>
+          <span>{tl("Less")}</span>
           {levelColors.map((c, i) => (
             <span key={i} className={`w-3 h-3 rounded-sm ${c} inline-block`} />
           ))}
-          <span>More</span>
+          <span>{tl("More")}</span>
         </div>
       </div>
     </motion.div>

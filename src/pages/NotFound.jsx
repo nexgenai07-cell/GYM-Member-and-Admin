@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { tl } from '../i18n';
 
 export default function NotFound() {
   return (
@@ -19,12 +20,11 @@ export default function NotFound() {
         </span>
 
         <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-widest mt-2">
-          Signal Lost
+          {tl("Signal Lost")}
         </h1>
 
         <p className="font-body-lg text-body-lg text-on-surface-variant mt-space-xs max-w-md">
-          This path doesn't exist in the Titan Core network. Return to the dashboard to
-          continue your training.
+          {tl("This path doesn't exist in the Titan Core network. Return to the dashboard to continue your training.")}
         </p>
 
         <div className="flex items-center gap-space-sm mt-space-xl flex-wrap justify-center">
@@ -33,14 +33,14 @@ export default function NotFound() {
             className="px-space-lg py-space-sm rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(229,25,55,0.4)] flex items-center gap-space-xs"
           >
             <span className="material-symbols-outlined text-[18px]">home</span>
-            <span>Return Dashboard</span>
+            <span>{tl("Return Dashboard")}</span>
           </Link>
           <Link
             to="/login"
             className="px-space-lg py-space-sm rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg uppercase tracking-widest transition-all flex items-center gap-space-xs"
           >
             <span className="material-symbols-outlined text-[18px]">login</span>
-            <span>Sign Out</span>
+            <span>{tl("Sign Out")}</span>
           </Link>
         </div>
       </motion.div>

@@ -9,11 +9,12 @@ import { classesService } from '../../services/classesService';
 import { Drawer, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
+import { tl, locale } from '../../i18n';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const CATEGORIES = [['strength', 'Strength'], ['hiit', 'HIIT'], ['combat', 'Combat'], ['mobility', 'Mobility'],
-  ['endurance', 'Endurance'], ['olympic', 'Olympic lifting'], ['recovery', 'Recovery']];
-const LEVELS = [['all_levels', 'All levels'], ['beginner', 'Beginner'], ['intermediate', 'Intermediate'], ['advanced', 'Advanced']];
+const CATEGORIES = [['strength', tl("Strength")], ['hiit', tl("HIIT")], ['combat', tl("Combat")], ['mobility', tl("Mobility")],
+  ['endurance', tl("Endurance")], ['olympic', tl("Olympic lifting")], ['recovery', tl("Recovery")]];
+const LEVELS = [['all_levels', tl("All levels")], ['beginner', tl("Beginner")], ['intermediate', tl("Intermediate")], ['advanced', tl("Advanced")]];
 const NEW = { name: '', category: 'strength', level: 'all_levels', description: '', trainer_id: '', day_of_week: 0,
   start_time: '18:00', duration_minutes: 60, capacity: 12, location: '', is_active: true };
 
@@ -30,18 +31,18 @@ export default function AdminClasses() {
   const at = (day, t) => list.filter((c) => c.day_of_week === day && c.start_time === t);
 
   const tiles = [
-    ['Classes a week', stats?.total_classes], ['Spots booked', stats?.active_enrollments],
-    ['Fill rate', stats ? `${stats.fill_rate}%` : undefined], ['Full classes', stats?.full_classes],
-    ['On waitlists', stats?.waitlisted], ['Members booked', stats?.members_booked],
+    [tl("Classes a week"), stats?.total_classes], [tl("Spots booked"), stats?.active_enrollments],
+    [tl("Fill rate"), stats ? `${stats.fill_rate}%` : undefined], [tl("Full classes"), stats?.full_classes],
+    [tl("On waitlists"), stats?.waitlisted], [tl("Members booked"), stats?.members_booked],
   ];
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-6">
-      <PageHeader title="Classes" subtitle="Weekly timetable (gym time). Members book a standing spot from their portal.">
+      <PageHeader title={tl("Classes")} subtitle={tl("Weekly timetable (gym time). Members book a standing spot from their portal.")}>
         <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
-          <input type="checkbox" checked={showPaused} onChange={(e) => setShowPaused(e.target.checked)} /> Show paused
+          <input type="checkbox" checked={showPaused} onChange={(e) => setShowPaused(e.target.checked)} />{' '}{tl("Show paused")}
         </label>
-        <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>+ Add class</button>
+        <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>{tl("+ Add class")}</button>
       </PageHeader>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -57,15 +58,15 @@ export default function AdminClasses() {
         <div className="h-96 bg-[#0e0e0f] rounded-lg animate-pulse" />
       ) : list.length === 0 ? (
         <div className="text-center py-16 bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg text-on-surface-variant text-[13px] flex flex-col items-center gap-3">
-          No classes on the timetable yet.
-          <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>Add the first class</button>
+          {tl("No classes on the timetable yet.")}
+          <button type="button" className={btn.primary} onClick={() => setEditing(NEW)}>{tl("Add the first class")}</button>
         </div>
       ) : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse">
             <thead>
               <tr className="border-b border-[#1a1a1e] text-[10px] uppercase tracking-widest text-on-surface-variant">
-                <th className="px-3 py-3 text-left w-20">Time</th>
+                <th className="px-3 py-3 text-left w-20">{tl("Time")}</th>
                 {DAYS.map((d) => <th key={d} className="px-2 py-3 text-center">{d.slice(0, 3)}</th>)}
               </tr>
             </thead>
@@ -81,9 +82,9 @@ export default function AdminClasses() {
                             className={`text-left p-2 rounded border-l-2 bg-[#131316] hover:bg-[#1a1a1e] ${
                               !c.is_active ? 'border-neutral-600 opacity-50' : c.status === 'full' ? 'border-rose-500' : 'border-emerald-500'}`}>
                             <span className="block text-[12px] text-on-surface font-bold leading-tight">{c.name}</span>
-                            <span className="block text-[10px] text-on-surface-variant truncate">{c.trainer || 'No trainer'}{c.location && ` · ${c.location}`}</span>
+                            <span className="block text-[10px] text-on-surface-variant truncate">{c.trainer || tl("No trainer")}{c.location && ` · ${c.location}`}</span>
                             <span className="block text-[10px] text-on-surface-variant mt-0.5">
-                              {c.booked}/{c.capacity}{c.waitlisted > 0 && ` · ${c.waitlisted} waiting`}{!c.is_active && ' · paused'}
+                              {c.booked}/{c.capacity}{c.waitlisted > 0 && tl(" · {0} waiting", { 0: c.waitlisted })}{!c.is_active && tl(" · paused")}
                             </span>
                           </button>
                         ))}
@@ -137,7 +138,7 @@ function ClassEditor({ cls, trainers, onClose, onSaved }) {
       onClose();
     } catch (err) {
       setErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Could not save the class'));
+      toast.error(errorMessage(err, tl("Could not save the class")));
     } finally {
       setBusy(false);
     }
@@ -145,80 +146,80 @@ function ClassEditor({ cls, trainers, onClose, onSaved }) {
 
   const remove = async () => {
     const n = (cls.booked || 0) + (cls.waitlisted || 0);
-    if (!window.confirm(`Remove ${cls.name} from the timetable?${n ? ` ${n} booked/waitlisted members will be notified.` : ''}`)) return;
+    if (!window.confirm(tl("Remove {0} from the timetable?{1}", { 0: cls.name, 1: n ? ` ${n} booked/waitlisted members will be notified.` : '' }))) return;
     try {
       await classesService.remove(cls.id);
-      toast.success('Class removed');
+      toast.success(tl("Class removed"));
       onSaved();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not remove the class'));
+      toast.error(errorMessage(err, tl("Could not remove the class")));
     }
   };
 
   const kick = async (e) => {
-    if (!window.confirm(`Remove ${e.name} from this class? They’ll be notified.`)) return;
+    if (!window.confirm(tl("Remove {0} from this class? They’ll be notified.", { 0: e.name }))) return;
     try {
       toast.success((await classesService.removeFromRoster(cls.id, e.id)).detail);
       refetchRoster();
       onSaved();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not remove them'));
+      toast.error(errorMessage(err, tl("Could not remove them")));
     }
   };
 
   const people = roster?.roster || [];
 
   return (
-    <Drawer open title={isNew ? 'Add class' : cls.name} onClose={onClose}
-      subtitle={isNew ? 'Repeats every week at the same time.' : `${cls.day}s ${cls.start_time}–${cls.end_time} · ${cls.booked}/${cls.capacity} booked`}
+    <Drawer open title={isNew ? tl("Add class") : cls.name} onClose={onClose}
+      subtitle={isNew ? tl("Repeats every week at the same time.") : tl("{0}s {1}–{2} · {3}/{4} booked", { 0: cls.day, 1: cls.start_time, 2: cls.end_time, 3: cls.booked, 4: cls.capacity })}
       footer={<>
-        {!isNew && <button type="button" className={btn.danger} onClick={remove}>Remove</button>}
+        {!isNew && <button type="button" className={btn.danger} onClick={remove}>{tl("Remove")}</button>}
         <div className="flex-1" />
-        <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+        <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
+        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : tl("Save")}</button>
       </>}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label="Name" error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} placeholder="Morning HIIT" /></Field>
-        <Field label="Day" error={errors.day_of_week}>
+        <Field label={tl("Name")} error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} placeholder={tl("Morning HIIT")} /></Field>
+        <Field label={tl("Day")} error={errors.day_of_week}>
           <select className={inputCls} value={f.day_of_week} onChange={set('day_of_week')}>
             {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
           </select></Field>
-        <Field label="Starts (gym time)" error={errors.start_time}><input className={inputCls} type="time" value={f.start_time} onChange={set('start_time')} /></Field>
-        <Field label="Length (minutes)" error={errors.duration_minutes}><input className={inputCls} type="number" min="10" max="300" value={f.duration_minutes} onChange={set('duration_minutes')} /></Field>
-        <Field label="Spots" error={errors.capacity}><input className={inputCls} type="number" min="1" max="500" value={f.capacity} onChange={set('capacity')} /></Field>
-        <Field label="Category" error={errors.category}>
+        <Field label={tl("Starts (gym time)")} error={errors.start_time}><input className={inputCls} type="time" value={f.start_time} onChange={set('start_time')} /></Field>
+        <Field label={tl("Length (minutes)")} error={errors.duration_minutes}><input className={inputCls} type="number" min="10" max="300" value={f.duration_minutes} onChange={set('duration_minutes')} /></Field>
+        <Field label={tl("Spots")} error={errors.capacity}><input className={inputCls} type="number" min="1" max="500" value={f.capacity} onChange={set('capacity')} /></Field>
+        <Field label={tl("Category")} error={errors.category}>
           <select className={inputCls} value={f.category} onChange={set('category')}>{CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
-        <Field label="Level" error={errors.level}>
+        <Field label={tl("Level")} error={errors.level}>
           <select className={inputCls} value={f.level} onChange={set('level')}>{LEVELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
-        <Field label="Trainer" error={errors.trainer_id}>
+        <Field label={tl("Trainer")} error={errors.trainer_id}>
           <select className={inputCls} value={f.trainer_id} onChange={set('trainer_id')}>
-            <option value="">No trainer</option>
+            <option value="">{tl("No trainer")}</option>
             {trainers.map((t) => <option key={t.id} value={t.id}>{t.user_name}</option>)}
           </select></Field>
-        <Field label="Room" error={errors.location}><input className={inputCls} value={f.location} onChange={set('location')} placeholder="Studio 1" /></Field>
-        <Field label="Description" error={errors.description} className="md:col-span-2">
+        <Field label={tl("Room")} error={errors.location}><input className={inputCls} value={f.location} onChange={set('location')} placeholder={tl("Studio 1")} /></Field>
+        <Field label={tl("Description")} error={errors.description} className="md:col-span-2">
           <textarea className={inputCls} rows={3} value={f.description} onChange={set('description')} /></Field>
       </div>
       <label className="flex items-start gap-2 text-[13px] text-on-surface">
         <input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />
-        <span>On the timetable<span className="block text-[11px] text-on-surface-variant">Untick to pause it: members keep their spots but can’t see or book it until you turn it back on.</span></span>
+        <span>{tl("On the timetable")}<span className="block text-[11px] text-on-surface-variant">{tl("Untick to pause it: members keep their spots but can’t see or book it until you turn it back on.")}</span></span>
       </label>
 
       {!isNew && (
         <div className="flex flex-col gap-2">
-          <span className={labelCls}>Roster ({people.filter((p) => p.status === 'booked').length} booked, {people.filter((p) => p.status === 'waitlist').length} waiting)</span>
+          <span className={labelCls}>{tl("Roster (")}{people.filter((p) => p.status === 'booked').length}{' '}{tl("booked,")}{' '}{people.filter((p) => p.status === 'waitlist').length}{' '}{tl("waiting)")}</span>
           {people.length === 0 ? (
-            <p className="text-[12px] text-on-surface-variant">Nobody has booked yet.</p>
+            <p className="text-[12px] text-on-surface-variant">{tl("Nobody has booked yet.")}</p>
           ) : people.map((p) => (
             <div key={p.id} className="flex items-center justify-between gap-2 bg-[#0e0e0f] border border-[#1a1a1e] rounded px-3 py-2 text-[13px]">
               <div className="min-w-0">
                 <div className="text-on-surface truncate">{p.name}</div>
-                <div className="text-[11px] text-on-surface-variant truncate">{p.email} · since {new Date(p.since).toLocaleDateString()}</div>
+                <div className="text-[11px] text-on-surface-variant truncate">{p.email}{' '}{tl("· since")}{' '}{new Date(p.since).toLocaleDateString(locale)}</div>
               </div>
               <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${p.status === 'booked' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                {p.status === 'booked' ? 'Booked' : 'Waitlist'}</span>
-              <button type="button" className={btn.ghost} onClick={() => kick(p)}>Remove</button>
+                {p.status === 'booked' ? tl("Booked") : tl("Waitlist")}</span>
+              <button type="button" className={btn.ghost} onClick={() => kick(p)}>{tl("Remove")}</button>
             </div>
           ))}
         </div>

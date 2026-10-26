@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import CountUp from '../CountUp';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -15,9 +16,9 @@ const lineUp = {
 };
 
 const stats = [
-  { value: 48, suffix: '+', label: 'Protocols' },
-  { value: 5, suffix: 'K+', label: 'Active Athletes' },
-  { value: 20, suffix: 'K+', label: 'Workouts Logged' },
+  { value: 48, suffix: '+', label: tl("Protocols") },
+  { value: 5, suffix: 'K+', label: tl("Active Athletes") },
+  { value: 20, suffix: 'K+', label: tl("Workouts Logged") },
 ];
 
 export default function BrandingPanel() {
@@ -120,10 +121,10 @@ export default function BrandingPanel() {
           </div>
           <div className="flex flex-col">
             <span className="font-headline-md text-headline-md tracking-wider text-on-surface uppercase leading-none">
-              Smart Gym
+              {tl("Smart Gym")}
             </span>
             <span className="font-label-md text-label-md text-primary tracking-widest uppercase">
-              Performance Core
+              {tl("Performance Core")}
             </span>
           </div>
         </motion.div>
@@ -140,7 +141,7 @@ export default function BrandingPanel() {
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 1.6, repeat: Infinity }}
               />
-              Member Access Portal
+              {tl("Member Access Portal")}
             </motion.span>
 
             {/* Headline — words rise in sequence */}
@@ -165,8 +166,7 @@ export default function BrandingPanel() {
               variants={lineUp}
               className="font-body-lg text-body-lg text-on-surface-variant max-w-lg"
             >
-              Access your personalized training protocols, biometric telemetry, and
-              performance dashboards — engineered for elite strength athletes.
+              {tl("Access your personalized training protocols, biometric telemetry, and performance dashboards — engineered for elite strength athletes.")}
             </motion.p>
           </motion.div>
 
@@ -203,13 +203,13 @@ export default function BrandingPanel() {
           variants={lineUp}
           className="flex items-center justify-between text-on-surface-variant font-label-md text-label-md uppercase tracking-wider"
         >
-          <span>© 2025 Smart Gym</span>
+          <span>{tl("© 2025 Smart Gym")}</span>
           <span className="flex items-center gap-2">
             <span className="relative flex w-1.5 h-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
-            All Systems Online
+            {tl("All Systems Online")}
           </span>
         </motion.div>
       </motion.div>

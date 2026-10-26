@@ -1,6 +1,7 @@
 // src/components/admin/RevenueStreams.jsx
 import { motion } from 'framer-motion';
 import { formatSAR } from '../../utils/money';
+import { tl } from '../../i18n';
 export default function RevenueStreams({ data, loading }) {
   const streams = data?.streams || [];
   const paymentMethods = data?.payment_methods || [];
@@ -19,10 +20,10 @@ export default function RevenueStreams({ data, loading }) {
       <div className="flex justify-between items-start">
         <div>
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            {data?.range_label || 'Last 30 days'}
+            {data?.range_label || tl("Last 30 days")}
           </span>
           <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-            Where the money comes from
+            {tl("Where the money comes from")}
           </h2>
         </div>
         <span className="font-title-md text-title-md text-on-surface font-mono">
@@ -32,11 +33,11 @@ export default function RevenueStreams({ data, loading }) {
 
       <div className="flex flex-col gap-4">
         <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
-          By type
+          {tl("By type")}
         </span>
         {streams.length === 0 ? (
           <div className="text-center py-8 text-on-surface-variant text-[13px]">
-            No payments in this period
+            {tl("No payments in this period")}
           </div>
         ) : (
           streams.map((r, i) => (
@@ -77,11 +78,11 @@ export default function RevenueStreams({ data, loading }) {
 
       <div className="flex flex-col gap-4">
         <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
-          By payment method
+          {tl("By payment method")}
         </span>
         {paymentMethods.length === 0 ? (
           <div className="text-center py-4 text-on-surface-variant text-[12px]">
-            No payment data
+            {tl("No payment data")}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">

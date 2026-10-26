@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function TelemetryImpact({ trainer }) {
   if (!trainer) return null;
@@ -6,24 +7,24 @@ export default function TelemetryImpact({ trainer }) {
   // Build telemetry from trainer data
   const metrics = [
     {
-      label: 'Athletes Trained',
+      label: tl("Athletes Trained"),
       value: `${trainer.total_students || 0}`,
       bar: Math.min(100, (trainer.total_students / 500) * 100),
-      sub: 'Active Roster',
+      sub: tl("Active Roster"),
       accent: true,
     },
     {
-      label: 'Total Reviews',
+      label: tl("Total Reviews"),
       value: `${trainer.total_reviews || 0}`,
       bar: Math.min(100, (trainer.total_reviews / 400) * 100),
-      sub: 'Verified Feedback',
+      sub: tl("Verified Feedback"),
       accent: false,
     },
     {
-      label: 'Experience',
+      label: tl("Experience"),
       value: `${trainer.years_experience || 0} YRS`,
       bar: Math.min(100, (trainer.years_experience / 20) * 100),
-      sub: 'Industry Tenure',
+      sub: tl("Industry Tenure"),
       accent: true,
     },
   ];
@@ -41,11 +42,11 @@ export default function TelemetryImpact({ trainer }) {
             monitoring
           </span>
           <span className="font-headline-md text-headline-md text-on-surface uppercase">
-            Athlete Roster Telemetry Impact
+            {tl("Athlete Roster Telemetry Impact")}
           </span>
         </div>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-          Live Performance Metrics
+          {tl("Live Performance Metrics")}
         </span>
       </div>
 

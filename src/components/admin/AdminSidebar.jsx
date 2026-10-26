@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
+import { tl } from '../../i18n';
 
 const HEALTH_MS = 60_000;
 const ACTIVITY_MS = 45_000;
@@ -56,59 +57,59 @@ function useApiHealth() {
    ============================================ */
 const navGroups = [
   {
-    label: 'Overview',
+    label: tl("Overview"),
     items: [
-      { path: '/admin', label: 'Dashboard', icon: 'dashboard', end: true },
-      { path: '/admin/analytics', label: 'Insights', icon: 'insights' },
+      { path: '/admin', label: tl("Dashboard"), icon: 'dashboard', end: true },
+      { path: '/admin/analytics', label: tl("Insights"), icon: 'insights' },
     ],
   },
   {
-    label: 'Operations',
+    label: tl("Operations"),
     items: [
-      { path: '/admin/members', label: 'Members', icon: 'groups' },
-      { path: '/admin/trainers', label: 'Trainers & Courses', icon: 'school' },
-      { path: '/admin/nutrition', label: 'Nutrition', icon: 'restaurant' },
-      { path: '/admin/staff', label: 'Staff', icon: 'badge' },
-      { path: '/admin/shop', label: 'Shop Products', icon: 'storefront' },
-      { path: '/admin/shop-orders', label: 'Shop Orders', icon: 'shopping_bag' },
-      { path: '/admin/trainer-hours', label: 'Trainer Hours', icon: 'schedule' },
+      { path: '/admin/members', label: tl("Members"), icon: 'groups' },
+      { path: '/admin/trainers', label: tl("Trainers & Courses"), icon: 'school' },
+      { path: '/admin/nutrition', label: tl("Nutrition"), icon: 'restaurant' },
+      { path: '/admin/staff', label: tl("Staff"), icon: 'badge' },
+      { path: '/admin/shop', label: tl("Shop Products"), icon: 'storefront' },
+      { path: '/admin/shop-orders', label: tl("Shop Orders"), icon: 'shopping_bag' },
+      { path: '/admin/trainer-hours', label: tl("Trainer Hours"), icon: 'schedule' },
     ],
   },
     {
-    label: 'Registrations',
+    label: tl("Registrations"),
     items: [
-      { path: '/admin/registrations', label: 'Registrations', icon: 'how_to_reg' },
-      { path: '/admin/member-lookup', label: 'Member Lookup', icon: 'person_search' },
+      { path: '/admin/registrations', label: tl("Registrations"), icon: 'how_to_reg' },
+      { path: '/admin/member-lookup', label: tl("Member Lookup"), icon: 'person_search' },
     ],
   },
   {
-    label: 'Facility',
+    label: tl("Facility"),
     items: [
-      { path: '/admin/machines', label: 'Machines & QR', icon: 'precision_manufacturing' },
-      { path: '/admin/facilities', label: 'Facilities', icon: 'meeting_room' },
-      { path: '/admin/classes', label: 'Classes', icon: 'event' },
+      { path: '/admin/machines', label: tl("Machines & QR"), icon: 'precision_manufacturing' },
+      { path: '/admin/facilities', label: tl("Facilities"), icon: 'meeting_room' },
+      { path: '/admin/classes', label: tl("Classes"), icon: 'event' },
     ],
   },
   {
-    label: 'Finance',
+    label: tl("Finance"),
     items: [
-      { path: '/admin/finance', label: 'Finance', icon: 'payments' },
-      { path: '/admin/reports', label: 'Reports', icon: 'assessment' },
+      { path: '/admin/finance', label: tl("Finance"), icon: 'payments' },
+      { path: '/admin/reports', label: tl("Reports"), icon: 'assessment' },
     ],
   },
   {
-    label: 'Public Website',
+    label: tl("Public Website"),
     items: [
-      { path: '/admin/site-content', label: 'Site Content', icon: 'web' },
-      { path: '/admin/site-lists', label: 'Facilities & Articles', icon: 'view_list' },
-      { path: '/admin/site-plans', label: 'Membership Plans', icon: 'sell' },
-      { path: '/admin/site-inbox', label: 'Website Inbox', icon: 'inbox' },
+      { path: '/admin/site-content', label: tl("Site Content"), icon: 'web' },
+      { path: '/admin/site-lists', label: tl("Facilities & Articles"), icon: 'view_list' },
+      { path: '/admin/site-plans', label: tl("Membership Plans"), icon: 'sell' },
+      { path: '/admin/site-inbox', label: tl("Website Inbox"), icon: 'inbox' },
     ],
   },
   {
-    label: 'System',
+    label: tl("System"),
     items: [
-      { path: '/admin/settings', label: 'Settings', icon: 'settings' },
+      { path: '/admin/settings', label: tl("Settings"), icon: 'settings' },
     ],
   },
 ];
@@ -134,10 +135,10 @@ export default function AdminSidebar() {
         </div>
         <div className="flex flex-col">
           <span className="font-headline-md text-[18px] tracking-wider text-on-surface uppercase leading-none">
-            Smart Gym
+            {tl("Smart Gym")}
           </span>
           <span className="font-label-md text-[10px] text-primary tracking-widest uppercase font-bold">
-            Admin Command
+            {tl("Admin Command")}
           </span>
         </div>
       </motion.div>
@@ -175,7 +176,7 @@ export default function AdminSidebar() {
                     <span className="leading-none flex-1">{item.label}</span>
                     {activity[item.path.split('/')[2]] > 0 && (
                       <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold grid place-items-center normal-case tracking-normal ring-2 ring-[#08080a]"
-                        aria-label={`${activity[item.path.split('/')[2]]} new`}>
+                        aria-label={tl("{0} new", { 0: activity[item.path.split('/')[2]] })}>
                         {activity[item.path.split('/')[2]] > 99 ? '99+' : activity[item.path.split('/')[2]]}
                       </span>
                     )}
@@ -197,18 +198,18 @@ export default function AdminSidebar() {
         <div className="bg-[#0e0e0f] rounded-lg px-3 py-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-              API
+              {tl("API")}
             </span>
             <span className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${health.ok === false ? 'bg-error' : health.ok ? 'bg-emerald-400 animate-pulse' : 'bg-[#2a2a2e]'}`} />
               <span className={`font-label-md text-[10px] uppercase font-bold ${health.ok === false ? 'text-error' : 'text-emerald-400'}`}>
-                {health.ok === false ? 'Unreachable' : health.ok ? 'Online' : 'Checking…'}
+                {health.ok === false ? tl("Unreachable") : health.ok ? tl("Online") : tl("Checking…")}
               </span>
             </span>
           </div>
           <div className="flex items-center justify-between text-[10px] font-label-md text-on-surface-variant uppercase tracking-wider">
-            <span>Response time</span>
-            <span className="text-on-surface font-bold">{health.ms != null ? `${health.ms} ms` : '—'}</span>
+            <span>{tl("Response time")}</span>
+            <span className="text-on-surface font-bold">{health.ms != null ? tl("{0} ms", { 0: health.ms }) : '—'}</span>
           </div>
         </div>
       </motion.div>

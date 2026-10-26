@@ -1,6 +1,7 @@
 // src/components/admin/FlowAndRevenue.jsx
 import { motion } from 'framer-motion';
 import { formatSAR } from '../../utils/money';
+import { tl } from '../../i18n';
 
 // Build a smooth SVG path from hourly counts
 // viewBox: 0 0 600 240
@@ -52,21 +53,21 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-              Check-ins by hour
+              {tl("Check-ins by hour")}
             </span>
             <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-              Today vs 30-day average
+              {tl("Today vs 30-day average")}
             </h2>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
               <span className="w-3 h-1 bg-primary-container rounded-full" />
-              <span className="font-label-md text-[10px] text-on-surface">Today</span>
+              <span className="font-label-md text-[10px] text-on-surface">{tl("Today")}</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-3 h-1 bg-outline rounded-full" />
               <span className="font-label-md text-[10px] text-on-surface-variant">
-                30D Rolling Mean
+                {tl("30D Rolling Mean")}
               </span>
             </div>
           </div>
@@ -152,12 +153,12 @@ export default function FlowAndRevenue({ data, loading }) {
             </span>
             <span className="font-body-md text-body-md text-on-surface text-[13px]">
               {peak && peak.count > 0
-                ? `Today's peak: ${peak.count} check-ins at ${String(peak.hour).padStart(2, '0')}:00.`
-                : 'No check-ins today yet.'}
+                ? tl("Today's peak: {0} check-ins at {1}:00.", { 0: peak.count, 1: String(peak.hour).padStart(2, '0') })
+                : tl("No check-ins today yet.")}
             </span>
           </div>
           <span className="font-label-md text-[10px] text-primary font-bold uppercase tracking-wider">
-            Today
+            {tl("Today")}
           </span>
         </div>
       </motion.div>
@@ -172,10 +173,10 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="flex justify-between items-start">
           <div>
             <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-              {summary.range_label || 'Revenue'}
+              {summary.range_label || tl("Revenue")}
             </span>
             <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-              Where revenue comes from
+              {tl("Where revenue comes from")}
             </h2>
           </div>
           <span className="font-title-md text-title-md text-on-surface font-mono">
@@ -186,7 +187,7 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="flex flex-col gap-4 my-4">
           {streams.length === 0 ? (
             <div className="text-center py-8 text-on-surface-variant text-[13px]">
-              No payments in this period
+              {tl("No payments in this period")}
             </div>
           ) : (
             streams.map((r, i) => (
@@ -221,7 +222,7 @@ export default function FlowAndRevenue({ data, loading }) {
         <div className="grid grid-cols-2 gap-3 pt-2">
           <div className="p-3 bg-surface-container-lowest rounded-lg">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase block">
-              Avg per paying member
+              {tl("Avg per paying member")}
             </span>
             <span className="font-headline-md text-headline-md text-on-surface">
               {formatSAR(summary.avg_per_member)}
@@ -229,7 +230,7 @@ export default function FlowAndRevenue({ data, loading }) {
           </div>
           <div className="p-3 bg-surface-container-lowest rounded-lg">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase block">
-              Annual run rate
+              {tl("Annual run rate")}
             </span>
             <span className="font-headline-md text-headline-md text-primary">
               {formatSAR(summary.arr)}

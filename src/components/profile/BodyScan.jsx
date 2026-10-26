@@ -1,6 +1,7 @@
 // src/components/profile/BodyScan.jsx
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { tl, locale } from '../../i18n';
 
 export default function BodyScan({ dexa }) {
   const [view, setView] = useState('front');
@@ -16,10 +17,10 @@ export default function BodyScan({ dexa }) {
         <div className="flex items-center justify-between mb-space-md flex-wrap gap-2">
           <div className="flex flex-col">
             <span className="font-label-md text-label-md text-primary uppercase tracking-widest font-bold">
-              Biometric Optical Density
+              {tl("Biometric Optical Density")}
             </span>
             <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">
-              3D Scan Composition
+              {tl("3D Scan Composition")}
             </h2>
           </div>
 
@@ -33,7 +34,7 @@ export default function BodyScan({ dexa }) {
               }`}
               type="button"
             >
-              FRONT
+              {tl("FRONT")}
             </button>
             <button
               onClick={() => setView('back')}
@@ -44,13 +45,13 @@ export default function BodyScan({ dexa }) {
               }`}
               type="button"
             >
-              POSTERIOR
+              {tl("POSTERIOR")}
             </button>
           </div>
         </div>
 
         <p className="font-body-md text-body-md text-on-surface-variant">
-          From your latest body-composition (DEXA) scan, recorded by your nutritionist.
+          {tl("From your latest body-composition (DEXA) scan, recorded by your nutritionist.")}
         </p>
       </div>
 
@@ -60,10 +61,10 @@ export default function BodyScan({ dexa }) {
             monitor_weight
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-3">
-            No DEXA scan on record
+            {tl("No DEXA scan on record")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Book a scan with your nutritionist.
+            {tl("Book a scan with your nutritionist.")}
           </p>
         </div>
       ) : (
@@ -133,19 +134,19 @@ export default function BodyScan({ dexa }) {
 
             <div className="absolute top-16 right-4 bg-surface-container-high/90 backdrop-blur px-space-xs py-1 rounded shadow-lg flex flex-col">
               <span className="font-label-md text-label-md text-primary font-bold uppercase">
-                Lean: {Number(dexa.lean_mass_kg).toFixed(1)} kg
+                {tl("Lean:")}{' '}{Number(dexa.lean_mass_kg).toFixed(1)} kg
               </span>
               <span className="font-label-md text-label-md text-on-surface-variant">
-                Fat: {Number(dexa.fat_mass_kg).toFixed(1)} kg
+                {tl("Fat:")}{' '}{Number(dexa.fat_mass_kg).toFixed(1)} kg
               </span>
             </div>
 
             <div className="absolute bottom-16 left-2 bg-surface-container-high/90 backdrop-blur px-space-xs py-1 rounded shadow-lg flex flex-col">
               <span className="font-label-md text-label-md text-primary font-bold uppercase">
-                Body Fat: {Number(dexa.body_fat_percent).toFixed(1)}%
+                {tl("Body Fat:")}{' '}{Number(dexa.body_fat_percent).toFixed(1)}%
               </span>
               <span className="font-label-md text-label-md text-on-surface-variant">
-                Scanned: {new Date(dexa.scan_date).toLocaleDateString()}
+                {tl("Scanned:")}{' '}{new Date(dexa.scan_date).toLocaleDateString(locale)}
               </span>
             </div>
           </div>
@@ -155,10 +156,10 @@ export default function BodyScan({ dexa }) {
               <div className="w-3 h-3 rounded-full bg-primary-container" />
               <div className="flex flex-col">
                 <span className="font-title-md text-title-md text-on-surface leading-none">
-                  {Number(dexa.lean_mass_kg).toFixed(1)} KG
+                  {Number(dexa.lean_mass_kg).toFixed(1)}{' '}{tl("KG")}
                 </span>
                 <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                  Lean Tissue Mass
+                  {tl("Lean Tissue Mass")}
                 </span>
               </div>
             </div>
@@ -167,10 +168,10 @@ export default function BodyScan({ dexa }) {
               <div className="w-3 h-3 rounded-full bg-surface-bright" />
               <div className="flex flex-col">
                 <span className="font-title-md text-title-md text-on-surface leading-none">
-                  {Number(dexa.fat_mass_kg).toFixed(1)} KG
+                  {Number(dexa.fat_mass_kg).toFixed(1)}{' '}{tl("KG")}
                 </span>
                 <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                  Adipose Mass
+                  {tl("Adipose Mass")}
                 </span>
               </div>
             </div>

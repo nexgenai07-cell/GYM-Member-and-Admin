@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { tl } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -88,11 +89,11 @@ export default function AIDirectives({ directives = [] }) {
             auto_awesome
           </motion.span>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider m-0">
-            For you today
+            {tl("For you today")}
           </h3>
         </div>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">
-          Based on your activity
+          {tl("Based on your activity")}
         </span>
       </motion.div>
 

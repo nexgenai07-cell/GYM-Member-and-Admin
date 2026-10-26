@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import CountUp from './CountUp';
+import { tl } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -28,16 +29,16 @@ export default function FloorDensity({ density }) {
       <div className="flex flex-col gap-space-sm">
         <div className="flex items-center justify-between">
           <span className="font-label-md text-label-md uppercase tracking-widest text-primary">
-            Gym right now
+            {tl("Gym right now")}
           </span>
           <span className="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse shadow-[0_0_10px_rgba(229,25,55,0.6)]" />
         </div>
         <div>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide leading-none m-0">
-            {density ? `${density.current} member${density.current === 1 ? '' : 's'} checked in` : 'Loading…'}
+            {density ? tl("{0} member{1} checked in", { 0: density.current, 1: density.current === 1 ? '' : 's' }) : tl("Loading…")}
           </h3>
           <span className="font-body-md text-body-md text-on-surface-variant block mt-1">
-            {density?.peak_window ? `Usually busiest ${density.peak_window}` : 'Busiest hours appear once there is enough data'}
+            {density?.peak_window ? tl("Usually busiest {0}", { 0: density.peak_window }) : tl("Busiest hours appear once there is enough data")}
           </span>
         </div>
 

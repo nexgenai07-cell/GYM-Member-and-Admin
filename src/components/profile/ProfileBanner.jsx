@@ -1,6 +1,7 @@
 // src/components/profile/ProfileBanner.jsx
 import { motion } from 'framer-motion';
 import { formatRemaining } from '../../utils/membershipTime';
+import { tl } from '../../i18n';
 export default function ProfileBanner({
   displayName,
   initials,
@@ -66,21 +67,21 @@ export default function ProfileBanner({
                 <span className="material-symbols-outlined text-[16px] text-primary">
                   calendar_month
                 </span>
-                Member Since {memberSince}
+                {tl("Member Since")}{' '}{memberSince}
               </span>
               <span className="text-surface-bright">•</span>
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[16px] text-primary">
                   fitness_center
                 </span>
-                {totalWorkouts} Workouts
+                {totalWorkouts}{' '}{tl("Workouts")}
               </span>
               <span className="text-surface-bright">•</span>
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[16px] text-primary">
                   emoji_events
                 </span>
-                {totalPrs} PRs
+                {totalPrs}{' '}{tl("PRs")}
               </span>
             </div>
           </div>
@@ -90,7 +91,7 @@ export default function ProfileBanner({
         <div className="flex items-center gap-space-md w-full xl:w-auto justify-start xl:justify-end border-t xl:border-t-0 border-surface-container-high pt-space-md xl:pt-0">
           <div className="px-space-md py-space-sm rounded bg-surface-container-lowest flex flex-col min-w-[120px]">
             <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-              Membership left
+              {tl("Membership left")}
             </span>
             <span className="font-headline-md text-headline-md text-primary tracking-wide">
               {formatRemaining(membership?.time_remaining)}
@@ -99,7 +100,7 @@ export default function ProfileBanner({
 
           <div className="px-space-md py-space-sm rounded bg-surface-container-lowest flex flex-col min-w-[120px]">
             <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-              Visits
+              {tl("Visits")}
             </span>
             <span className="font-headline-md text-headline-md text-on-surface tracking-wide">
               {membership?.total_check_ins ?? 0}
@@ -114,7 +115,7 @@ export default function ProfileBanner({
             onClick={onExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Download my data
+            {tl("Download my data")}
           </motion.button>
         </div>
       </div>

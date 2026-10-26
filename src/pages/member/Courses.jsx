@@ -10,6 +10,7 @@ import FeaturedCourse from '../../components/courses/FeaturedCourse';
 import CourseFilters from '../../components/courses/CourseFilters';
 import CourseCard from '../../components/courses/CourseCard';
 import PayDialog from '../../components/payments/PayDialog';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -96,7 +97,7 @@ export default function Courses() {
     }
     try {
       await catalogService.enroll(course.id);
-      toast.success(`Enrolled in ${course.title}! Opening player...`);
+      toast.success(tl("Enrolled in {0}! Opening player...", { 0: course.title }));
       refetchEnrollments();
       setTimeout(() => navigate(`/dashboard/player/${course.id}`), 800);
     } catch (e) {
@@ -170,10 +171,10 @@ export default function Courses() {
             search_off
           </span>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase mb-2">
-            No Courses Match
+            {tl("No Courses Match")}
           </h3>
           <p className="font-body-md text-on-surface-variant">
-            Try changing your filters or selecting a different discipline.
+            {tl("Try changing your filters or selecting a different discipline.")}
           </p>
         </motion.div>
       ) : (
@@ -203,7 +204,7 @@ export default function Courses() {
         allowCredit
         onPaid={() => {
           const id = buying?.id;
-          toast.success('Enrolled! Opening player...');
+          toast.success(tl("Enrolled! Opening player..."));
           refetchEnrollments();
           setTimeout(() => navigate(`/dashboard/player/${id}`), 800);
         }}

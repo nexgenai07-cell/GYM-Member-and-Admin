@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function SyllabusSidebar({ modules = [], enrollment, onCompleteModule }) {
   const progress = enrollment?.progress_percent ?? 0;
@@ -24,10 +25,10 @@ export default function SyllabusSidebar({ modules = [], enrollment, onCompleteMo
       >
         <div className="flex items-center justify-between">
           <span className="font-headline-md text-headline-md text-on-surface tracking-wider uppercase">
-            Course Syllabus
+            {tl("Course Syllabus")}
           </span>
           <span className="text-label-lg font-label-lg text-primary uppercase">
-            {progress}% Completed
+            {progress}{tl("% Completed")}
           </span>
         </div>
         <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden mt-space-2xs">
@@ -39,8 +40,8 @@ export default function SyllabusSidebar({ modules = [], enrollment, onCompleteMo
           />
         </div>
         <div className="flex justify-between items-center text-label-md font-label-md text-on-surface-variant mt-1">
-          <span>Week {Object.keys(weeks).length} of {Object.keys(weeks).length}</span>
-          <span>{completedCount} / {totalModules} Modules</span>
+          <span>{tl("Week")}{' '}{Object.keys(weeks).length} of {Object.keys(weeks).length}</span>
+          <span>{completedCount} / {totalModules}{' '}{tl("Modules")}</span>
         </div>
       </motion.div>
 
@@ -81,12 +82,12 @@ export default function SyllabusSidebar({ modules = [], enrollment, onCompleteMo
                     </span>
                   )}
                   <span className="font-title-md text-title-md text-on-surface uppercase">
-                    Week {String(weekNum).padStart(2, '0')}
+                    {tl("Week")}{' '}{String(weekNum).padStart(2, '0')}
                   </span>
                 </div>
                 {hasCurrent && (
                   <span className="text-label-md font-label-md text-on-primary-container bg-primary-container px-space-xs py-0.5 rounded uppercase">
-                    In Progress
+                    {tl("In Progress")}
                   </span>
                 )}
                 {allDone && (
@@ -146,7 +147,7 @@ export default function SyllabusSidebar({ modules = [], enrollment, onCompleteMo
                           : 'text-outline'
                       }`}
                     >
-                      {m.is_completed ? 'Done' : m.is_current ? 'Now' : `${m.duration_minutes}m`}
+                      {m.is_completed ? tl("Done") : m.is_current ? tl("Now") : `${m.duration_minutes}m`}
                     </span>
                   </button>
                 ))}

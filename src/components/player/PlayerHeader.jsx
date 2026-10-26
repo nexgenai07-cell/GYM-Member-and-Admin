@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function PlayerHeader({ course, currentModule, enrollment, onLog, logged, starting }) {
   const moduleLabel = currentModule
@@ -18,7 +19,7 @@ export default function PlayerHeader({ course, currentModule, enrollment, onLog,
         <div className="flex items-center gap-space-xs flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-space-xs py-0.5 rounded bg-primary-container/15 text-primary text-label-md font-label-md uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse" />
-            {enrollment?.status === 'completed' ? 'Course Complete' : 'Live Curriculum'}
+            {enrollment?.status === 'completed' ? tl("Course Complete") : tl("Live Curriculum")}
           </span>
           <span className="text-outline text-label-md font-label-md">/</span>
           <span className="text-on-surface-variant text-label-md font-label-md uppercase tracking-widest">
@@ -26,7 +27,7 @@ export default function PlayerHeader({ course, currentModule, enrollment, onLog,
           </span>
         </div>
         <h1 className="text-headline-lg font-headline-lg text-on-surface tracking-wider uppercase leading-tight m-0">
-          {course?.title || 'Course Player'}
+          {course?.title || tl("Course Player")}
           {currentModule && (
             <>
               <span className="text-primary-container font-headline-md text-headline-md tracking-normal mx-2">
@@ -49,7 +50,7 @@ export default function PlayerHeader({ course, currentModule, enrollment, onLog,
             type="button"
           >
             <span className="material-symbols-outlined text-title-md">picture_as_pdf</span>
-            <span>Day PDF</span>
+            <span>{tl("Day PDF")}</span>
           </motion.a>
         )}
 
@@ -71,7 +72,7 @@ export default function PlayerHeader({ course, currentModule, enrollment, onLog,
             {starting ? 'sync' : logged ? 'done_all' : 'check_circle'}
           </span>
           <span>
-            {starting ? 'Starting...' : logged ? 'Session Logged!' : 'Start Workout'}
+            {starting ? tl("Starting...") : logged ? tl("Session Logged!") : tl("Start Workout")}
           </span>
         </motion.button>
       </div>

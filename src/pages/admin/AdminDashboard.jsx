@@ -11,6 +11,7 @@ import FlowAndRevenue from '../../components/admin/FlowAndRevenue';
 import ArenaHeatmap from '../../components/admin/ArenaHeatmap';
 import AuditFeed from '../../components/admin/AuditFeed';
 import FacilityNodeCard from '../../components/admin/FacilityNodeCard';
+import { tl } from '../../i18n';
 
 export default function AdminDashboard() {
   const [range, setRange] = useState('30d');
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Export failed');
+      toast.error(tl("Export failed"));
     } finally {
       setExporting(false);
     }
@@ -87,7 +88,7 @@ export default function AdminDashboard() {
 function LiveKPIs({ overview, loading }) {
   const kpis = [
     {
-      label: 'Check-ins',
+      label: tl("Check-ins"),
       value: overview?.activity?.check_ins_today ?? '—',
       sub: 'today',
       subAccent: true,
@@ -95,25 +96,25 @@ function LiveKPIs({ overview, loading }) {
       icon: 'door_sliding',
     },
     {
-      label: 'Active Members',
+      label: tl("Active Members"),
       value: overview?.members?.active_memberships ?? '—',
-      sub: `${overview?.members?.total ?? 0} total`,
+      sub: tl("{0} total", { 0: overview?.members?.total ?? 0 }),
       subAccent: false,
       footer: `${overview?.members?.expiring_soon ?? 0} expiring soon`,
       icon: 'group',
     },
     {
-      label: 'Revenue',
+      label: tl("Revenue"),
       value: overview ? formatSAR(overview.revenue.last_30d) : '—',
-      sub: `${overview?.revenue?.transaction_count ?? 0} payments`,
+      sub: tl("{0} payments", { 0: overview?.revenue?.transaction_count ?? 0 }),
       subAccent: true,
       footer: overview?.revenue?.range_label || '',
       icon: 'payments',
     },
     {
-      label: 'Content',
+      label: tl("Content"),
       value: overview?.content?.active_courses ?? '—',
-      sub: `${overview?.content?.pending_approvals ?? 0} pending`,
+      sub: tl("{0} pending", { 0: overview?.content?.pending_approvals ?? 0 }),
       subAccent: (overview?.content?.pending_approvals ?? 0) > 0,
       footer: 'Active courses',
       icon: 'school',

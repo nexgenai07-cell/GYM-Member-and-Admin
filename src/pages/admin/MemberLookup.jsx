@@ -7,6 +7,7 @@ import { adminService } from '../../services/adminService';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
 import { errorMessage } from '../../utils/apiError';
 import QrScanner from '../../components/QrScanner';
+import { tl } from '../../i18n';
 
 const PASS_PREFIX = 'SGPASS:';
 
@@ -58,7 +59,7 @@ export default function MemberLookup() {
       const body = err?.response?.data;
       setError(body?.reason === 'not_found' ? 'Member not found.'
         : body?.reason === 'registration_pending' ? 'This Iqama has a registration waiting for approval.'
-          : errorMessage(err, 'Lookup failed'));
+          : errorMessage(err, tl("Lookup failed")));
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ export default function MemberLookup() {
     try {
       // Desk check-in: no face comparison happens here (the gate script does that).
       const ci = await adminService.checkInMember(result.member.id, {});
-      toast.success('Session started');
+      toast.success(tl("Session started"));
       setResult({ ...result, active_check_in: ci });
     } catch (err) {
       toast.error(err.message || 'Check-in failed');
@@ -94,7 +95,7 @@ export default function MemberLookup() {
     setBusy(true);
     try {
       const ci = await adminService.checkOut(result.active_check_in.id);
-      toast.success(`Session ended — ${ci.duration_minutes} min`);
+      toast.success(tl("Session ended — {0} min", { 0: ci.duration_minutes }));
       setResult({ ...result, active_check_in: null });
     } catch (err) {
       toast.error(err.message || 'Check-out failed');
@@ -124,18 +125,17 @@ export default function MemberLookup() {
         className="mb-6"
       >
         <h1 className="font-headline-lg text-[28px] text-on-surface uppercase tracking-wider mb-1">
-          Member Lookup
+          {tl("Member Lookup")}
         </h1>
         <p className="font-body-sm text-on-surface-variant text-[13px]">
-          Scan the member's digital pass QR (or type their Iqama number) to verify the
-          membership and start their session timer.
+          {tl("Scan the member's digital pass QR (or type their Iqama number) to verify the membership and start their session timer.")}
         </p>
       </motion.div>
 
       <QrScanner
         open={scanning}
-        title="Scan member pass"
-        manualLabel="Or type the Iqama number"
+        title={tl("Scan member pass")}
+        manualLabel={tl("Or type the Iqama number")}
         onResult={(code) => { setScanning(false); setIqama(code.startsWith(PASS_PREFIX) ? '' : code); lookup(null, code); }}
         onClose={() => setScanning(false)}
       />
@@ -149,8 +149,8 @@ export default function MemberLookup() {
             // Pass tokens (from a USB scanner) are kept as typed; Iqama numbers are digits only.
             setIqama(/^s/i.test(v) ? v.trim().slice(0, 400) : v.replace(/\D/g, '').slice(0, 10));
           }}
-          placeholder="Iqama 2XXXXXXXXX or scan pass"
-          aria-label="Iqama number or pass"
+          placeholder={tl("Iqama 2XXXXXXXXX or scan pass")}
+          aria-label={tl("Iqama number or pass")}
           className="flex-1 bg-[#131316] border border-[#1a1a1e] rounded px-4 py-3 text-[16px] font-mono text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container outline-none"
           autoFocus
         />
@@ -159,14 +159,14 @@ export default function MemberLookup() {
           disabled={loading}
           className="px-6 py-3 rounded bg-primary-container hover:opacity-90 disabled:opacity-40 text-on-primary-container text-[12px] font-bold uppercase tracking-wider"
         >
-          {loading ? 'Searching…' : 'Lookup'}
+          {loading ? tl("Searching…") : tl("Lookup")}
         </button>
         <button
           type="button"
           onClick={() => setScanning(true)}
           className="px-4 py-3 rounded bg-[#131316] hover:bg-[#1a1a1e] text-on-surface text-[12px] font-bold uppercase tracking-wider flex items-center gap-1"
         >
-          <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span> Scan pass
+          <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>{' '}{tl("Scan pass")}
         </button>
         {result && (
           <button
@@ -174,7 +174,7 @@ export default function MemberLookup() {
             onClick={reset}
             className="px-4 py-3 rounded bg-[#131316] hover:bg-[#1a1a1e] text-on-surface-variant text-[12px] font-bold uppercase tracking-wider"
           >
-            Clear
+            {tl("Clear")}
           </button>
         )}
       </form>
@@ -205,7 +205,7 @@ export default function MemberLookup() {
                 />
               ) : (
                 <span className="text-[11px] text-on-surface-variant text-center px-2">
-                  No registration photo
+                  {tl("No registration photo")}
                 </span>
               )}
             </div>
@@ -226,7 +226,7 @@ export default function MemberLookup() {
                   : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
               }`}
             >
-              {result.is_valid ? '✓ Valid' : '✗ Not Valid'}
+              {result.is_valid ? tl("✓ Valid") : tl("✗ Not Valid")}
             </div>
 
           </div>
@@ -234,9 +234,9 @@ export default function MemberLookup() {
           {/* Details */}
           <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-6">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <Stat label="Plan" value={result.membership?.plan?.display_name} />
+              <Stat label={tl("Plan")} value={result.membership?.plan?.display_name} />
               <Stat
-                label="Time Remaining"
+                label={tl("Time Remaining")}
                 value={formatRemaining(result.membership?.time_remaining)}
                 accent={
                   result.membership?.time_remaining?.expired
@@ -244,28 +244,28 @@ export default function MemberLookup() {
                     : result.membership?.days_remaining <= 5 ? 'text-amber-400' : ''
                 }
               />
-              <Stat label="Started (approved)" value={formatDate(result.membership?.start_date)} />
-              <Stat label="Status" value={result.membership?.status} />
-              <Stat label="Pass ID" value={result.membership?.pass_id} mono />
+              <Stat label={tl("Started (approved)")} value={formatDate(result.membership?.start_date)} />
+              <Stat label={tl("Status")} value={result.membership?.status} />
+              <Stat label={tl("Pass ID")} value={result.membership?.pass_id} mono />
               <Stat
-                label="Iqama"
+                label={tl("Iqama")}
                 value={result.membership?.iqama_number}
                 mono
               />
               <Stat
-                label="Expires"
+                label={tl("Expires")}
                 value={formatDate(result.membership?.expiry_date)}
               />
             </div>
 
             {/* Paid facility add-ons (pool, courts, ...) */}
             <div className="mb-6 flex flex-wrap items-center gap-2">
-              <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mr-1">Facilities</span>
+              <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mr-1">{tl("Facilities")}</span>
               {result.facilities?.length ? result.facilities.map((f) => (
                 <span key={f.name} className="px-2 py-1 rounded bg-emerald-500/15 text-emerald-400 text-[11px] font-bold">
-                  {f.name} · until {formatDate(f.expires_on)}
+                  {f.name}{' '}{tl("· until")}{' '}{formatDate(f.expires_on)}
                 </span>
-              )) : <span className="text-[12px] text-on-surface-variant">None — gym floor only</span>}
+              )) : <span className="text-[12px] text-on-surface-variant">{tl("None — gym floor only")}</span>}
             </div>
             {/* Session timer */}
             <div className="border-t border-[#1a1a1e] pt-6">
@@ -274,7 +274,7 @@ export default function MemberLookup() {
                   <div className="flex items-center gap-3 mb-4">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-[11px] uppercase tracking-widest text-emerald-400 font-bold">
-                      Session Active
+                      {tl("Session Active")}
                     </span>
                   </div>
                   <div className="text-[48px] font-mono text-on-surface leading-none mb-5">
@@ -285,24 +285,24 @@ export default function MemberLookup() {
                     disabled={busy}
                     className="px-6 py-3 rounded bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white text-[12px] font-bold uppercase tracking-wider"
                   >
-                    End Timer
+                    {tl("End Timer")}
                   </button>
                 </>
               ) : (
                 <>
                   <div className="text-[13px] text-on-surface-variant mb-4">
-                    No active session. Click below to start the timer.
+                    {tl("No active session. Click below to start the timer.")}
                   </div>
                   <button
                     onClick={startTimer}
                     disabled={busy || !result.is_valid}
                     className="px-6 py-3 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-[12px] font-bold uppercase tracking-wider"
                   >
-                    ▶ Start Timer
+                    {tl("▶ Start Timer")}
                   </button>
                   {!result.is_valid && (
                     <span className="ml-3 text-[11px] text-rose-400">
-                      Membership not valid
+                      {tl("Membership not valid")}
                     </span>
                   )}
                 </>

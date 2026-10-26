@@ -1,5 +1,6 @@
 // src/components/profile/PRMilestones.jsx
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function PRMilestones({ prs, loading }) {
   const list = Array.isArray(prs) ? prs : [];
@@ -15,19 +16,19 @@ export default function PRMilestones({ prs, loading }) {
         <div className="flex items-center justify-between mb-space-md flex-wrap gap-2">
           <div className="flex flex-col">
             <span className="font-label-md text-label-md text-primary uppercase tracking-widest font-bold">
-              Validated Achievements
+              {tl("Validated Achievements")}
             </span>
             <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">
-              Personal Records
+              {tl("Personal Records")}
             </h2>
           </div>
           <span className="px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface font-label-md text-label-md font-bold uppercase">
-            {list.length} PRs
+            {list.length}{' '}{tl("PRs")}
           </span>
         </div>
 
         <p className="font-body-md text-body-md text-on-surface-variant mb-space-lg">
-          Verified by Smart Gym plate sensors and linear transducer telemetry.
+          {tl("Verified by Smart Gym plate sensors and linear transducer telemetry.")}
         </p>
       </div>
 
@@ -46,10 +47,10 @@ export default function PRMilestones({ prs, loading }) {
             emoji_events
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-3">
-            No PRs yet
+            {tl("No PRs yet")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Log heavy sets in the Machine Guide to set your first record.
+            {tl("Log heavy sets in the Machine Guide to set your first record.")}
           </p>
         </div>
       ) : (
@@ -74,10 +75,10 @@ export default function PRMilestones({ prs, loading }) {
                   {pr.exercise_name}
                 </span>
                 <span className="font-body-md text-body-md text-on-surface-variant">
-                  {Number(pr.best_weight_kg).toFixed(1)} kg × {pr.best_reps} reps
+                  {Number(pr.best_weight_kg).toFixed(1)}{' '}{tl("kg ×")}{' '}{pr.best_reps} reps
                 </span>
                 <span className="font-label-md text-label-md text-primary font-bold mt-1">
-                  Estimated 1RM: {Number(pr.best_estimated_1rm).toFixed(1)} kg
+                  {tl("Estimated 1RM:")}{' '}{Number(pr.best_estimated_1rm).toFixed(1)} kg
                 </span>
               </div>
             </motion.div>
@@ -92,12 +93,12 @@ export default function PRMilestones({ prs, loading }) {
           </span>
           <span className="font-body-md text-body-md text-on-surface">
             {list.length > 0
-              ? `Logged ${list.length} verified record${list.length > 1 ? 's' : ''}`
-              : 'Start logging to build your record history'}
+              ? tl("Logged {0} verified record{1}", { 0: list.length, 1: list.length > 1 ? 's' : '' })
+              : tl("Start logging to build your record history")}
           </span>
         </div>
         <button className="font-label-md text-label-md text-primary uppercase font-bold hover:underline">
-          View Full Log
+          {tl("View Full Log")}
         </button>
       </div>
     </motion.div>

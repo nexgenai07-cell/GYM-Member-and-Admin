@@ -8,6 +8,7 @@ import { paymentsService } from '../../services/paymentsService';
 import { errorMessage } from '../../utils/apiError';
 import { formatSAR } from '../../utils/money';
 import { RETURN_KEY } from '../../components/payments/PayDialog';
+import { tl } from '../../i18n';
 
 const MAX_POLLS = 6;
 const POLL_MS = 3000;
@@ -43,7 +44,7 @@ export default function PaymentCallback() {
         }
       } catch (err) {
         if (!alive) return;
-        setMessage(errorMessage(err, 'Could not verify the payment.'));
+        setMessage(errorMessage(err, tl("Could not verify the payment.")));
       }
       if (n + 1 < MAX_POLLS) timer = setTimeout(() => attempt(n + 1), POLL_MS);
       else setState('pending');
@@ -84,10 +85,10 @@ export default function PaymentCallback() {
         {state !== 'verifying' && (
           <div className="flex gap-2 flex-wrap justify-center">
             <Link to={backPath} className="px-5 py-2 rounded bg-primary-container text-on-primary-container font-bold uppercase text-[11px]">
-              {state === 'failed' ? 'Try again' : `Back to ${back?.title || 'payments'}`}
+              {state === 'failed' ? tl("Try again") : tl("Back to {0}", { 0: back?.title || 'payments' })}
             </Link>
             <Link to="/dashboard/payments" className="px-5 py-2 rounded bg-surface-container-high text-on-surface font-bold uppercase text-[11px]">
-              Payment history
+              {tl("Payment history")}
             </Link>
           </div>
         )}

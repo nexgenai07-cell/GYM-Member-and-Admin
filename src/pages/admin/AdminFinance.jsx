@@ -9,6 +9,7 @@ import RevenueChart from '../../components/admin/RevenueChart';
 import RevenueStreams from '../../components/admin/RevenueStreams';
 import TopMembersCard from '../../components/admin/TopMembersCard';
 import InvoiceDrawer from '../../components/admin/InvoiceDrawer';
+import { tl, locale } from '../../i18n';
 
 export default function AdminFinance() {
   const [page, setPage] = useState(1);
@@ -48,7 +49,7 @@ export default function AdminFinance() {
       const detail = await adminService.transactionDetail(txn.id);
       setSelectedTxn(detail);
     } catch {
-      toast.error('Failed to load invoice');
+      toast.error(tl("Failed to load invoice"));
     }
   };
 
@@ -61,19 +62,19 @@ export default function AdminFinance() {
         <div className="flex items-center gap-2 text-primary mb-2">
           <span className="material-symbols-outlined text-[16px]">payments</span>
           <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            Finance
+            {tl("Finance")}
           </span>
         </div>
         <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          Revenue & payments
+          {tl("Revenue & payments")}
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          Money received by card, STC Pay, top-ups and desk payments. Spending locker credit isn’t counted again — it was counted when topped up.
+          {tl("Money received by card, STC Pay, top-ups and desk payments. Spending locker credit isn’t counted again — it was counted when topped up.")}
         </p>
       </motion.div>
 
-      <div className="flex gap-1" role="tablist" aria-label="Period">
-        {[['7d', '7 days'], ['30d', '30 days'], ['90d', '90 days'], ['ytd', 'Year to date']].map(([id, label]) => (
+      <div className="flex gap-1" role="tablist" aria-label={tl("Period")}>
+        {[['7d', tl("7 days")], ['30d', tl("30 days")], ['90d', tl("90 days")], ['ytd', tl("Year to date")]].map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={range === id} onClick={() => setRange(id)}
             className={`px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${range === id ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant hover:text-on-surface'}`}>
             {label}
@@ -84,27 +85,27 @@ export default function AdminFinance() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <FinanceStat
-          label="Received"
+          label={tl("Received")}
           value={loading ? '—' : formatSAR(overview?.received)}
           delta={`${overview?.range_label || ''} · ${overview?.payment_count ?? 0} payments`}
           icon="payments"
           accent
         />
         <FinanceStat
-          label="This month"
+          label={tl("This month")}
           value={loading ? '—' : formatSAR(overview?.this_month)}
           delta={`Annual run rate ${formatSAR(overview?.run_rate)}`}
           icon="trending_up"
         />
         <FinanceStat
-          label="Payments to review"
+          label={tl("Payments to review")}
           value={loading ? '—' : formatSAR(overview?.review_amount)}
           delta={`${overview?.review_count ?? 0} — refund or follow up in Shop Orders`}
           icon="schedule"
           accent
         />
         <FinanceStat
-          label="Refunds"
+          label={tl("Refunds")}
           value={loading ? '—' : formatSAR(overview?.refunds)}
           delta={overview?.range_label || ''}
           icon="undo"
@@ -132,16 +133,16 @@ export default function AdminFinance() {
       >
         <div className="p-5 border-b border-surface-container-high flex items-center justify-between">
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase">
-            All transactions
+            {tl("All transactions")}
           </h2>
           <div className="flex gap-2 flex-wrap">
-            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search member, item, ID…" aria-label="Search transactions"
+            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder={tl("Search member, item, ID…")} aria-label={tl("Search transactions")}
               className="bg-surface-container-lowest text-on-surface text-[12px] px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary" />
-            <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} aria-label="Type"
+            <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} aria-label={tl("Type")}
               className="bg-surface-container-lowest text-on-surface text-[12px] px-3 py-2 rounded border border-surface-container-high">
-              <option value="">All types</option><option value="subscription">Memberships & add-ons</option>
-              <option value="retail">Shop</option><option value="coaching">Trainers & courses</option>
-              <option value="topup">Top-ups</option><option value="refund">Refunds</option>
+              <option value="">{tl("All types")}</option><option value="subscription">{tl("Memberships & add-ons")}</option>
+              <option value="retail">{tl("Shop")}</option><option value="coaching">{tl("Trainers & courses")}</option>
+              <option value="topup">{tl("Top-ups")}</option><option value="refund">{tl("Refunds")}</option>
             </select>
           </div>
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase">
@@ -164,7 +165,7 @@ export default function AdminFinance() {
               receipt_long
             </span>
             <p className="font-title-md text-title-md text-on-surface mt-3">
-              No transactions yet
+              {tl("No transactions yet")}
             </p>
           </div>
         ) : (
@@ -172,12 +173,12 @@ export default function AdminFinance() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-surface-container-lowest text-on-surface-variant font-label-md text-[10px] uppercase tracking-wider">
-                  <th className="py-3 px-4 text-left">Transaction</th>
-                  <th className="py-3 px-4 text-left">Member</th>
-                  <th className="py-3 px-4 text-left">Description</th>
-                  <th className="py-3 px-4 text-right">Amount</th>
-                  <th className="py-3 px-4 text-left">Status</th>
-                  <th className="py-3 px-4 text-right">Action</th>
+                  <th className="py-3 px-4 text-left">{tl("Transaction")}</th>
+                  <th className="py-3 px-4 text-left">{tl("Member")}</th>
+                  <th className="py-3 px-4 text-left">{tl("Description")}</th>
+                  <th className="py-3 px-4 text-right">{tl("Amount")}</th>
+                  <th className="py-3 px-4 text-left">{tl("Status")}</th>
+                  <th className="py-3 px-4 text-right">{tl("Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container-highest/50">
@@ -195,7 +196,7 @@ export default function AdminFinance() {
                           {t.transaction_id}
                         </span>
                         <span className="font-label-md text-[9px] text-on-surface-variant">
-                          {new Date(t.created_at).toLocaleString()} · {t.method || '—'}
+                          {new Date(t.created_at).toLocaleString(locale)} · {t.method || '—'}
                         </span>
                       </div>
                     </td>
@@ -233,7 +234,7 @@ export default function AdminFinance() {
                             : 'bg-surface-container-high text-on-surface-variant'
                         }`}
                       >
-                        {t.status}
+                        {tl(t.status)}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -241,7 +242,7 @@ export default function AdminFinance() {
                         onClick={() => handleViewInvoice(t)}
                         className="w-8 h-8 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors"
                         type="button"
-                        title="View invoice"
+                        title={tl("View invoice")}
                       >
                         <span className="material-symbols-outlined text-[18px]">
                           visibility
@@ -259,7 +260,7 @@ export default function AdminFinance() {
         {!loadingTx && transactions.length > 0 && (
           <div className="p-4 bg-surface-container-lowest flex items-center justify-between">
             <span className="font-label-md text-[10px] text-on-surface-variant uppercase">
-              Page {page} · {total} transactions
+              {tl("Page")}{' '}{page} · {total} transactions
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -268,7 +269,7 @@ export default function AdminFinance() {
                 className="px-3 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface text-[11px] font-bold uppercase disabled:opacity-30"
                 type="button"
               >
-                Prev
+                {tl("Prev")}
               </button>
               <span className="px-3 py-1 rounded bg-primary-container text-on-primary-container text-[11px] font-bold">
                 {page}
@@ -279,7 +280,7 @@ export default function AdminFinance() {
                 className="px-3 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface text-[11px] font-bold uppercase disabled:opacity-30"
                 type="button"
               >
-                Next
+                {tl("Next")}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { workoutsService } from '../services/workoutsService';
 import { errorMessage } from '../utils/apiError';
+import { tl, locale } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -20,10 +21,10 @@ export default function WorkoutCard({ workout, onStartWorkout, starting, onChang
     setFinishing(true);
     try {
       const done = await workoutsService.complete(workout.id);
-      toast.success(`Workout saved — ${done.total_sets} sets, ${Number(done.total_tonnage_kg).toLocaleString()} kg`);
+      toast.success(tl("Workout saved — {0} sets, {1} kg", { 0: done.total_sets, 1: Number(done.total_tonnage_kg).toLocaleString(locale) }));
       onChanged?.();
     } catch (e) {
-      toast.error(errorMessage(e, 'Could not finish the workout'));
+      toast.error(errorMessage(e, tl("Could not finish the workout")));
     } finally {
       setFinishing(false);
     }
@@ -45,15 +46,15 @@ export default function WorkoutCard({ workout, onStartWorkout, starting, onChang
         <div className="flex flex-col gap-1">
           <span className={`w-fit px-space-xs py-0.5 rounded font-label-md text-label-md uppercase tracking-widest font-bold ${
             workout ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
-            {workout ? 'In progress' : 'Ready'}
+            {workout ? tl("In progress") : tl("Ready")}
           </span>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide m-0">
-            {workout?.name || 'Ready for today’s session'}
+            {workout?.name || tl("Ready for today’s session")}
           </h2>
           <span className="font-body-md text-body-md text-on-surface-variant">
             {workout
-              ? `Started ${new Date(workout.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${exercises.length} exercise${exercises.length === 1 ? '' : 's'} · ${exercises.reduce((n, e) => n + (e.total_sets || 0), 0)} sets`
-              : 'Start a session, then scan machines or pick exercises to log your sets.'}
+              ? tl("Started {0} · {1} exercise{2} · {3} sets", { 0: new Date(workout.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 1: exercises.length, 2: exercises.length === 1 ? '' : 's', 3: exercises.reduce((n, e) => n + (e.total_sets || 0), 0) })
+              : tl("Start a session, then scan machines or pick exercises to log your sets.")}
           </span>
         </div>
       </div>
@@ -66,8 +67,8 @@ export default function WorkoutCard({ workout, onStartWorkout, starting, onChang
 
       {workout && exercises.length === 0 && (
         <div className="relative rounded-lg bg-surface-container-low p-space-md text-on-surface-variant text-[13px]">
-          No exercises yet — scan a machine or open the{' '}
-          <Link to="/dashboard/machine-guide" className="text-primary hover:underline">Machine Guide</Link> to log your first set.
+          {tl("No exercises yet — scan a machine or open the")}{' '}
+          <Link to="/dashboard/machine-guide" className="text-primary hover:underline">{tl("Machine Guide")}</Link>{' '}{tl("to log your first set.")}
         </div>
       )}
 
@@ -76,18 +77,18 @@ export default function WorkoutCard({ workout, onStartWorkout, starting, onChang
           <button type="button" onClick={onStartWorkout} disabled={starting}
             className="px-space-lg py-space-sm rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg uppercase tracking-wider font-bold flex items-center gap-space-xs disabled:opacity-60">
             <span className="material-symbols-outlined text-[18px]">{starting ? 'sync' : 'play_arrow'}</span>
-            {starting ? 'Starting…' : 'Start workout'}
+            {starting ? tl("Starting…") : tl("Start workout")}
           </button>
         ) : (
           <>
             <Link to="/dashboard/machine-guide"
               className="px-space-lg py-space-sm rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-lg uppercase tracking-wider font-bold flex items-center gap-space-xs">
-              <span className="material-symbols-outlined text-[18px]">add</span> Add exercise
+              <span className="material-symbols-outlined text-[18px]">add</span>{' '}{tl("Add exercise")}
             </Link>
             <button type="button" onClick={finish} disabled={finishing}
               className="px-space-lg py-space-sm rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg uppercase tracking-wider font-bold flex items-center gap-space-xs disabled:opacity-60">
               <span className="material-symbols-outlined text-[18px]">flag</span>
-              {finishing ? 'Saving…' : 'Finish workout'}
+              {finishing ? tl("Saving…") : tl("Finish workout")}
             </button>
           </>
         )}
@@ -107,16 +108,16 @@ function ExerciseRow({ ex, onLogged }) {
     const r = parseInt(reps, 10);
     const w = parseFloat(weight);
     if (!(r > 0) || !(w >= 0)) {
-      toast.error('Enter reps and weight');
+      toast.error(tl("Enter reps and weight"));
       return;
     }
     setSaving(true);
     try {
       const set = await workoutsService.logSet(ex.id, { set_number: (ex.total_sets || 0) + 1, reps: r, weight_kg: w });
-      toast.success(set.is_pr ? `New PR on ${ex.name}!` : `Set ${set.set_number} logged`);
+      toast.success(set.is_pr ? tl("New PR on {0}!", { 0: ex.name }) : tl("Set {0} logged", { 0: set.set_number }));
       onLogged?.();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not log the set'));
+      toast.error(errorMessage(err, tl("Could not log the set")));
     } finally {
       setSaving(false);
     }
@@ -127,19 +128,19 @@ function ExerciseRow({ ex, onLogged }) {
       <div className="flex flex-col min-w-0">
         <span className="font-title-md text-title-md text-on-surface truncate">{ex.name}</span>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-          {ex.muscle ? `${ex.muscle} · ` : ''}{ex.total_sets || 0} sets{last ? ` · last ${last.weight_kg} kg × ${last.reps}` : ''}
+          {ex.muscle ? `${ex.muscle} · ` : ''}{ex.total_sets || 0} sets{last ? tl(" · last {0} kg × {1}", { 0: last.weight_kg, 1: last.reps }) : ''}
         </span>
       </div>
       <div className="flex items-center gap-1">
-        <input aria-label={`${ex.name} reps`} inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)}
+        <input aria-label={tl("{0} reps", { 0: ex.name })} inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)}
           className="w-14 bg-surface-container-lowest text-on-surface text-center px-1 py-1 rounded border border-surface-container-high" />
-        <span className="text-on-surface-variant text-[11px]">reps ×</span>
-        <input aria-label={`${ex.name} weight in kg`} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)}
+        <span className="text-on-surface-variant text-[11px]">{tl("reps ×")}</span>
+        <input aria-label={tl("{0} weight in kg", { 0: ex.name })} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)}
           className="w-16 bg-surface-container-lowest text-on-surface text-center px-1 py-1 rounded border border-surface-container-high" />
         <span className="text-on-surface-variant text-[11px]">kg</span>
         <button type="submit" disabled={saving}
           className="ml-1 px-space-sm py-1 rounded bg-primary-container text-on-primary-container font-label-md text-label-md uppercase font-bold disabled:opacity-60">
-          {saving ? '…' : '+ Log'}
+          {saving ? '…' : tl("+ Log")}
         </button>
       </div>
     </form>

@@ -9,6 +9,7 @@ import TelemetryImpact from '../../components/trainers/TelemetryImpact';
 import CurriculumGrid from '../../components/trainers/CurriculumGrid';
 import ReviewsList from '../../components/trainers/ReviewsList';
 import BookingPanel from '../../components/trainers/BookingPanel';
+import { tl } from '../../i18n';
 
 export default function TrainerProfile() {
   const { id } = useParams();
@@ -35,14 +36,14 @@ export default function TrainerProfile() {
           person_off
         </span>
         <p className="font-title-md text-title-md text-on-surface mt-3">
-          Trainer not found
+          {tl("Trainer not found")}
         </p>
         <button
           onClick={() => navigate('/dashboard/trainers')}
           className="mt-4 px-6 py-2 rounded bg-primary-container text-on-primary-container font-label-lg uppercase tracking-wider"
           type="button"
         >
-          Back to Directory
+          {tl("Back to Directory")}
         </button>
       </div>
     );
@@ -65,7 +66,7 @@ export default function TrainerProfile() {
         {/* LEFT: Content */}
         <div className="flex flex-col gap-space-xl min-w-0">
           <SpecialtiesPillRow specialties={trainer.specialties} />
-          <PhilosophyCard bio={trainer.bio} title="Coaching Philosophy" />
+          <PhilosophyCard bio={trainer.bio} title={tl("Coaching Philosophy")} />
           <TelemetryImpact trainer={trainer} />
           <CurriculumGrid courses={trainer.courses || []} />
           <ReviewsList reviews={trainer.reviews || []} />

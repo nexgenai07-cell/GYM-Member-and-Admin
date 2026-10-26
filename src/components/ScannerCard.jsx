@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { workoutsService } from '../services/workoutsService';
 import QrScanner from './QrScanner';
 import { machineTagFrom } from '../utils/machineQr';
+import { tl } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -23,10 +24,10 @@ export default function ScannerCard() {
     setLooking(true);
     try {
       const ex = await workoutsService.exerciseByQR(tag);
-      toast.success(`Found: ${ex.name}`);
+      toast.success(tl("Found: {0}", { 0: ex.name }));
       navigate(`/dashboard/machine-guide?qr=${encodeURIComponent(tag)}`);
     } catch {
-      toast.error('No machine matches that code');
+      toast.error(tl("No machine matches that code"));
     } finally {
       setLooking(false);
     }
@@ -42,10 +43,10 @@ export default function ScannerCard() {
       <div className="absolute -right-16 -top-16 w-44 h-44 bg-primary-container/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="flex flex-col gap-1 relative z-10">
-        <span className="font-label-md text-label-md uppercase tracking-widest text-primary">Machine Scanner</span>
-        <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide m-0">Scan a machine</h2>
+        <span className="font-label-md text-label-md uppercase tracking-widest text-primary">{tl("Machine Scanner")}</span>
+        <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide m-0">{tl("Scan a machine")}</h2>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Scan the QR sticker on any machine to open its guide and log your sets.
+          {tl("Scan the QR sticker on any machine to open its guide and log your sets.")}
         </p>
       </div>
 
@@ -59,7 +60,7 @@ export default function ScannerCard() {
           <span className="material-symbols-outlined text-[32px]">{looking ? 'sync' : 'qr_code_scanner'}</span>
         </span>
         <span className="font-title-md text-title-md text-on-surface uppercase tracking-wider">
-          {looking ? 'Looking up…' : 'Open camera'}
+          {looking ? tl("Looking up…") : tl("Open camera")}
         </span>
       </button>
 
@@ -68,7 +69,7 @@ export default function ScannerCard() {
         onSubmit={(e) => { e.preventDefault(); openMachine(code); }}
       >
         <label htmlFor="machineCode" className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">
-          Or type the machine code
+          {tl("Or type the machine code")}
         </label>
         <div className="flex gap-space-xs">
           <input
@@ -76,30 +77,30 @@ export default function ScannerCard() {
             type="text"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Code printed under the QR"
+            placeholder={tl("Code printed under the QR")}
             autoComplete="off"
             className="flex-1 min-w-0 bg-surface-container-lowest text-on-surface px-space-sm py-space-xs rounded border border-surface-container-high focus:outline-none focus:border-primary"
           />
           <button type="submit" disabled={looking || !code.trim()}
             className="px-space-md rounded bg-primary-container text-on-primary-container font-label-lg uppercase tracking-wider font-bold disabled:opacity-50">
-            Open
+            {tl("Open")}
           </button>
         </div>
       </form>
 
       <div className="relative z-10 flex items-center justify-between text-on-surface-variant font-label-md text-label-md uppercase">
         <Link to="/dashboard/profile#pass" className="flex items-center gap-1 hover:text-primary">
-          <span className="material-symbols-outlined text-[16px]">badge</span> My entry pass
+          <span className="material-symbols-outlined text-[16px]">badge</span>{' '}{tl("My entry pass")}
         </Link>
         <Link to="/dashboard/machine-guide" className="flex items-center gap-1 hover:text-primary">
-          <span className="material-symbols-outlined text-[16px]">precision_manufacturing</span> All machines
+          <span className="material-symbols-outlined text-[16px]">precision_manufacturing</span>{' '}{tl("All machines")}
         </Link>
       </div>
 
       <QrScanner
         open={scanning}
-        title="Scan machine QR"
-        manualLabel="Or type the machine code"
+        title={tl("Scan machine QR")}
+        manualLabel={tl("Or type the machine code")}
         onResult={openMachine}
         onClose={() => setScanning(false)}
       />

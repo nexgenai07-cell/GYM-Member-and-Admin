@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { btn, inputCls, labelCls } from './siteStyles';
+import { tl } from '../../i18n';
 
 export function PageHeader({ title, subtitle, children }) {
   return (
@@ -28,7 +29,7 @@ export function BilingualField({ label, value, onChange, multiline = false, erro
           className={`${inputCls} ${error ? 'border-rose-500' : ''}`}
           value={v.en}
           rows={multiline ? rows : undefined}
-          placeholder="English"
+          placeholder={tl("English")}
           onChange={(e) => onChange({ ...v, en: e.target.value })}
         />
         <Tag
@@ -81,30 +82,30 @@ export function ImageUploader({ url, customized, onUpload, onReset, label = 'Ima
         {url ? (
           <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
         ) : (
-          <div className="w-full h-full grid place-items-center text-on-surface-variant text-[12px]">No image</div>
+          <div className="w-full h-full grid place-items-center text-on-surface-variant text-[12px]">{tl("No image")}</div>
         )}
         {busy && (
           <div className="absolute inset-0 bg-black/60 grid place-items-center text-[11px] uppercase tracking-widest text-on-surface">
-            Uploading…
+            {tl("Uploading…")}
           </div>
         )}
         <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
           customized ? 'bg-primary-container text-on-primary-container' : 'bg-black/60 text-on-surface-variant'
         }`}>
-          {customized ? 'Uploaded' : 'Original'}
+          {customized ? tl("Uploaded") : tl("Original")}
         </span>
       </div>
       <input ref={input} type="file" accept={TYPES.join(',')} className="hidden" onChange={pick} />
       <div className="flex gap-2">
         <button type="button" className={btn.ghost} disabled={busy} onClick={() => input.current?.click()}>
-          {customized ? 'Replace' : 'Upload'}
+          {customized ? tl("Replace") : tl("Upload")}
         </button>
         {customized && onReset && (
-          <button type="button" className={btn.ghost} disabled={busy} onClick={reset}>Use original</button>
+          <button type="button" className={btn.ghost} disabled={busy} onClick={reset}>{tl("Use original")}</button>
         )}
       </div>
       {error && <span className="text-[11px] text-rose-400">{error}</span>}
-      <span className="text-[10px] text-on-surface-variant/60">JPEG, PNG or WebP · under 4 MB</span>
+      <span className="text-[10px] text-on-surface-variant/60">{tl("JPEG, PNG or WebP · under 4 MB")}</span>
     </div>
   );
 }
@@ -145,7 +146,7 @@ export function Drawer({ open, title, subtitle, onClose, children, footer }) {
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={tl("Close")}
                 className="w-8 h-8 rounded bg-[#131316] hover:bg-rose-700/30 text-on-surface-variant grid place-items-center"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>

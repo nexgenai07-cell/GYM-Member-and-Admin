@@ -9,6 +9,7 @@ import { Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import { GYM_TZ } from '../../utils/gymTime';
 import { errorMessage } from '../../utils/apiError';
+import { tl, locale } from '../../i18n';
 
 // Today in gym time as YYYY-MM-DD (en-CA formats dates that way).
 const iso = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: GYM_TZ }).format(d);
@@ -41,12 +42,12 @@ export default function AdminReports() {
     setBusy(t.key);
     try {
       const report = await reportsService.generate({ template_key: t.key, start: range[0], end: range[1] });
-      toast.success(`${report.name} — ${report.row_count} rows`);
+      toast.success(tl("{0} — {1} rows", { 0: report.name, 1: report.row_count }));
       await reportsService.download(report);
       refetchHistory();
       refetchTemplates();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not generate the report'));
+      toast.error(errorMessage(err, tl("Could not generate the report")));
     } finally {
       setBusy(null);
     }
@@ -56,28 +57,28 @@ export default function AdminReports() {
     try {
       await reportsService.download(r);
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not download the report'));
+      toast.error(errorMessage(err, tl("Could not download the report")));
     }
   };
 
   const remove = async (r) => {
-    if (!window.confirm(`Delete “${r.name}”?`)) return;
+    if (!window.confirm(tl("Delete “{0}”?", { 0: r.name }))) return;
     try {
       await reportsService.deleteReport(r.report_id);
-      toast.success('Report deleted');
+      toast.success(tl("Report deleted"));
       refetchHistory();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not delete the report'));
+      toast.error(errorMessage(err, tl("Could not delete the report")));
     }
   };
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-6">
-      <PageHeader title="Reports" subtitle="Download real data as CSV (opens in Excel or Google Sheets). Dates are in gym time." />
+      <PageHeader title={tl("Reports")} subtitle={tl("Download real data as CSV (opens in Excel or Google Sheets). Dates are in gym time.")} />
 
       <section className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-4 flex flex-col lg:flex-row lg:items-end gap-3">
         <div className="flex flex-col gap-1">
-          <span className={labelCls}>Period</span>
+          <span className={labelCls}>{tl("Period")}</span>
           <div className="flex gap-1 flex-wrap">
             {Object.entries(PRESETS).map(([key, [label]]) => (
               <button key={key} type="button" onClick={() => pick(key)}
@@ -88,10 +89,10 @@ export default function AdminReports() {
             ))}
           </div>
         </div>
-        <label className="flex flex-col gap-1"><span className={labelCls}>From</span>
+        <label className="flex flex-col gap-1"><span className={labelCls}>{tl("From")}</span>
           <input type="date" className={inputCls} value={range[0]} max={range[1]}
             onChange={(e) => { setPreset('custom'); setRange([e.target.value, range[1]]); }} /></label>
-        <label className="flex flex-col gap-1"><span className={labelCls}>To</span>
+        <label className="flex flex-col gap-1"><span className={labelCls}>{tl("To")}</span>
           <input type="date" className={inputCls} value={range[1]} min={range[0]} max={TODAY}
             onChange={(e) => { setPreset('custom'); setRange([range[0], e.target.value]); }} /></label>
       </section>
@@ -113,10 +114,10 @@ export default function AdminReports() {
               </div>
               <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#1a1a1e]">
                 <span className="text-[11px] text-on-surface-variant">
-                  {t.last_generated_at ? `Last run ${new Date(t.last_generated_at).toLocaleDateString()}` : 'Not run yet'}
+                  {t.last_generated_at ? tl("Last run {0}", { 0: new Date(t.last_generated_at).toLocaleDateString(locale) }) : tl("Not run yet")}
                 </span>
                 <button type="button" className={btn.primary} disabled={busy === t.key || !range[0] || !range[1]} onClick={() => generate(t)}>
-                  {busy === t.key ? 'Building…' : 'Download CSV'}
+                  {busy === t.key ? tl("Building…") : tl("Download CSV")}
                 </button>
               </div>
             </div>
@@ -125,18 +126,18 @@ export default function AdminReports() {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className={labelCls}>Generated reports</h2>
+        <h2 className={labelCls}>{tl("Generated reports")}</h2>
         {historyLoading ? (
           <div className="h-24 bg-[#0e0e0f] rounded-lg animate-pulse" />
         ) : past.length === 0 ? (
-          <Empty>Reports you generate are kept here.</Empty>
+          <Empty>{tl("Reports you generate are kept here.")}</Empty>
         ) : (
           <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
-                  <th className="px-4 py-3">Report</th><th className="px-4 py-3">Rows</th><th className="px-4 py-3">Size</th>
-                  <th className="px-4 py-3">Generated</th><th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">{tl("Report")}</th><th className="px-4 py-3">{tl("Rows")}</th><th className="px-4 py-3">{tl("Size")}</th>
+                  <th className="px-4 py-3">{tl("Generated")}</th><th className="px-4 py-3 text-right">{tl("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -145,12 +146,12 @@ export default function AdminReports() {
                     <td className="px-4 py-3"><div className="text-on-surface">{r.name}</div>
                       <div className="text-[11px] text-on-surface-variant font-mono">{r.report_id}</div></td>
                     <td className="px-4 py-3 text-on-surface-variant">{r.row_count}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{r.size_kb} KB</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{r.size_kb}{' '}{tl("KB")}</td>
                     <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">
-                      {new Date(r.generated_at).toLocaleString()}<div className="text-[11px]">{r.generated_by_name}</div></td>
+                      {new Date(r.generated_at).toLocaleString(locale)}<div className="text-[11px]">{r.generated_by_name}</div></td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <button type="button" className={btn.ghost} onClick={() => download(r)}>Download</button>{' '}
-                      <button type="button" className={btn.danger} onClick={() => remove(r)}>Delete</button>
+                      <button type="button" className={btn.ghost} onClick={() => download(r)}>{tl("Download")}</button>{' '}
+                      <button type="button" className={btn.danger} onClick={() => remove(r)}>{tl("Delete")}</button>
                     </td>
                   </tr>
                 ))}

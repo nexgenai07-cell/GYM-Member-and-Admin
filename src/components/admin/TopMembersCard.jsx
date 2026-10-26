@@ -1,6 +1,7 @@
 // src/components/admin/TopMembersCard.jsx
 import { motion } from 'framer-motion';
 import { formatSAR } from '../../utils/money';
+import { tl } from '../../i18n';
 const tierColors = {
   'Black Elite': 'bg-gradient-to-r from-[#2a2a2e] to-[#3a3a3e] text-on-surface',
   'Pro': 'bg-primary-container/20 text-primary',
@@ -24,10 +25,10 @@ export default function TopMembersCard({ data, loading }) {
       <div className="flex items-center justify-between">
         <div>
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            Top Contributors
+            {tl("Top Contributors")}
           </span>
           <h2 className="font-headline-md text-headline-md uppercase text-on-surface">
-            Highest LTV Members
+            {tl("Highest LTV Members")}
           </h2>
         </div>
         <span className="material-symbols-outlined text-primary text-[24px]">
@@ -37,7 +38,7 @@ export default function TopMembersCard({ data, loading }) {
 
       {members.length === 0 ? (
         <div className="text-center py-8 text-on-surface-variant text-[13px]">
-          No member data yet
+          {tl("No member data yet")}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -96,7 +97,7 @@ export default function TopMembersCard({ data, loading }) {
       <div className="mt-auto pt-4 border-t border-surface-container-high">
         <div className="flex items-center justify-between">
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-            Top {members.length} paid in total
+            {tl("Top")}{' '}{members.length}{' '}{tl("paid in total")}
           </span>
           <span className="font-headline-md text-headline-md text-primary">
             {formatSAR(totalLtv)}

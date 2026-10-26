@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function CoachNotes({ trainer, course }) {
   const coachName = trainer?.user?.full_name || course?.trainer_name || 'Your Coach';
@@ -45,7 +46,7 @@ export default function CoachNotes({ trainer, course }) {
         {course?.category && (
           <div className="flex items-center gap-space-xs bg-surface-container-lowest px-space-sm py-space-2xs rounded-lg">
             <span className="text-label-md font-label-md text-on-surface-variant uppercase">
-              Category:
+              {tl("Category:")}
             </span>
             <span className="text-label-lg font-label-lg text-on-surface">
               {course.category}
@@ -57,7 +58,7 @@ export default function CoachNotes({ trainer, course }) {
       <p className="text-body-md font-body-md text-on-surface-variant leading-relaxed">
         {trainer?.bio ||
           course?.description ||
-          'Follow the day-by-day protocol. Log each set to sync your velocity and tonnage to your profile.'}
+          tl("Follow the day-by-day protocol. Log each set to sync your velocity and tonnage to your profile.")}
       </p>
 
       {trainer?.credentials && (
@@ -67,7 +68,7 @@ export default function CoachNotes({ trainer, course }) {
               verified
             </span>
             <span className="text-label-md font-label-md text-on-surface-variant uppercase">
-              Credentials:
+              {tl("Credentials:")}
             </span>
             <span className="text-body-md font-body-md text-on-surface">
               {trainer.credentials}
@@ -75,7 +76,7 @@ export default function CoachNotes({ trainer, course }) {
           </div>
           {trainer.years_experience > 0 && (
             <span className="font-headline-md text-headline-md text-primary">
-              {trainer.years_experience}+ YRS
+              {trainer.years_experience}{tl("+ YRS")}
             </span>
           )}
         </div>

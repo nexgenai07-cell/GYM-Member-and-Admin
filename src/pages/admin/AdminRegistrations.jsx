@@ -7,13 +7,14 @@ import { formatDate, formatRemaining } from '../../utils/membershipTime';
 import { formatSAR } from '../../utils/money';
 import { errorMessage } from '../../utils/apiError';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { tl } from '../../i18n';
 
 const STATUS_FILTERS = [
-  { id: 'pending', label: 'Pending' },
-  { id: 'payment_confirmed', label: 'Paid' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'rejected', label: 'Rejected' },
-  { id: 'all', label: 'All' },
+  { id: 'pending', label: tl("Pending") },
+  { id: 'payment_confirmed', label: tl("Paid") },
+  { id: 'approved', label: tl("Approved") },
+  { id: 'rejected', label: tl("Rejected") },
+  { id: 'all', label: tl("All") },
 ];
 
 const StatusBadge = ({ status }) => {
@@ -56,7 +57,7 @@ export default function AdminRegistrations() {
       setRegistrations(listRes.results || []);
       setStats(statsRes);
     } catch (err) {
-      toast.error(errorMessage(err, 'Failed to load registrations'));
+      toast.error(errorMessage(err, tl("Failed to load registrations")));
     } finally {
       setLoading(false);
     }
@@ -73,11 +74,11 @@ export default function AdminRegistrations() {
     try {
       const res = await adminService.approveRegistration(id);
       toast.success(
-        `Approved. Pass: ${res.membership?.pass_id || 'created'}`
+        tl("Approved. Pass: {0}", { 0: res.membership?.pass_id || 'created' })
       );
       await load();
     } catch (err) {
-      toast.error(errorMessage(err, 'Approval failed'));
+      toast.error(errorMessage(err, tl("Approval failed")));
     } finally {
       setBusyId(null);
     }
@@ -88,28 +89,28 @@ export default function AdminRegistrations() {
     setBusyId(id);
     try {
       const res = await adminService.rejectRegistration(id, reason, refund);
-      toast.success(res.refunded ? `Rejected and ${formatSAR(rejecting.payment_amount)} refunded` : 'Registration rejected');
+      toast.success(res.refunded ? tl("Rejected and {0} refunded", { 0: formatSAR(rejecting.payment_amount) }) : 'Registration rejected');
       setRejecting(null);
       await load();
     } catch (err) {
-      toast.error(errorMessage(err, 'Rejection failed'));
+      toast.error(errorMessage(err, tl("Rejection failed")));
     } finally {
       setBusyId(null);
     }
   };
 
   const handleBulkApproveToday = async () => {
-    if (!window.confirm("Approve all PAID registrations submitted today? Each payment is re-verified with Moyasar; unpaid ones are skipped.")) return;
+    if (!window.confirm(tl("Approve all PAID registrations submitted today? Each payment is re-verified with Moyasar; unpaid ones are skipped."))) return;
     setBulkBusy(true);
     try {
       const res = await adminService.bulkApproveRegistrations({ onlyToday: true });
       toast.success(
-        `Approved ${res.approved_count}. Failed: ${res.failed_count}`
+        tl("Approved {0}. Failed: {1}", { 0: res.approved_count, 1: res.failed_count })
       );
       if (res.failed?.length) toast.error(res.failed.map((f) => `#${f.id}: ${f.error}`).join('\n'), { duration: 8000 });
       await load();
     } catch (err) {
-      toast.error(errorMessage(err, 'Bulk approve failed'));
+      toast.error(errorMessage(err, tl("Bulk approve failed")));
     } finally {
       setBulkBusy(false);
     }
@@ -118,7 +119,7 @@ export default function AdminRegistrations() {
   const handleBulkApproveAll = async () => {
     if (
       !window.confirm(
-        "Approve ALL paid registrations (not just today)? Each payment is re-verified with Moyasar. This will create user accounts."
+        tl("Approve ALL paid registrations (not just today)? Each payment is re-verified with Moyasar. This will create user accounts.")
       )
     )
       return;
@@ -126,12 +127,12 @@ export default function AdminRegistrations() {
     try {
       const res = await adminService.bulkApproveRegistrations({});
       toast.success(
-        `Approved ${res.approved_count}. Failed: ${res.failed_count}`
+        tl("Approved {0}. Failed: {1}", { 0: res.approved_count, 1: res.failed_count })
       );
       if (res.failed?.length) toast.error(res.failed.map((f) => `#${f.id}: ${f.error}`).join('\n'), { duration: 8000 });
       await load();
     } catch (err) {
-      toast.error(errorMessage(err, 'Bulk approve failed'));
+      toast.error(errorMessage(err, tl("Bulk approve failed")));
     } finally {
       setBulkBusy(false);
     }
@@ -143,9 +144,9 @@ export default function AdminRegistrations() {
   const copyPaymentId = async (paymentId) => {
     try {
       await navigator.clipboard.writeText(paymentId);
-      toast.success('Payment ID copied — search it in the Moyasar dashboard');
+      toast.success(tl("Payment ID copied — search it in the Moyasar dashboard"));
     } catch {
-      toast.error('Could not copy');
+      toast.error(tl("Could not copy"));
     }
   };
 
@@ -158,11 +159,10 @@ export default function AdminRegistrations() {
         className="mb-6"
       >
         <h1 className="font-headline-lg text-[28px] text-on-surface uppercase tracking-wider mb-1">
-          Registrations
+          {tl("Registrations")}
         </h1>
         <p className="font-body-sm text-on-surface-variant text-[13px]">
-          Approve public-site signups. On approval, a User + Membership is
-          created automatically.
+          {tl("Approve public-site signups. On approval, a User + Membership is created automatically.")}
         </p>
       </motion.div>
 
@@ -170,12 +170,12 @@ export default function AdminRegistrations() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
           {[
-            { label: 'Pending', value: stats.pending, accent: 'text-amber-400' },
-            { label: 'Paid', value: stats.paid, accent: 'text-sky-400' },
-            { label: 'Approved', value: stats.approved, accent: 'text-emerald-400' },
-            { label: 'Rejected', value: stats.rejected, accent: 'text-rose-400' },
-            { label: 'Today Total', value: stats.today_total, accent: 'text-on-surface' },
-            { label: 'Today Pending', value: stats.today_pending, accent: 'text-amber-400' },
+            { label: tl("Pending"), value: stats.pending, accent: 'text-amber-400' },
+            { label: tl("Paid"), value: stats.paid, accent: 'text-sky-400' },
+            { label: tl("Approved"), value: stats.approved, accent: 'text-emerald-400' },
+            { label: tl("Rejected"), value: stats.rejected, accent: 'text-rose-400' },
+            { label: tl("Today Total"), value: stats.today_total, accent: 'text-on-surface' },
+            { label: tl("Today Pending"), value: stats.today_pending, accent: 'text-amber-400' },
           ].map((s) => (
             <div
               key={s.label}
@@ -213,7 +213,7 @@ export default function AdminRegistrations() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search Iqama / name / email / phone"
+          placeholder={tl("Search Iqama / name / email / phone")}
           className="bg-[#131316] border border-[#1a1a1e] rounded px-3 py-2 text-[13px] text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container outline-none w-full md:w-72"
         />
 
@@ -222,7 +222,7 @@ export default function AdminRegistrations() {
           disabled={bulkBusy || paidCount === 0}
           className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-[11px] font-bold uppercase tracking-wider"
         >
-          Approve Today
+          {tl("Approve Today")}
         </button>
 
         <button
@@ -230,18 +230,18 @@ export default function AdminRegistrations() {
           disabled={bulkBusy || paidCount === 0}
           className="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white text-[11px] font-bold uppercase tracking-wider"
         >
-          Approve All
+          {tl("Approve All")}
         </button>
       </div>
 
       {/* Table */}
       {loading ? (
         <div className="text-center py-16 text-on-surface-variant text-[13px]">
-          Loading…
+          {tl("Loading…")}
         </div>
       ) : registrations.length === 0 ? (
         <div className="text-center py-16 bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg text-on-surface-variant text-[13px]">
-          No registrations match this filter.
+          {tl("No registrations match this filter.")}
         </div>
       ) : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-hidden">
@@ -249,17 +249,17 @@ export default function AdminRegistrations() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
-                  <th className="px-4 py-3">Photo</th>
-                  <th className="px-4 py-3">Iqama</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Plan</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Payment</th>
-                  <th className="px-4 py-3">Moyasar Payment ID</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">{tl("Photo")}</th>
+                  <th className="px-4 py-3">{tl("Iqama")}</th>
+                  <th className="px-4 py-3">{tl("Name")}</th>
+                  <th className="px-4 py-3">{tl("Email")}</th>
+                  <th className="px-4 py-3">{tl("Phone")}</th>
+                  <th className="px-4 py-3">{tl("Plan")}</th>
+                  <th className="px-4 py-3">{tl("Amount")}</th>
+                  <th className="px-4 py-3">{tl("Payment")}</th>
+                  <th className="px-4 py-3">{tl("Moyasar Payment ID")}</th>
+                  <th className="px-4 py-3">{tl("Status")}</th>
+                  <th className="px-4 py-3 text-right">{tl("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -298,7 +298,7 @@ export default function AdminRegistrations() {
                           <a className="block text-[11px] text-primary underline truncate max-w-[200px]" target="_blank" rel="noreferrer"
                             title={r.address}
                             href={r.address_lat ? `https://www.google.com/maps?q=${r.address_lat},${r.address_lng}` : `https://www.google.com/maps/search/${encodeURIComponent(r.address)}`}>
-                            {r.address || 'Map'}
+                            {r.address || tl("Map")}
                           </a>
                         )}
                       </td>
@@ -334,7 +334,7 @@ export default function AdminRegistrations() {
                           {r.payment_status}
                         </span>
                         {r.receipt_url && (
-                          <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-1 normal-case tracking-normal text-[11px] text-primary underline">Receipt</a>
+                          <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-1 normal-case tracking-normal text-[11px] text-primary underline">{tl("Receipt")}</a>
                         )}
                         {r.payment_failure_reason && (
                           <div className="mt-1 normal-case tracking-normal text-[11px] text-rose-400 max-w-[220px] whitespace-normal">
@@ -346,7 +346,7 @@ export default function AdminRegistrations() {
                         {r.moyasar_payment_id ? (
                           <button
                             onClick={() => copyPaymentId(r.moyasar_payment_id)}
-                            title="Copy — verify this payment in the Moyasar dashboard before approving"
+                            title={tl("Copy — verify this payment in the Moyasar dashboard before approving")}
                             className="hover:text-primary-container underline decoration-dotted break-all text-left"
                           >
                             {r.moyasar_payment_id}
@@ -362,11 +362,11 @@ export default function AdminRegistrations() {
                             className={`mt-1 text-[11px] whitespace-nowrap ${
                               r.membership.time_remaining?.expired ? 'text-rose-400' : 'text-on-surface-variant'
                             }`}
-                            title={`Started ${formatDate(r.membership.start_date)} (approval) · expires ${formatDate(r.membership.expiry_date)}`}
+                            title={tl("Started {0} (approval) · expires {1}", { 0: formatDate(r.membership.start_date), 1: formatDate(r.membership.expiry_date) })}
                           >
                             {r.membership.time_remaining?.expired
-                              ? `Expired ${formatDate(r.membership.expiry_date)}`
-                              : `${formatRemaining(r.membership.time_remaining)} left`}
+                              ? tl("Expired {0}", { 0: formatDate(r.membership.expiry_date) })
+                              : tl("{0} left", { 0: formatRemaining(r.membership.time_remaining) })}
                           </div>
                         )}
                       </td>
@@ -378,19 +378,19 @@ export default function AdminRegistrations() {
                               disabled={busyId === r.id || !canApprove}
                               title={
                                 canApprove
-                                  ? 'Verify the payment in the Moyasar dashboard, then approve'
-                                  : 'Approval needs a paid Moyasar payment'
+                                  ? tl("Verify the payment in the Moyasar dashboard, then approve")
+                                  : tl("Approval needs a paid Moyasar payment")
                               }
                               className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-[10px] font-bold uppercase tracking-wider mr-2"
                             >
-                              Approve
+                              {tl("Approve")}
                             </button>
                             <button
                               onClick={() => setRejecting(r)}
                               disabled={busyId === r.id}
                               className="px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white text-[10px] font-bold uppercase tracking-wider"
                             >
-                              Reject
+                              {tl("Reject")}
                             </button>
                           </>
                         ) : (
@@ -421,25 +421,25 @@ function RejectDialog({ reg, busy, onClose, onSubmit }) {
   const [refund, setRefund] = useState(paid);
   return (
     <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true"
-      aria-label="Reject registration" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      aria-label={tl("Reject registration")} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="w-full max-w-md bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl p-5 flex flex-col gap-3"
         onSubmit={(e) => { e.preventDefault(); onSubmit({ reason: reason.trim(), refund: paid && refund }); }}>
-        <h3 className="text-on-surface font-bold uppercase tracking-wider">Reject {reg.full_name}</h3>
-        <label className="flex flex-col gap-1"><span className={labelCls}>Reason (emailed to the applicant)</span>
+        <h3 className="text-on-surface font-bold uppercase tracking-wider">{tl("Reject")}{' '}{reg.full_name}</h3>
+        <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Reason (emailed to the applicant)")}</span>
           <textarea className={inputCls} rows={3} maxLength={500} value={reason} autoFocus
-            onChange={(e) => setReason(e.target.value)} placeholder="e.g. The Iqama photo is unreadable" /></label>
+            onChange={(e) => setReason(e.target.value)} placeholder={tl("e.g. The Iqama photo is unreadable")} /></label>
         {paid ? (
           <label className="flex items-start gap-2 text-[13px] text-on-surface">
             <input type="checkbox" className="mt-1" checked={refund} onChange={(e) => setRefund(e.target.checked)} />
-            <span>Refund {formatSAR(reg.payment_amount)} to their card through Moyasar
-              <span className="block text-[11px] text-on-surface-variant">Untick only if the money was already returned another way.</span></span>
+            <span>{tl("Refund")}{' '}{formatSAR(reg.payment_amount)}{' '}{tl("to their card through Moyasar")}
+              <span className="block text-[11px] text-on-surface-variant">{tl("Untick only if the money was already returned another way.")}</span></span>
           </label>
         ) : (
-          <p className="text-[11px] text-on-surface-variant">No payment was taken for this signup, so there is nothing to refund.</p>
+          <p className="text-[11px] text-on-surface-variant">{tl("No payment was taken for this signup, so there is nothing to refund.")}</p>
         )}
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-          <button type="submit" className={btn.danger} disabled={busy}>{busy ? 'Rejecting…' : refund && paid ? 'Reject & refund' : 'Reject'}</button>
+          <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
+          <button type="submit" className={btn.danger} disabled={busy}>{busy ? tl("Rejecting…") : refund && paid ? tl("Reject & refund") : tl("Reject")}</button>
         </div>
       </form>
     </div>

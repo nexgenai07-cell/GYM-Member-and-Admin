@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function VideoStage({ course, currentModule }) {
   const [playing, setPlaying] = useState(false);
@@ -47,16 +48,16 @@ export default function VideoStage({ course, currentModule }) {
           </span>
           <div className="flex flex-col">
             <span className="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest leading-none">
-              {course?.category || 'Training'}
+              {course?.category || tl("Training")}
             </span>
             <span className="text-title-md font-headline-md text-on-surface leading-none mt-1">
-              {course?.level?.replace('_', ' ').toUpperCase() || 'ALL LEVELS'}
+              {course?.level?.replace('_', ' ').toUpperCase() || tl("ALL LEVELS")}
             </span>
           </div>
         </div>
 
         <span className="px-space-xs py-1 rounded bg-surface-container-lowest/90 backdrop-blur-md text-on-surface font-label-md text-label-md uppercase tracking-wider">
-          {course?.duration_weeks} Weeks
+          {course?.duration_weeks}{' '}{tl("Weeks")}
         </span>
       </div>
 
@@ -85,7 +86,7 @@ export default function VideoStage({ course, currentModule }) {
       {/* Bottom overlay with title */}
       <div className="absolute bottom-0 left-0 right-0 p-space-md bg-gradient-to-t from-surface-container-lowest to-transparent">
         <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-          {currentModule ? 'Current Module' : 'Course Preview'}
+          {currentModule ? tl("Current Module") : tl("Course Preview")}
         </span>
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
           {currentModule?.title || course?.title}

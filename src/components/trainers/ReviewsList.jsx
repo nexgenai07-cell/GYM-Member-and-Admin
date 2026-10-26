@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl, locale } from '../../i18n';
 
 export default function ReviewsList({ reviews = [] }) {
   if (!reviews || reviews.length === 0) {
@@ -8,10 +9,10 @@ export default function ReviewsList({ reviews = [] }) {
           rate_review
         </span>
         <p className="font-title-md text-title-md text-on-surface mt-3">
-          No Reviews Yet
+          {tl("No Reviews Yet")}
         </p>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          Be the first to book a session and leave a review.
+          {tl("Be the first to book a session and leave a review.")}
         </p>
       </div>
     );
@@ -21,11 +22,11 @@ export default function ReviewsList({ reviews = [] }) {
     <div className="flex flex-col gap-space-md">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider">
-          Verified Athlete Field Reports
+          {tl("Verified Athlete Field Reports")}
         </h2>
         <span className="font-label-md text-label-md text-primary uppercase flex items-center gap-space-2xs">
           <span className="material-symbols-outlined text-title-md">verified_user</span>
-          100% Verified
+          {tl("100% Verified")}
         </span>
       </div>
 
@@ -57,7 +58,7 @@ export default function ReviewsList({ reviews = [] }) {
                       {memberName}
                     </span>
                     <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                      Verified Athlete
+                      {tl("Verified Athlete")}
                     </span>
                   </div>
                 </div>
@@ -79,7 +80,7 @@ export default function ReviewsList({ reviews = [] }) {
                 {r.comment}
               </p>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                Session Date: {new Date(r.created_at).toLocaleDateString()}
+                {tl("Session Date:")}{' '}{new Date(r.created_at).toLocaleDateString(locale)}
               </span>
             </motion.div>
           );

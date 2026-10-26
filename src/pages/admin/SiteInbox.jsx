@@ -6,12 +6,13 @@ import { siteContentService as api } from '../../services/siteContentService';
 import { errorMessage } from '../../utils/apiError';
 import { Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn } from '../../components/site/siteStyles';
+import { tl, locale } from '../../i18n';
 
 const FILTERS = [
-  { id: 'new', label: 'New' },
-  { id: 'read', label: 'Read' },
-  { id: 'archived', label: 'Archived' },
-  { id: '', label: 'All' },
+  { id: 'new', label: tl("New") },
+  { id: 'read', label: tl("Read") },
+  { id: 'archived', label: tl("Archived") },
+  { id: '', label: tl("All") },
 ];
 
 export default function SiteInbox() {
@@ -56,8 +57,8 @@ export default function SiteInbox() {
   };
 
   const remove = async (msg) => {
-    if (!window.confirm(`Delete the message from ${msg.name} permanently?`)) return;
-    try { await api.deleteMessage(msg.id); toast.success('Deleted'); load(); }
+    if (!window.confirm(tl("Delete the message from {0} permanently?", { 0: msg.name }))) return;
+    try { await api.deleteMessage(msg.id); toast.success(tl("Deleted")); load(); }
     catch (err) { toast.error(errorMessage(err)); }
   };
 
@@ -65,7 +66,7 @@ export default function SiteInbox() {
 
   return (
     <div className="p-8 bg-background min-h-screen">
-      <PageHeader title="Website Inbox" subtitle="Messages from the public website's contact form. Opening a message marks it as read." />
+      <PageHeader title={tl("Website Inbox")} subtitle={tl("Messages from the public website's contact form. Opening a message marks it as read.")} />
 
       <div className="flex gap-1 mb-5 flex-wrap" role="tablist">
         {FILTERS.map((f) => {
@@ -87,31 +88,31 @@ export default function SiteInbox() {
         })}
       </div>
 
-      {loading ? <Empty>Loading…</Empty> : !data.results.length ? <Empty>No messages here.</Empty> : (
+      {loading ? <Empty>{tl("Loading…")}</Empty> : !data.results.length ? <Empty>{tl("No messages here.")}</Empty> : (
         <div className="flex flex-col gap-2">
           {data.results.map((m) => (
             <div key={m.id} className={`bg-[#0e0e0f] border rounded-lg ${m.status === 'new' ? 'border-primary-container/50' : 'border-[#1a1a1e]'}`}>
               <button type="button" onClick={() => openMsg(m)} className="w-full text-left px-4 py-3 flex items-center gap-3" aria-expanded={open === m.id}>
-                {m.status === 'new' && <span className="w-2 h-2 rounded-full bg-primary-container shrink-0" aria-label="New" />}
+                {m.status === 'new' && <span className="w-2 h-2 rounded-full bg-primary-container shrink-0" aria-label={tl("New")} />}
                 <span className="text-[13px] text-on-surface font-bold truncate">{m.name}</span>
                 <span className="text-[12px] text-on-surface-variant truncate hidden md:inline">{m.email}</span>
-                <span className="text-[11px] uppercase tracking-wider text-on-surface-variant shrink-0">{[m.topic, m.subtopic].filter(Boolean).join(' / ') || 'General'}</span>
+                <span className="text-[11px] uppercase tracking-wider text-on-surface-variant shrink-0">{[m.topic, m.subtopic].filter(Boolean).join(' / ') || tl("General")}</span>
                 <span className="flex-1 text-[12px] text-on-surface-variant truncate">{m.message}</span>
-                <span className="text-[11px] text-on-surface-variant shrink-0">{new Date(m.created_at).toLocaleString()}</span>
+                <span className="text-[11px] text-on-surface-variant shrink-0">{new Date(m.created_at).toLocaleString(locale)}</span>
               </button>
               {open === m.id && (
                 <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[#1a1a1e] pt-3">
                   <p className="text-[14px] text-on-surface whitespace-pre-wrap" dir="auto">{m.message}</p>
                   <div className="text-[12px] text-on-surface-variant flex gap-4 flex-wrap">
-                    <span>Email: <a className="text-primary hover:underline" href={`mailto:${m.email}`}>{m.email}</a></span>
-                    {m.phone && <span>Phone: <a className="text-primary hover:underline" href={`tel:${m.phone}`}>{m.phone}</a></span>}
-                    {m.lang && <span>Site language: {m.lang.toUpperCase()}</span>}
+                    <span>{tl("Email:")}{' '}<a className="text-primary hover:underline" href={`mailto:${m.email}`}>{m.email}</a></span>
+                    {m.phone && <span>{tl("Phone:")}{' '}<a className="text-primary hover:underline" href={`tel:${m.phone}`}>{m.phone}</a></span>}
+                    {m.lang && <span>{tl("Site language:")}{' '}{m.lang.toUpperCase()}</span>}
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <a className={btn.primary} href={`mailto:${m.email}?subject=${encodeURIComponent('Re: your message to Smart Gym')}`}>Reply by email</a>
-                    {m.status !== 'new' && <button type="button" className={btn.ghost} onClick={() => setMsgStatus(m, 'new')}>Mark as new</button>}
-                    {m.status !== 'archived' && <button type="button" className={btn.ghost} onClick={() => setMsgStatus(m, 'archived')}>Archive</button>}
-                    <button type="button" className={btn.danger} onClick={() => remove(m)}>Delete</button>
+                    <a className={btn.primary} href={`mailto:${m.email}?subject=${encodeURIComponent('Re: your message to Smart Gym')}`}>{tl("Reply by email")}</a>
+                    {m.status !== 'new' && <button type="button" className={btn.ghost} onClick={() => setMsgStatus(m, 'new')}>{tl("Mark as new")}</button>}
+                    {m.status !== 'archived' && <button type="button" className={btn.ghost} onClick={() => setMsgStatus(m, 'archived')}>{tl("Archive")}</button>}
+                    <button type="button" className={btn.danger} onClick={() => remove(m)}>{tl("Delete")}</button>
                   </div>
                 </div>
               )}

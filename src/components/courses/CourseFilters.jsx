@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 const SPRING = { type: 'spring', stiffness: 420, damping: 30 };
 
 const levels = [
-  { key: 'all', label: 'All Levels' },
-  { key: 'beginner', label: 'Beginner' },
-  { key: 'intermediate', label: 'Intermediate' },
-  { key: 'advanced', label: 'Advanced' },
+  { key: 'all', label: tl("All Levels") },
+  { key: 'beginner', label: tl("Beginner") },
+  { key: 'intermediate', label: tl("Intermediate") },
+  { key: 'advanced', label: tl("Advanced") },
 ];
 
 const sorts = [
@@ -35,7 +36,7 @@ export default function CourseFilters({
         {/* Level pills with sliding pill */}
         <div className="flex items-center gap-space-xs overflow-x-auto pb-1 md:pb-0">
           <span className="font-label-md text-label-md uppercase text-on-surface-variant tracking-wider mr-space-xs shrink-0">
-            Level:
+            {tl("Level:")}
           </span>
           {levels.map((lvl) => {
             const isActive = level === lvl.key;
@@ -67,7 +68,7 @@ export default function CourseFilters({
         {/* Sort */}
         <div className="flex items-center gap-space-xs shrink-0">
           <span className="font-label-md text-label-md uppercase text-on-surface-variant tracking-wider">
-            Sort by:
+            {tl("Sort by:")}
           </span>
           <select
             value={sortBy}
@@ -88,7 +89,7 @@ export default function CourseFilters({
         </span>
         <input
           type="text"
-          placeholder="Search courses by name or category..."
+          placeholder={tl("Search courses by name or category...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-surface-container-lowest text-on-surface text-body-md pl-10 pr-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"

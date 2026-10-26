@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tl } from '../../i18n';
+import LangToggle from '../../i18n/LangToggle';
 
 const EASE = [0.22, 1, 0.36, 1];
 const SPRING = { type: 'spring', stiffness: 420, damping: 30 };
@@ -34,8 +36,8 @@ const fieldSwap = {
 };
 
 const modes = [
-  { key: 'password', label: 'Password' },
-  { key: 'otp', label: 'OTP' },
+  { key: 'password', label: tl("Password") },
+  { key: 'otp', label: tl("OTP") },
 ];
 
 export default function LoginForm({ onSubmit }) {
@@ -80,20 +82,20 @@ export default function LoginForm({ onSubmit }) {
           >
             lock
           </motion.span>
-          Secure Sign In
+          {tl("Secure Sign In")}
         </motion.span>
 
         <motion.h1
           variants={lineUp}
           className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider leading-none mb-space-xs m-0"
         >
-          Welcome Back,{' '}
+          {tl("Welcome Back,")}{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
-            Athlete
+            {tl("Athlete")}
           </span>
         </motion.h1>
         <motion.p variants={lineUp} className="font-body-md text-body-md text-on-surface-variant">
-          Sign in with your member credentials to access your performance dashboard.
+          {tl("Sign in with your member credentials to access your performance dashboard.")}
         </motion.p>
       </div>
 
@@ -127,6 +129,7 @@ export default function LoginForm({ onSubmit }) {
       </motion.div>
 
       {/* Form */}
+      <div className="flex justify-end"><LangToggle /></div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-space-md">
         {/* Email */}
         <motion.div variants={lineUp} className="flex flex-col gap-space-2xs">
@@ -134,7 +137,7 @@ export default function LoginForm({ onSubmit }) {
             className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
             htmlFor="email"
           >
-            Email Address
+            {tl("Email Address")}
           </label>
           <div className="relative group">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary text-[20px] pointer-events-none z-10 transition-colors duration-300">
@@ -146,7 +149,7 @@ export default function LoginForm({ onSubmit }) {
               required
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="athlete@smartgym.com"
+              placeholder={tl("athlete@smartgym.com")}
               className={`${inputBase} pl-11 pr-4`}
             />
           </div>
@@ -168,13 +171,13 @@ export default function LoginForm({ onSubmit }) {
                   className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
                   htmlFor="password"
                 >
-                  Password
+                  {tl("Password")}
                 </label>
                 <Link
                   to="/forgot-password"
                   className="font-label-md text-label-md text-primary uppercase tracking-wider hover:underline"
                 >
-                  Forgot?
+                  {tl("Forgot?")}
                 </Link>
               </div>
               <div className="relative group">
@@ -190,7 +193,7 @@ export default function LoginForm({ onSubmit }) {
                   required
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
-                  placeholder="Enter your secure password"
+                  placeholder={tl("Enter your secure password")}
                   className={`${inputBase} pl-11 pr-12`}
                 />
                 <motion.button
@@ -198,7 +201,7 @@ export default function LoginForm({ onSubmit }) {
                   onClick={() => setShowPassword((s) => !s)}
                   whileTap={{ scale: 0.85 }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? tl("Hide password") : tl("Show password")}
                 >
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span
@@ -228,7 +231,7 @@ export default function LoginForm({ onSubmit }) {
                 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
                 htmlFor="otp"
               >
-                One-Time Code (6 digits)
+                {tl("One-Time Code (6 digits)")}
               </label>
               <div className="relative group">
                 <input
@@ -243,7 +246,7 @@ export default function LoginForm({ onSubmit }) {
                 />
               </div>
               <span className="font-label-md text-label-md text-on-surface-variant">
-                A 6-digit code will be sent to your registered email
+                {tl("A 6-digit code will be sent to your registered email")}
               </span>
             </motion.div>
           )}
@@ -280,7 +283,7 @@ export default function LoginForm({ onSubmit }) {
               </AnimatePresence>
             </motion.span>
             <span className="font-body-md text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">
-              Keep me signed in
+              {tl("Keep me signed in")}
             </span>
           </label>
 
@@ -297,7 +300,7 @@ export default function LoginForm({ onSubmit }) {
             >
               fingerprint
             </motion.span>
-            <span>Use Biometric</span>
+            <span>{tl("Use Biometric")}</span>
           </motion.button>
         </motion.div>
 
@@ -320,7 +323,7 @@ export default function LoginForm({ onSubmit }) {
           >
             login
           </motion.span>
-          <span className="relative z-10">Access Dashboard</span>
+          <span className="relative z-10">{tl("Access Dashboard")}</span>
         </motion.button>
       </form>
 
@@ -336,7 +339,7 @@ export default function LoginForm({ onSubmit }) {
           transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
         />
         <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider whitespace-nowrap">
-          Or Continue With
+          {tl("Or Continue With")}
         </span>
         <motion.div
           className="flex-1 h-px bg-surface-container-high origin-left"
@@ -366,7 +369,7 @@ export default function LoginForm({ onSubmit }) {
           >
             <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
           </motion.svg>
-          <span>Apple</span>
+          <span>{tl("Apple")}</span>
         </motion.button>
 
         <motion.button
@@ -381,7 +384,7 @@ export default function LoginForm({ onSubmit }) {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
           </svg>
-          <span>Google</span>
+          <span>{tl("Google")}</span>
         </motion.button>
       </motion.div>
 
@@ -390,12 +393,12 @@ export default function LoginForm({ onSubmit }) {
         variants={lineUp}
         className="text-center mt-space-xl font-body-md text-body-md text-on-surface-variant"
       >
-        New to Smart Gym?{' '}
+        {tl("New to Smart Gym?")}{' '}
         <Link
           to="/signup"
           className="text-primary font-title-md text-title-md uppercase tracking-wider hover:underline underline-offset-4 decoration-primary-container/50"
         >
-          Create Account
+          {tl("Create Account")}
         </Link>
       </motion.div>
 
@@ -419,7 +422,7 @@ export default function LoginForm({ onSubmit }) {
           />
         </span>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-          256-bit SSL Encrypted · 2FA Supported
+          {tl("256-bit SSL Encrypted · 2FA Supported")}
         </span>
       </motion.div>
     </motion.div>

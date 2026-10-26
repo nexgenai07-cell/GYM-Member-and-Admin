@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { animate, useInView } from 'framer-motion';
+import { locale } from '../i18n';
 
 export default function CountUp({
   to = 0,
@@ -25,7 +26,7 @@ export default function CountUp({
     return () => controls.stop();
   }, [inView, to, duration, delay, decimals]);
 
-  const display = comma ? val.toLocaleString() : String(val);
+  const display = comma ? val.toLocaleString(locale) : String(val);
 
   return (
     <span ref={ref} className={className}>

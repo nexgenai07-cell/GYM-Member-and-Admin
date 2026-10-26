@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import CountUp from './CountUp';
+import { tl } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -64,7 +65,7 @@ export default function StreakBadge({ streak = 0, target = 12 }) {
             transition={{ duration: 0.4, delay: 0.55, ease: EASE }}
             className="font-label-md text-label-md text-primary tracking-widest uppercase"
           >
-            Streak active
+            {tl("Streak active")}
           </motion.span>
         </div>
 
@@ -97,7 +98,7 @@ export default function StreakBadge({ streak = 0, target = 12 }) {
           transition={{ delay: 0.6 }}
           className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider block"
         >
-          Target {target}D
+          {tl("Target")}{' '}{target}{tl("D")}
         </motion.span>
         <span className="font-body-md text-body-md text-on-surface font-bold">
           <CountUp to={percent} suffix="% of goal" duration={1.4} delay={0.6} />

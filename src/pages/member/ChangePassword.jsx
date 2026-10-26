@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
+import { tl } from '../../i18n';
 
 const MIN_LENGTH = 8;   // backend: Django MinimumLengthValidator
 
@@ -66,10 +67,10 @@ export default function ChangePassword({ forced = false }) {
   };
 
   const rules = [
-    { ok: form.next.length >= MIN_LENGTH, label: `At least ${MIN_LENGTH} characters` },
-    { ok: form.next !== '' && !/^\d+$/.test(form.next), label: 'Not only numbers' },
-    { ok: form.next !== '' && form.next !== form.current, label: 'Different from the current password' },
-    { ok: form.confirm !== '' && form.confirm === form.next, label: 'Both new passwords match' },
+    { ok: form.next.length >= MIN_LENGTH, label: tl("At least {0} characters", { 0: MIN_LENGTH }) },
+    { ok: form.next !== '' && !/^\d+$/.test(form.next), label: tl("Not only numbers") },
+    { ok: form.next !== '' && form.next !== form.current, label: tl("Different from the current password") },
+    { ok: form.confirm !== '' && form.confirm === form.next, label: tl("Both new passwords match") },
   ];
   const ready = form.current !== '' && rules.every((r) => r.ok);
 
@@ -81,7 +82,7 @@ export default function ChangePassword({ forced = false }) {
     try {
       await authService.changePassword(form.current, form.next, form.confirm);
       setForm(EMPTY);
-      toast.success('Password changed');
+      toast.success(tl("Password changed"));
       if (forced) {
         try {
           await refreshUser();        // clears must_change_password → the portal unlocks
@@ -125,11 +126,11 @@ export default function ChangePassword({ forced = false }) {
         <div className="flex items-start gap-space-sm">
           <span className="material-symbols-outlined text-primary text-[28px]">lock_reset</span>
           <div>
-            <h1 className="font-headline-md text-[22px] text-on-surface uppercase tracking-wider">Change password</h1>
+            <h1 className="font-headline-md text-[22px] text-on-surface uppercase tracking-wider">{tl("Change password")}</h1>
             <p className="font-body-sm text-on-surface-variant text-[13px] mt-space-2xs">
               {forced
-                ? 'For your security, please choose a new password before continuing.'
-                : 'Enter your current password, then choose a new one.'}
+                ? tl("For your security, please choose a new password before continuing.")
+                : tl("Enter your current password, then choose a new one.")}
             </p>
           </div>
         </div>
@@ -139,28 +140,28 @@ export default function ChangePassword({ forced = false }) {
             <div className="flex items-center gap-space-sm p-space-md rounded-lg bg-primary-container/10 border border-primary-container/30">
               <span className="material-symbols-outlined text-primary">check_circle</span>
               <span className="font-body-md text-on-surface">
-                Your password has been changed. Use the new one next time you log in.
+                {tl("Your password has been changed. Use the new one next time you log in.")}
               </span>
             </div>
             <Link to="/dashboard/profile" className="font-label-md text-label-md uppercase tracking-widest text-primary hover:underline">
-              Back to profile
+              {tl("Back to profile")}
             </Link>
           </div>
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-space-md" noValidate>
-            <PasswordField id="current-password" label="Current password" value={form.current}
+            <PasswordField id="current-password" label={tl("Current password")} value={form.current}
               onChange={set('current')} show={show} autoComplete="current-password" error={errors.current} />
-            <PasswordField id="new-password" label="New password" value={form.next}
+            <PasswordField id="new-password" label={tl("New password")} value={form.next}
               onChange={set('next')} show={show} autoComplete="new-password" error={errors.next} />
-            <PasswordField id="confirm-password" label="Confirm new password" value={form.confirm}
+            <PasswordField id="confirm-password" label={tl("Confirm new password")} value={form.confirm}
               onChange={set('confirm')} show={show} autoComplete="new-password" error={errors.confirm} />
 
             <label className="flex items-center gap-space-xs font-body-sm text-[13px] text-on-surface-variant cursor-pointer w-fit">
               <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="accent-primary" />
-              Show passwords
+              {tl("Show passwords")}
             </label>
 
-            <ul className="flex flex-col gap-space-2xs" aria-label="Password requirements">
+            <ul className="flex flex-col gap-space-2xs" aria-label={tl("Password requirements")}>
               {rules.map((r) => (
                 <li key={r.label} className={`flex items-center gap-space-xs font-body-sm text-[12px] ${r.ok ? 'text-on-surface' : 'text-on-surface-variant'}`}>
                   <span className={`material-symbols-outlined text-[16px] ${r.ok ? 'text-primary' : 'text-on-surface-variant/50'}`}>
@@ -170,7 +171,7 @@ export default function ChangePassword({ forced = false }) {
                 </li>
               ))}
               <li className="font-body-sm text-[12px] text-on-surface-variant/70 pl-[22px]">
-                Very common passwords, or ones too close to your name or email, are also rejected.
+                {tl("Very common passwords, or ones too close to your name or email, are also rejected.")}
               </li>
             </ul>
 
@@ -183,7 +184,7 @@ export default function ChangePassword({ forced = false }) {
               disabled={!ready || saving}
               className="w-full bg-primary-container hover:bg-secondary-container disabled:opacity-40 disabled:cursor-not-allowed text-on-primary-container font-label-lg text-label-lg uppercase tracking-widest py-space-md rounded-lg transition-colors"
             >
-              {saving ? 'Saving…' : 'Change password'}
+              {saving ? tl("Saving…") : tl("Change password")}
             </button>
 
             {forced && (
@@ -192,7 +193,7 @@ export default function ChangePassword({ forced = false }) {
                 onClick={signOut}
                 className="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant hover:text-on-surface transition-colors"
               >
-                Log out
+                {tl("Log out")}
               </button>
             )}
           </form>

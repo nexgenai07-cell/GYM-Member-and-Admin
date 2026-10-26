@@ -7,6 +7,7 @@ import { membersService } from '../../services/membersService';
 import PayDialog from '../../components/payments/PayDialog';
 import { formatSAR } from '../../utils/money';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
+import { tl, locale } from '../../i18n';
 
 const TOPUP_AMOUNTS = [25, 50, 100];
 const RENEW_MONTHS = [1, 3, 6, 12];
@@ -60,24 +61,24 @@ export default function Payments() {
   const startFacility = (f) => {
     setPay({
       request: { purpose: 'facility_addon', facility_id: f.id },
-      title: `${f.name} · ${f.months_remaining} mo`,
+      title: tl("{0} · {1} mo", { 0: f.name, 1: f.months_remaining }),
       allowCredit: true,
     });
   };
 
   const startTopup = (amount) => {
     if (amount > room) {
-      toast.error(`Your locker credit is capped — you can add up to ${formatSAR(room)}.`);
+      toast.error(tl("Your locker credit is capped — you can add up to {0}.", { 0: formatSAR(room) }));
       return;
     }
-    setPay({ request: { purpose: 'locker_topup', amount }, title: `Top up ${formatSAR(amount)}`, allowCredit: false });
+    setPay({ request: { purpose: 'locker_topup', amount }, title: tl("Top up {0}", { 0: formatSAR(amount) }), allowCredit: false });
   };
 
   const startRenewal = () => {
     if (!planObj) return;
     setPay({
       request: { purpose: 'renewal', plan_id: planObj.id, months: renewMonths },
-      title: `Renew ${planObj.display_name} · ${renewMonths} mo`,
+      title: tl("Renew {0} · {1} mo", { 0: planObj.display_name, 1: renewMonths }),
       allowCredit: true,
     });
   };
@@ -87,45 +88,45 @@ export default function Payments() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center gap-2 text-primary mb-2">
           <span className="material-symbols-outlined text-[16px]">payments</span>
-          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">Billing</span>
+          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">{tl("Billing")}</span>
         </div>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">Billing & Payments</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">{tl("Billing & Payments")}</h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          Renew your membership, top up locker credit and see every payment you’ve made.
+          {tl("Renew your membership, top up locker credit and see every payment you’ve made.")}
         </p>
       </motion.div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatTile label="Total paid" value={formatSAR(summary?.total_spent)} icon="payments" accent />
-        <StatTile label="Locker credit" value={formatSAR(balance)} icon="account_balance_wallet" accent />
-        <StatTile label="Membership left" value={formatRemaining(membership?.time_remaining)} icon="hourglass_bottom" />
-        <StatTile label="Refunded" value={formatSAR(summary?.refunded_amount)} icon="undo" />
+        <StatTile label={tl("Total paid")} value={formatSAR(summary?.total_spent)} icon="payments" accent />
+        <StatTile label={tl("Locker credit")} value={formatSAR(balance)} icon="account_balance_wallet" accent />
+        <StatTile label={tl("Membership left")} value={formatRemaining(membership?.time_remaining)} icon="hourglass_bottom" />
+        <StatTile label={tl("Refunded")} value={formatSAR(summary?.refunded_amount)} icon="undo" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 flex flex-col gap-4">
           {/* Membership + renewal */}
-          <Card label="Membership">
+          <Card label={tl("Membership")}>
             {membership ? (
               <>
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-headline-md text-headline-md text-on-surface">{membership.plan?.display_name}</span>
                   <span className={`text-[10px] font-bold uppercase ${membership.time_remaining?.expired ? 'text-error' : 'text-primary'}`}>
-                    {membership.time_remaining?.expired ? 'Expired' : membership.status}
+                    {membership.time_remaining?.expired ? tl("Expired") : membership.status}
                   </span>
                 </div>
                 <p className="text-on-surface-variant text-[12px] mt-1">
-                  Valid until {formatDate(membership.expiry_date)} · {formatRemaining(membership.time_remaining)}
+                  {tl("Valid until")}{' '}{formatDate(membership.expiry_date)} · {formatRemaining(membership.time_remaining)}
                 </p>
               </>
             ) : (
-              <p className="text-on-surface-variant text-[13px]">No membership found.</p>
+              <p className="text-on-surface-variant text-[13px]">{tl("No membership found.")}</p>
             )}
 
             {membership && activePlans.length > 0 && (
               <div className="mt-4 flex flex-col gap-3 border-t border-surface-container-high pt-4">
-                <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">Renew / extend</span>
+                <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">{tl("Renew / extend")}</span>
                 <select value={selectedPlan ?? ''} onChange={(e) => setRenewPlan(Number(e.target.value))}
                   className="bg-surface-container-lowest text-on-surface px-3 py-2 rounded border border-surface-container-high">
                   {activePlans.map((p) => <option key={p.id} value={p.id}>{p.display_name}</option>)}
@@ -141,11 +142,11 @@ export default function Payments() {
                 {planObj && (
                   <button type="button" onClick={startRenewal}
                     className="w-full py-3 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[11px] font-bold uppercase tracking-wider">
-                    Pay {formatSAR(planPrice(planObj, renewMonths))}
+                    {tl("Pay")}{' '}{formatSAR(planPrice(planObj, renewMonths))}
                   </button>
                 )}
                 <p className="text-on-surface-variant text-[11px]">
-                  Time is added after your current expiry date (or from today if it has expired).
+                  {tl("Time is added after your current expiry date (or from today if it has expired).")}
                 </p>
               </div>
             )}
@@ -153,38 +154,37 @@ export default function Payments() {
 
           {/* Facility add-ons */}
           {Array.isArray(facilities) && facilities.length > 0 && (
-            <Card label="Facility add-ons">
+            <Card label={tl("Facility add-ons")}>
               <div className="flex flex-col gap-2">
                 {facilities.map((f) => (
                   <div key={f.id} className="flex items-center justify-between gap-2 bg-surface-container-low rounded px-3 py-2">
                     <div className="min-w-0">
                       <div className="text-on-surface text-[13px] font-bold truncate">{f.name}</div>
                       <div className="text-on-surface-variant text-[11px]">
-                        {f.owned ? `Included until ${formatDate(f.expires_on)}` : `${formatSAR(f.monthly_price)} / month`}
+                        {f.owned ? tl("Included until {0}", { 0: formatDate(f.expires_on) }) : `${formatSAR(f.monthly_price)} / month`}
                       </div>
                     </div>
                     {f.owned ? (
-                      <span className="px-2 py-1 rounded bg-emerald-400/15 text-emerald-400 text-[10px] font-bold uppercase">Active</span>
+                      <span className="px-2 py-1 rounded bg-emerald-400/15 text-emerald-400 text-[10px] font-bold uppercase">{tl("Active")}</span>
                     ) : f.addon_price ? (
                       <button type="button" onClick={() => startFacility(f)}
                         className="px-3 py-1.5 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase whitespace-nowrap">
-                        Add · {formatSAR(f.addon_price)}
+                        {tl("Add ·")}{' '}{formatSAR(f.addon_price)}
                       </button>
                     ) : (
-                      <span className="text-on-surface-variant text-[10px] uppercase">Renew first</span>
+                      <span className="text-on-surface-variant text-[10px] uppercase">{tl("Renew first")}</span>
                     )}
                   </div>
                 ))}
               </div>
               <p className="text-on-surface-variant text-[11px] mt-3">
-                Added facilities cost the monthly price × months left on your membership (a started month counts),
-                and end when your membership does.
+                {tl("Added facilities cost the monthly price × months left on your membership (a started month counts), and end when your membership does.")}
               </p>
             </Card>
           )}
 
           {/* Locker credit */}
-          <Card label="Locker credit">
+          <Card label={tl("Locker credit")}>
             <div className="flex items-baseline gap-2 mb-3">
               <span className="font-display-xl text-display-xl text-on-surface">{formatSAR(balance)}</span>
             </div>
@@ -193,7 +193,7 @@ export default function Payments() {
                 animate={{ width: `${credit?.percent_of_cap ?? 0}%` }} transition={{ duration: 1 }} />
             </div>
             <p className="text-on-surface-variant text-[11px] mb-3">
-              Cap {formatSAR(credit?.max_cap)} · use it in the shop and for sessions, courses and renewals.
+              {tl("Cap")}{' '}{formatSAR(credit?.max_cap)}{' '}{tl("· use it in the shop and for sessions, courses and renewals.")}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {TOPUP_AMOUNTS.map((a) => (
@@ -206,17 +206,17 @@ export default function Payments() {
           </Card>
 
           {/* How you can pay */}
-          <Card label="Payment methods">
+          <Card label={tl("Payment methods")}>
             <div className="flex flex-wrap gap-1">
               {(methods?.accepted || ['mada', 'Visa', 'Mastercard', 'STC Pay', 'Locker credit']).map((m) => (
                 <span key={m} className="px-2 py-1 rounded bg-surface-container-high text-on-surface text-[10px] font-bold uppercase">{m}</span>
               ))}
             </div>
             {methods?.recent?.length > 0 && (
-              <p className="text-on-surface-variant text-[11px] mt-3">Recently used: {methods.recent.join(' · ')}</p>
+              <p className="text-on-surface-variant text-[11px] mt-3">{tl("Recently used:")}{' '}{methods.recent.join(' · ')}</p>
             )}
             <p className="text-on-surface-variant text-[11px] mt-2">
-              Cards are entered on Moyasar’s secure form at checkout and never stored by Smart Gym.
+              {tl("Cards are entered on Moyasar’s secure form at checkout and never stored by Smart Gym.")}
             </p>
           </Card>
         </div>
@@ -226,12 +226,12 @@ export default function Payments() {
           className="lg:col-span-2 bg-surface-container rounded-xl shadow-md overflow-hidden">
           <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-surface-container-high">
             <div>
-              <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">Ledger</span>
-              <h2 className="font-headline-md text-headline-md text-on-surface uppercase">Payment history</h2>
+              <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">{tl("Ledger")}</span>
+              <h2 className="font-headline-md text-headline-md text-on-surface uppercase">{tl("Payment history")}</h2>
             </div>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px] pointer-events-none">search</span>
-              <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+              <input type="text" placeholder={tl("Search...")} value={search} onChange={(e) => setSearch(e.target.value)}
                 className="bg-surface-container-lowest text-on-surface text-body-md pl-9 pr-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary w-full md:w-64" />
             </div>
           </div>
@@ -243,7 +243,7 @@ export default function Payments() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
               <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">receipt_long</span>
-              <p className="font-title-md text-title-md text-on-surface mt-3">No payments yet</p>
+              <p className="font-title-md text-title-md text-on-surface mt-3">{tl("No payments yet")}</p>
             </div>
           ) : (
             <div className="divide-y divide-surface-container-high/50">
@@ -256,7 +256,7 @@ export default function Payments() {
                     <div className="flex flex-col min-w-0">
                       <span className="font-title-md text-title-md text-on-surface truncate">{t.description}</span>
                       <span className="font-label-md text-[10px] text-on-surface-variant uppercase truncate">
-                        {t.transaction_id} · {new Date(t.created_at).toLocaleDateString()}
+                        {t.transaction_id} · {new Date(t.created_at).toLocaleDateString(locale)}
                         {t.payment_method_label && ` · ${t.payment_method_label}`}
                       </span>
                     </div>
@@ -273,7 +273,7 @@ export default function Payments() {
                       {t.status === 'settled' ? 'paid' : t.status}
                     </span>
                     {t.receipt_url && (
-                      <a href={t.receipt_url} target="_blank" rel="noreferrer" title="Receipt · إيصال"
+                      <a href={t.receipt_url} target="_blank" rel="noreferrer" title={tl("Receipt · إيصال")}
                         className="w-8 h-8 rounded bg-surface-container-high hover:bg-primary-container/30 text-on-surface-variant hover:text-primary flex items-center justify-center">
                         <span className="material-symbols-outlined text-[16px]">receipt_long</span>
                       </a>
@@ -290,7 +290,7 @@ export default function Payments() {
         request={pay?.request || null}
         title={pay?.title || ''}
         allowCredit={pay?.allowCredit}
-        onPaid={() => { toast.success('Payment complete'); refreshAll(); }}
+        onPaid={() => { toast.success(tl("Payment complete")); refreshAll(); }}
         onClose={() => { setPay(null); refreshAll(); }}
       />
     </div>

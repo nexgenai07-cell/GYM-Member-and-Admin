@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import CountUp from '../CountUp';
+import { tl, locale } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -8,17 +9,17 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
 
   const stats = [
     {
-      label: 'Duration',
+      label: tl("Duration"),
       value: `${course.duration_weeks} Weeks`,
       accent: false,
     },
     {
-      label: 'Frequency',
+      label: tl("Frequency"),
       value: `${course.days_per_week} Days/Wk`,
       accent: false,
     },
     {
-      label: 'Intensity',
+      label: tl("Intensity"),
       value: course.level?.replace('_', ' ') || 'All Levels',
       accent: true,
     },
@@ -62,7 +63,7 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
             transition={{ delay: 0.4, type: 'spring', stiffness: 320, damping: 20 }}
             className="bg-primary-container text-on-primary-container font-label-lg text-label-lg uppercase px-space-sm py-space-2xs rounded-sm tracking-wider shadow-lg shadow-[0_0_20px_rgba(229,25,55,0.4)]"
           >
-            Masterclass of the Month
+            {tl("Masterclass of the Month")}
           </motion.span>
           <motion.span
             initial={{ opacity: 0, y: -10, scale: 0.9 }}
@@ -71,7 +72,7 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
             className="bg-surface-container-highest/80 backdrop-blur-md text-on-surface font-label-md text-label-md uppercase px-space-sm py-space-2xs rounded-sm flex items-center gap-space-2xs"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-ping" />
-            Live Tracking Supported
+            {tl("Live Tracking Supported")}
           </motion.span>
         </div>
       </div>
@@ -93,7 +94,7 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
                 {rating}
               </span>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                ({enrolledCount.toLocaleString()} Athletes)
+                ({enrolledCount.toLocaleString(locale)}{' '}{tl("Athletes)")}
               </span>
             </div>
             <span className="font-label-md text-label-md text-primary uppercase bg-surface-container px-space-xs py-space-2xs rounded-sm">
@@ -106,7 +107,7 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
           </h2>
 
           <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">
-            By <strong className="text-on-surface">{course.trainer_name}</strong>.{' '}
+            {tl("By")}{' '}<strong className="text-on-surface">{course.trainer_name}</strong>.{' '}
             {course.subtitle || course.description}
           </p>
 
@@ -133,7 +134,7 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
           <div className="flex flex-col">
             <div className="flex items-baseline gap-space-2xs">
               <span className="font-headline-md text-headline-md text-on-surface leading-none tabular-nums">
-                {course.free_for_me ? 'Free' : (
+                {course.free_for_me ? tl("Free") : (
                   <CountUp
                     to={Number(course.price) || 0}
                     duration={1.2}
@@ -144,13 +145,13 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
               </span>
               {!course.free_for_me && (
                 <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                  SAR
+                  {tl("SAR")}
                 </span>
               )}
             </div>
             {course.is_included_with_pro && (
               <span className="font-label-md text-label-md text-primary tracking-wide">
-                Included with Pro
+                {tl("Included with Pro")}
               </span>
             )}
           </div>
@@ -174,7 +175,7 @@ export default function FeaturedCourse({ course, enrolled, onEnroll }) {
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
               />
             )}
-            <span className="relative z-10">{enrolled ? 'Enrolled' : 'Enroll Now'}</span>
+            <span className="relative z-10">{enrolled ? tl("Enrolled") : tl("Enroll Now")}</span>
             <span className="material-symbols-outlined text-title-md relative z-10 transition-transform duration-300 group-hover:translate-x-1">
               {enrolled ? 'check_circle' : 'arrow_forward'}
             </span>

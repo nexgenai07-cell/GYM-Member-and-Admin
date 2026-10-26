@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { notificationsService } from '../../services/notificationsService';
 import { useApi } from '../../hooks/useApi';
+import { tl, locale } from '../../i18n';
 
 /* ============================================================
    ICON COLOR MAP
@@ -22,15 +23,15 @@ const iconColors = {
 };
 
 const categoryTabs = [
-  { key: 'all', label: 'All', icon: 'inbox' },
-  { key: 'unread', label: 'Unread', icon: 'mark_email_unread' },
-  { key: 'workout', label: 'Workouts', icon: 'fitness_center' },
-  { key: 'course', label: 'Courses', icon: 'school' },
-  { key: 'recovery', label: 'Recovery', icon: 'ac_unit' },
-  { key: 'payment', label: 'Payments', icon: 'credit_card' },
-  { key: 'achievement', label: 'Achievements', icon: 'emoji_events' },
-  { key: 'nutrition', label: 'Nutrition', icon: 'restaurant' },
-  { key: 'system', label: 'System', icon: 'system_update' },
+  { key: 'all', label: tl("All"), icon: 'inbox' },
+  { key: 'unread', label: tl("Unread"), icon: 'mark_email_unread' },
+  { key: 'workout', label: tl("Workouts"), icon: 'fitness_center' },
+  { key: 'course', label: tl("Courses"), icon: 'school' },
+  { key: 'recovery', label: tl("Recovery"), icon: 'ac_unit' },
+  { key: 'payment', label: tl("Payments"), icon: 'credit_card' },
+  { key: 'achievement', label: tl("Achievements"), icon: 'emoji_events' },
+  { key: 'nutrition', label: tl("Nutrition"), icon: 'restaurant' },
+  { key: 'system', label: tl("System"), icon: 'system_update' },
 ];
 
 /* ============================================================
@@ -66,11 +67,11 @@ export default function Notifications() {
   const handleMarkAllRead = async () => {
     try {
       await notificationsService.markAllRead();
-      toast.success('All marked as read');
+      toast.success(tl("All marked as read"));
       refetch();
       refetchUnread();
     } catch (e) {
-      toast.error('Failed to mark all as read');
+      toast.error(tl("Failed to mark all as read"));
     }
   };
 
@@ -81,18 +82,18 @@ export default function Notifications() {
       refetch();
       refetchUnread();
     } catch (e) {
-      toast.error('Failed to update');
+      toast.error(tl("Failed to update"));
     }
   };
 
   const handleRemove = async (id) => {
     try {
       await notificationsService.remove(id);
-      toast.success('Notification removed');
+      toast.success(tl("Notification removed"));
       refetch();
       refetchUnread();
     } catch (e) {
-      toast.error('Failed to remove');
+      toast.error(tl("Failed to remove"));
     }
   };
 
@@ -114,7 +115,7 @@ export default function Notifications() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-4 border-primary-container/30 border-t-primary-container animate-spin" />
           <span className="font-label-md text-[11px] text-on-surface-variant uppercase tracking-widest">
-            Loading notifications...
+            {tl("Loading notifications...")}
           </span>
         </div>
       </div>
@@ -135,15 +136,14 @@ export default function Notifications() {
               notifications_active
             </span>
             <span className="font-label-md text-label-md uppercase tracking-widest">
-              Telemetry Alerts
+              {tl("Telemetry Alerts")}
             </span>
           </div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wide">
-            Notification Center
+            {tl("Notification Center")}
           </h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-3xl mt-space-2xs">
-            Live alerts from your training, biometric telemetry, payments, and
-            achievements.
+            {tl("Live alerts from your training, biometric telemetry, payments, and achievements.")}
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export default function Notifications() {
               <span className="material-symbols-outlined text-[18px]">
                 mark_email_read
               </span>
-              Mark All Read
+              {tl("Mark All Read")}
             </button>
           )}
         </div>
@@ -172,19 +172,19 @@ export default function Notifications() {
       >
         <StatTile
           icon="mark_email_unread"
-          label="Unread"
+          label={tl("Unread")}
           value={unreadCount}
           accent={unreadCount > 0}
         />
-        <StatTile icon="inbox" label="Total" value={list.length} />
+        <StatTile icon="inbox" label={tl("Total")} value={list.length} />
         <StatTile
           icon="priority_high"
-          label="High Priority"
+          label={tl("High Priority")}
           value={list.filter((n) => n.priority === 'high').length}
         />
         <StatTile
           icon="today"
-          label="Today"
+          label={tl("Today")}
           value={
             list.filter((n) => {
               const d = new Date(n.created_at);
@@ -252,16 +252,14 @@ export default function Notifications() {
         {!hasAny ? (
           <EmptyState
             icon="notifications_off"
-            title="All Clear"
-            subtitle="You have no notifications. Everything is running smoothly."
+            title={tl("All Clear")}
+            subtitle={tl("You have no notifications. Everything is running smoothly.")}
           />
         ) : !hasFiltered ? (
           <EmptyState
             icon="filter_alt_off"
-            title="No Matches"
-            subtitle={`No notifications in "${
-              categoryTabs.find((c) => c.key === activeCategory)?.label
-            }".`}
+            title={tl("No Matches")}
+            subtitle={tl("No notifications in \"{0}\".", { 0: categoryTabs.find((c) => c.key === activeCategory)?.label })}
           />
         ) : (
           <div className="flex flex-col gap-space-xs">
@@ -360,7 +358,7 @@ function NotificationCard({ notification: n, onToggleRead, onRemove, onAction })
           {n.priority === 'high' && (
             <span className="px-space-xs py-0.5 rounded bg-primary-container/20 text-primary font-label-md text-label-md uppercase font-bold tracking-wider flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse" />
-              Priority
+              {tl("Priority")}
             </span>
           )}
         </div>
@@ -372,7 +370,7 @@ function NotificationCard({ notification: n, onToggleRead, onRemove, onAction })
         <div className="flex items-center gap-space-md mt-space-2xs flex-wrap">
           <span className="font-label-md text-label-md text-on-surface-variant/70 uppercase tracking-wider flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">schedule</span>
-            {new Date(n.created_at).toLocaleString()}
+            {new Date(n.created_at).toLocaleString(locale)}
           </span>
 
           {n.action_label && (
@@ -394,7 +392,7 @@ function NotificationCard({ notification: n, onToggleRead, onRemove, onAction })
         {!n.is_read && (
           <button
             onClick={() => onToggleRead(n)}
-            title="Mark as read"
+            title={tl("Mark as read")}
             className="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors"
             type="button"
           >
@@ -403,7 +401,7 @@ function NotificationCard({ notification: n, onToggleRead, onRemove, onAction })
         )}
         <button
           onClick={() => onRemove(n.id)}
-          title="Remove"
+          title={tl("Remove")}
           className="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-error/20 text-on-surface-variant hover:text-error flex items-center justify-center transition-colors"
           type="button"
         >

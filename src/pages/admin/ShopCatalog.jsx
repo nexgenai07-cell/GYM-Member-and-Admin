@@ -10,8 +10,9 @@ import { Drawer, Empty, ImageUploader, PageHeader } from '../../components/site/
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import { formatSAR } from '../../utils/money';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
+import { tl, locale } from '../../i18n';
 
-const FILTERS = [['', 'All'], ['active', 'On sale'], ['low', 'Low stock'], ['out', 'Out of stock'], ['hidden', 'Hidden']];
+const FILTERS = [['', tl("All")], ['active', tl("On sale")], ['low', tl("Low stock")], ['out', tl("Out of stock")], ['hidden', tl("Hidden")]];
 
 export default function ShopCatalog() {
   const [tab, setTab] = useState('products');
@@ -20,14 +21,14 @@ export default function ShopCatalog() {
   const categories = Array.isArray(cats) ? cats : [];
 
   const tiles = [
-    ['Products on sale', stats?.products], ['Low stock', stats?.low_stock], ['Out of stock', stats?.out_of_stock],
-    ['Hidden', stats?.hidden], ['Orders, 30 days', stats?.orders_30d], ['Sales, 30 days', stats ? formatSAR(stats.sales_30d) : undefined],
+    [tl("Products on sale"), stats?.products], [tl("Low stock"), stats?.low_stock], [tl("Out of stock"), stats?.out_of_stock],
+    [tl("Hidden"), stats?.hidden], [tl("Orders, 30 days"), stats?.orders_30d], [tl("Sales, 30 days"), stats ? formatSAR(stats.sales_30d) : undefined],
   ];
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-6">
-      <PageHeader title="Shop" subtitle="What members can buy in the portal. Paid orders take stock off automatically.">
-        <Link to="/admin/shop-orders" className={btn.ghost}>Shop orders</Link>
+      <PageHeader title={tl("Shop")} subtitle={tl("What members can buy in the portal. Paid orders take stock off automatically.")}>
+        <Link to="/admin/shop-orders" className={btn.ghost}>{tl("Shop orders")}</Link>
       </PageHeader>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -40,7 +41,7 @@ export default function ShopCatalog() {
       </div>
 
       <div className="flex gap-1 bg-[#0e0e0f] border border-[#1a1a1e] p-1 rounded-lg w-fit" role="tablist">
-        {[['products', 'Products'], ['categories', 'Categories'], ['promos', 'Promo codes']].map(([id, label]) => (
+        {[['products', tl("Products")], ['categories', tl("Categories")], ['promos', tl("Promo codes")]].map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={`px-4 py-2 rounded text-[11px] font-bold uppercase tracking-wider ${
               tab === id ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'}`}>
@@ -95,24 +96,24 @@ function Products({ categories, onChanged }) {
           ))}
         </div>
         <div className="flex-1" />
-        <input className={`${inputCls} md:w-64`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or SKU…" aria-label="Search products" />
+        <input className={`${inputCls} md:w-64`} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tl("Search name or SKU…")} aria-label={tl("Search products")} />
         <button type="button" className={btn.primary} disabled={!categories.length} onClick={() => setEditing(blank)}
-          title={categories.length ? undefined : 'Add a category first'}>+ Add product</button>
+          title={categories.length ? undefined : tl("Add a category first")}>{tl("+ Add product")}</button>
       </div>
 
-      {!categories.length && <p className="text-[12px] text-amber-300">Add a category first (Categories tab), then add products to it.</p>}
+      {!categories.length && <p className="text-[12px] text-amber-300">{tl("Add a category first (Categories tab), then add products to it.")}</p>}
 
       {loading ? (
         <div className="h-48 bg-[#0e0e0f] rounded-lg animate-pulse" />
       ) : list.length === 0 ? (
-        <Empty>{q || status ? 'No products match.' : 'No products yet.'}</Empty>
+        <Empty>{q || status ? tl("No products match.") : tl("No products yet.")}</Empty>
       ) : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
-                <th className="px-4 py-3">Product</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Stock</th><th className="px-4 py-3">Sold</th><th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">{tl("Product")}</th><th className="px-4 py-3">{tl("Category")}</th><th className="px-4 py-3">{tl("Price")}</th>
+                <th className="px-4 py-3">{tl("Stock")}</th><th className="px-4 py-3">{tl("Sold")}</th><th className="px-4 py-3">{tl("Status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -133,12 +134,12 @@ function Products({ categories, onChanged }) {
                   <td className="px-4 py-3 whitespace-nowrap">{formatSAR(p.price)}
                     {p.original_price && <span className="ml-1 text-[11px] text-on-surface-variant line-through">{formatSAR(p.original_price)}</span>}</td>
                   <td className={`px-4 py-3 ${p.stock_quantity <= 0 ? 'text-rose-400' : p.is_low_stock ? 'text-amber-300' : 'text-on-surface'}`}>
-                    {p.stock_quantity <= 0 ? 'Out' : p.stock_quantity}</td>
+                    {p.stock_quantity <= 0 ? tl("Out") : p.stock_quantity}</td>
                   <td className="px-4 py-3 text-on-surface-variant">{p.total_sold}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${p.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
-                      {p.is_active ? 'On sale' : 'Hidden'}</span>
-                    {p.is_featured && <span className="ml-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/15 text-amber-300">Featured</span>}
+                      {p.is_active ? tl("On sale") : tl("Hidden")}</span>
+                    {p.is_featured && <span className="ml-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/15 text-amber-300">{tl("Featured")}</span>}
                   </td>
                 </tr>
               ))}
@@ -172,27 +173,27 @@ function ProductEditor({ product, categories, onClose, onSaved }) {
     if (f.sku) body.sku = f.sku;
     try {
       const row = await adminService.saveProduct(f.id, body);
-      toast.success(f.id ? 'Product saved' : `${row.name} added — add a photo now`);
+      toast.success(f.id ? 'Product saved' : tl("{0} added — add a photo now", { 0: row.name }));
       onSaved();
       if (f.id) onClose();
       else setF({ ...row, telemetry: row.telemetry.join('\n'), original_price: row.original_price ?? '' });
     } catch (err) {
       setErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Could not save the product'));
+      toast.error(errorMessage(err, tl("Could not save the product")));
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async () => {
-    if (!window.confirm(`Delete ${f.name}?`)) return;
+    if (!window.confirm(tl("Delete {0}?", { 0: f.name }))) return;
     try {
       await adminService.deleteProduct(f.id);
-      toast.success('Product deleted');
+      toast.success(tl("Product deleted"));
       onSaved();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not delete'));
+      toast.error(errorMessage(err, tl("Could not delete")));
     }
   };
 
@@ -200,48 +201,48 @@ function ProductEditor({ product, categories, onClose, onSaved }) {
     try {
       const row = await adminService.uploadProductImage(f.id, file);
       setF((p) => ({ ...p, image_url: row.image_url }));
-      toast.success('Photo updated');
+      toast.success(tl("Photo updated"));
       onSaved();
     } catch (err) {
-      toast.error(errorMessage(err, 'Upload failed'));
+      toast.error(errorMessage(err, tl("Upload failed")));
       throw err;
     }
   };
 
   return (
-    <Drawer open title={f.id ? f.name : 'Add product'} onClose={onClose} subtitle={f.id ? `SKU ${f.sku}` : 'Shown to members as soon as it’s saved and on sale.'}
+    <Drawer open title={f.id ? f.name : tl("Add product")} onClose={onClose} subtitle={f.id ? tl("SKU {0}", { 0: f.sku }) : tl("Shown to members as soon as it’s saved and on sale.")}
       footer={<>
-        {f.id && <button type="button" className={btn.danger} onClick={remove}>Delete</button>}
+        {f.id && <button type="button" className={btn.danger} onClick={remove}>{tl("Delete")}</button>}
         <div className="flex-1" />
-        <button type="button" className={btn.ghost} onClick={onClose}>Close</button>
-        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+        <button type="button" className={btn.ghost} onClick={onClose}>{tl("Close")}</button>
+        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : tl("Save")}</button>
       </>}>
       {f.id ? (
-        <div className="max-w-[240px]"><ImageUploader label="Photo" aspect="aspect-square" url={f.image_url} customized={!!f.image_url} onUpload={upload} /></div>
-      ) : <p className="text-[12px] text-on-surface-variant">You can add a photo after the first save.</p>}
+        <div className="max-w-[240px]"><ImageUploader label={tl("Photo")} aspect="aspect-square" url={f.image_url} customized={!!f.image_url} onUpload={upload} /></div>
+      ) : <p className="text-[12px] text-on-surface-variant">{tl("You can add a photo after the first save.")}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label="Name" error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} /></Field>
-        <Field label="Category" error={errors.category_id}>
+        <Field label={tl("Name")} error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} /></Field>
+        <Field label={tl("Category")} error={errors.category_id}>
           <select className={inputCls} value={f.category_id} onChange={set('category_id')}>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}{c.is_active ? '' : ' (hidden)'}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}{c.is_active ? '' : tl(" (hidden)")}</option>)}
           </select></Field>
-        <Field label="SKU" error={errors.sku} hint={f.id ? undefined : 'Leave empty to make one from the name.'}>
+        <Field label={tl("SKU")} error={errors.sku} hint={f.id ? undefined : tl("Leave empty to make one from the name.")}>
           <input className={inputCls} value={f.sku} onChange={set('sku')} /></Field>
-        <Field label="Price (SAR, VAT included)" error={errors.price}><input className={inputCls} inputMode="decimal" value={f.price} onChange={set('price')} /></Field>
-        <Field label="Was (SAR, optional)" error={errors.original_price} hint="Shows a crossed-out price."><input className={inputCls} inputMode="decimal" value={f.original_price} onChange={set('original_price')} /></Field>
-        <Field label="In stock" error={errors.stock_quantity}><input className={inputCls} type="number" min="0" value={f.stock_quantity} onChange={set('stock_quantity')} /></Field>
-        <Field label="Warn when stock is at or below" error={errors.low_stock_threshold}><input className={inputCls} type="number" min="0" value={f.low_stock_threshold} onChange={set('low_stock_threshold')} /></Field>
-        <Field label="Description" error={errors.description} className="md:col-span-2"><textarea className={inputCls} rows={3} value={f.description} onChange={set('description')} /></Field>
-        <Field label="Badge" error={errors.badge_top} hint="e.g. Best seller"><input className={inputCls} value={f.badge_top} onChange={set('badge_top')} /></Field>
-        <Field label="Second badge" error={errors.badge_secondary}><input className={inputCls} value={f.badge_secondary} onChange={set('badge_secondary')} /></Field>
-        <Field label="Price note" error={errors.price_note}><input className={inputCls} value={f.price_note} onChange={set('price_note')} placeholder="Per tub" /></Field>
-        <Field label="Stock note" error={errors.stock_label}><input className={inputCls} value={f.stock_label} onChange={set('stock_label')} placeholder="Ships in 2 days" /></Field>
-        <Field label="Key facts (one per line, up to 6)" error={errors.telemetry} className="md:col-span-2">
-          <textarea className={inputCls} rows={3} value={f.telemetry} onChange={set('telemetry')} placeholder={'25 g protein per scoop\n30 servings'} /></Field>
+        <Field label={tl("Price (SAR, VAT included)")} error={errors.price}><input className={inputCls} inputMode="decimal" value={f.price} onChange={set('price')} /></Field>
+        <Field label={tl("Was (SAR, optional)")} error={errors.original_price} hint={tl("Shows a crossed-out price.")}><input className={inputCls} inputMode="decimal" value={f.original_price} onChange={set('original_price')} /></Field>
+        <Field label={tl("In stock")} error={errors.stock_quantity}><input className={inputCls} type="number" min="0" value={f.stock_quantity} onChange={set('stock_quantity')} /></Field>
+        <Field label={tl("Warn when stock is at or below")} error={errors.low_stock_threshold}><input className={inputCls} type="number" min="0" value={f.low_stock_threshold} onChange={set('low_stock_threshold')} /></Field>
+        <Field label={tl("Description")} error={errors.description} className="md:col-span-2"><textarea className={inputCls} rows={3} value={f.description} onChange={set('description')} /></Field>
+        <Field label={tl("Badge")} error={errors.badge_top} hint={tl("e.g. Best seller")}><input className={inputCls} value={f.badge_top} onChange={set('badge_top')} /></Field>
+        <Field label={tl("Second badge")} error={errors.badge_secondary}><input className={inputCls} value={f.badge_secondary} onChange={set('badge_secondary')} /></Field>
+        <Field label={tl("Price note")} error={errors.price_note}><input className={inputCls} value={f.price_note} onChange={set('price_note')} placeholder={tl("Per tub")} /></Field>
+        <Field label={tl("Stock note")} error={errors.stock_label}><input className={inputCls} value={f.stock_label} onChange={set('stock_label')} placeholder={tl("Ships in 2 days")} /></Field>
+        <Field label={tl("Key facts (one per line, up to 6)")} error={errors.telemetry} className="md:col-span-2">
+          <textarea className={inputCls} rows={3} value={f.telemetry} onChange={set('telemetry')} placeholder={tl("25 g protein per scoop\n30 servings")} /></Field>
       </div>
       <div className="flex flex-col gap-2 text-[13px] text-on-surface">
-        <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />On sale (members can see and buy it)</label>
-        <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_featured} onChange={set('is_featured')} />Featured (shown first)</label>
+        <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />{tl("On sale (members can see and buy it)")}</label>
+        <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_featured} onChange={set('is_featured')} />{tl("Featured (shown first)")}</label>
       </div>
     </Drawer>
   );
@@ -257,7 +258,7 @@ function Categories({ categories, onChanged }) {
   const add = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error('Type a category name first');
+      toast.error(tl("Type a category name first"));
       document.getElementById('new-category-name')?.focus();
       return;
     }
@@ -265,10 +266,10 @@ function Categories({ categories, onChanged }) {
     try {
       await adminService.saveCategory(null, { name: name.trim() });
       setName('');
-      toast.success('Category added');
+      toast.success(tl("Category added"));
       onChanged();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not add the category'));
+      toast.error(errorMessage(err, tl("Could not add the category")));
     } finally {
       setBusy(false);
     }
@@ -279,21 +280,21 @@ function Categories({ categories, onChanged }) {
       if (msg) toast.success(msg);
       onChanged();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not save'));
+      toast.error(errorMessage(err, tl("Could not save")));
     }
   };
   const rename = (c) => {
-    const n = window.prompt('Category name', c.name);
+    const n = window.prompt(tl("Category name"), c.name);
     if (n && n.trim() && n.trim() !== c.name) update(c, { name: n.trim() }, 'Renamed');
   };
   const remove = async (c) => {
-    if (!window.confirm(`Delete ${c.name}?`)) return;
+    if (!window.confirm(tl("Delete {0}?", { 0: c.name }))) return;
     try {
       await adminService.deleteCategory(c.id);
-      toast.success('Category deleted');
+      toast.success(tl("Category deleted"));
       onChanged();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not delete'));
+      toast.error(errorMessage(err, tl("Could not delete")));
     }
   };
   const move = (i, d) => {
@@ -306,24 +307,24 @@ function Categories({ categories, onChanged }) {
   return (
     <div className="flex flex-col gap-3 max-w-3xl">
       <form onSubmit={add} className="flex gap-2">
-        <input id="new-category-name" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="New category, e.g. Protein" aria-label="New category name" />
-        <button type="submit" className={btn.primary} disabled={busy}>{busy ? 'Adding…' : '+ Add category'}</button>
+        <input id="new-category-name" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder={tl("New category, e.g. Protein")} aria-label={tl("New category name")} />
+        <button type="submit" className={btn.primary} disabled={busy}>{busy ? tl("Adding…") : tl("+ Add category")}</button>
       </form>
-      {categories.length === 0 ? <Empty>No categories yet.</Empty> : categories.map((c, i) => (
+      {categories.length === 0 ? <Empty>{tl("No categories yet.")}</Empty> : categories.map((c, i) => (
         <div key={c.id} className="flex items-center gap-2 bg-[#0e0e0f] border border-[#1a1a1e] rounded px-3 py-2 text-[13px]">
           <div className="flex-1 min-w-0">
             <span className={`font-bold ${c.is_active ? 'text-on-surface' : 'text-on-surface-variant line-through'}`}>{c.name}</span>
             <span className="text-[11px] text-on-surface-variant"> · {c.products} product{c.products === 1 ? '' : 's'}</span>
           </div>
-          <button type="button" className={btn.ghost} disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up">↑</button>
-          <button type="button" className={btn.ghost} disabled={i === categories.length - 1} onClick={() => move(i, 1)} aria-label="Move down">↓</button>
-          <button type="button" className={btn.ghost} onClick={() => rename(c)}>Rename</button>
+          <button type="button" className={btn.ghost} disabled={i === 0} onClick={() => move(i, -1)} aria-label={tl("Move up")}>↑</button>
+          <button type="button" className={btn.ghost} disabled={i === categories.length - 1} onClick={() => move(i, 1)} aria-label={tl("Move down")}>↓</button>
+          <button type="button" className={btn.ghost} onClick={() => rename(c)}>{tl("Rename")}</button>
           <button type="button" className={btn.ghost} onClick={() => update(c, { is_active: !c.is_active }, c.is_active ? 'Hidden from members' : 'Shown to members')}>
-            {c.is_active ? 'Hide' : 'Show'}</button>
-          {c.products === 0 && <button type="button" className={btn.danger} onClick={() => remove(c)}>Delete</button>}
+            {c.is_active ? tl("Hide") : tl("Show")}</button>
+          {c.products === 0 && <button type="button" className={btn.danger} onClick={() => remove(c)}>{tl("Delete")}</button>}
         </div>
       ))}
-      <p className="text-[11px] text-on-surface-variant">Hiding a category hides all of its products from members.</p>
+      <p className="text-[11px] text-on-surface-variant">{tl("Hiding a category hides all of its products from members.")}</p>
     </div>
   );
 }
@@ -340,15 +341,15 @@ function Promos() {
     <div className="flex flex-col gap-3">
       <div className="flex justify-end">
         <button type="button" className={btn.primary} onClick={() => setEditing({ code: '', description: '', discount_percent: 10, max_uses: '', valid_from: '', valid_until: '', is_active: true })}>
-          + New promo code</button>
+          {tl("+ New promo code")}</button>
       </div>
-      {loading ? <div className="h-24 bg-[#0e0e0f] rounded-lg animate-pulse" /> : list.length === 0 ? <Empty>No promo codes yet.</Empty> : (
+      {loading ? <div className="h-24 bg-[#0e0e0f] rounded-lg animate-pulse" /> : list.length === 0 ? <Empty>{tl("No promo codes yet.")}</Empty> : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
-                <th className="px-4 py-3">Code</th><th className="px-4 py-3">Discount</th><th className="px-4 py-3">Used</th>
-                <th className="px-4 py-3">Valid</th><th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">{tl("Code")}</th><th className="px-4 py-3">{tl("Discount")}</th><th className="px-4 py-3">{tl("Used")}</th>
+                <th className="px-4 py-3">{tl("Valid")}</th><th className="px-4 py-3">{tl("Status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -359,9 +360,9 @@ function Promos() {
                   <td className="px-4 py-3">{p.discount_percent}%</td>
                   <td className="px-4 py-3 text-on-surface-variant">{p.used_count}{p.max_uses ? ` / ${p.max_uses}` : ''}</td>
                   <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">
-                    {p.valid_from ? new Date(p.valid_from).toLocaleDateString() : 'Now'} → {p.valid_until ? new Date(p.valid_until).toLocaleDateString() : 'No end'}</td>
+                    {p.valid_from ? new Date(p.valid_from).toLocaleDateString(locale) : tl("Now")} → {p.valid_until ? new Date(p.valid_until).toLocaleDateString(locale) : tl("No end")}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${p.is_valid ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
-                    {p.is_valid ? 'Working' : 'Not working'}</span></td>
+                    {p.is_valid ? tl("Working") : tl("Not working")}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -386,45 +387,45 @@ function PromoEditor({ promo, onClose, onSaved }) {
     try {
       await adminService.savePromo(f.id, { code: f.code, description: f.description, discount_percent: f.discount_percent,
         max_uses: f.max_uses === '' ? null : f.max_uses, valid_from: f.valid_from || null, valid_until: f.valid_until || null, is_active: f.is_active });
-      toast.success('Promo code saved');
+      toast.success(tl("Promo code saved"));
       onSaved();
       onClose();
     } catch (err) {
       setErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Could not save'));
+      toast.error(errorMessage(err, tl("Could not save")));
     } finally {
       setBusy(false);
     }
   };
   const remove = async () => {
-    if (!window.confirm(`Delete ${f.code}?`)) return;
+    if (!window.confirm(tl("Delete {0}?", { 0: f.code }))) return;
     try {
       await adminService.deletePromo(f.id);
-      toast.success('Deleted');
+      toast.success(tl("Deleted"));
       onSaved();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err, 'Could not delete'));
+      toast.error(errorMessage(err, tl("Could not delete")));
     }
   };
 
   return (
-    <Drawer open title={f.id ? f.code : 'New promo code'} onClose={onClose} subtitle="Members type it at checkout for a percentage off the shop order."
+    <Drawer open title={f.id ? f.code : tl("New promo code")} onClose={onClose} subtitle={tl("Members type it at checkout for a percentage off the shop order.")}
       footer={<>
-        {f.id && !f.used_count && <button type="button" className={btn.danger} onClick={remove}>Delete</button>}
+        {f.id && !f.used_count && <button type="button" className={btn.danger} onClick={remove}>{tl("Delete")}</button>}
         <div className="flex-1" />
-        <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+        <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
+        <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : tl("Save")}</button>
       </>}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label="Code" error={errors.code} hint="Letters and numbers; members can type it in any case."><input className={`${inputCls} font-mono uppercase`} value={f.code} onChange={set('code')} /></Field>
-        <Field label="Discount %" error={errors.discount_percent}><input className={inputCls} type="number" min="1" max="90" value={f.discount_percent} onChange={set('discount_percent')} /></Field>
-        <Field label="Description (staff only)" error={errors.description} className="md:col-span-2"><input className={inputCls} value={f.description} onChange={set('description')} /></Field>
-        <Field label="Starts" error={errors.valid_from}><input className={inputCls} type="date" value={f.valid_from} onChange={set('valid_from')} /></Field>
-        <Field label="Ends" error={errors.valid_until}><input className={inputCls} type="date" value={f.valid_until} onChange={set('valid_until')} /></Field>
-        <Field label="Max uses (optional)" error={errors.max_uses}><input className={inputCls} type="number" min="1" value={f.max_uses} onChange={set('max_uses')} /></Field>
+        <Field label={tl("Code")} error={errors.code} hint={tl("Letters and numbers; members can type it in any case.")}><input className={`${inputCls} font-mono uppercase`} value={f.code} onChange={set('code')} /></Field>
+        <Field label={tl("Discount %")} error={errors.discount_percent}><input className={inputCls} type="number" min="1" max="90" value={f.discount_percent} onChange={set('discount_percent')} /></Field>
+        <Field label={tl("Description (staff only)")} error={errors.description} className="md:col-span-2"><input className={inputCls} value={f.description} onChange={set('description')} /></Field>
+        <Field label={tl("Starts")} error={errors.valid_from}><input className={inputCls} type="date" value={f.valid_from} onChange={set('valid_from')} /></Field>
+        <Field label={tl("Ends")} error={errors.valid_until}><input className={inputCls} type="date" value={f.valid_until} onChange={set('valid_until')} /></Field>
+        <Field label={tl("Max uses (optional)")} error={errors.max_uses}><input className={inputCls} type="number" min="1" value={f.max_uses} onChange={set('max_uses')} /></Field>
       </div>
-      <label className="flex items-start gap-2 text-[13px] text-on-surface"><input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />Switched on</label>
+      <label className="flex items-start gap-2 text-[13px] text-on-surface"><input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />{tl("Switched on")}</label>
     </Drawer>
   );
 }

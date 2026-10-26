@@ -6,6 +6,7 @@ import { siteContentService as api } from '../../services/siteContentService';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { BilingualField, Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { tl } from '../../i18n';
 
 const NEW_PLAN = {
   name: '', display_name: '', display_name_ar: '', description: '', description_ar: '',
@@ -34,35 +35,35 @@ export default function SitePlans() {
   return (
     <div className="p-8 bg-background min-h-screen">
       <PageHeader
-        title="Membership Plans"
-        subtitle="Plans and prices on the public website and signup. Price changes apply to new signups only; plans can't be deleted because members and signups refer to them — hide them instead."
+        title={tl("Membership Plans")}
+        subtitle={tl("Plans and prices on the public website and signup. Price changes apply to new signups only; plans can't be deleted because members and signups refer to them — hide them instead.")}
       >
-        <button type="button" className={btn.primary} onClick={() => setEditing(NEW_PLAN)}>+ Add plan</button>
+        <button type="button" className={btn.primary} onClick={() => setEditing(NEW_PLAN)}>{tl("+ Add plan")}</button>
       </PageHeader>
 
-      {loading ? <Empty>Loading…</Empty> : !plans.length ? <Empty>No plans yet.</Empty> : (
+      {loading ? <Empty>{tl("Loading…")}</Empty> : !plans.length ? <Empty>{tl("No plans yet.")}</Empty> : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {plans.map((p) => (
             <div key={p.id} className={`bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-5 flex flex-col gap-3 ${p.is_active ? '' : 'opacity-60'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[18px] text-on-surface font-bold">{p.display_name}</div>
-                  <div className="text-[13px] text-on-surface-variant" dir="rtl" lang="ar">{p.display_name_ar || '— no Arabic name —'}</div>
+                  <div className="text-[13px] text-on-surface-variant" dir="rtl" lang="ar">{p.display_name_ar || tl("— no Arabic name —")}</div>
                   <code className="text-[10px] text-on-surface-variant">{p.name}</code>
                 </div>
                 <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${p.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
-                  {p.is_active ? 'On website' : 'Hidden'}
+                  {p.is_active ? tl("On website") : tl("Hidden")}
                 </span>
               </div>
               <div className="text-[13px] text-on-surface">
-                SAR {p.price_monthly} <span className="text-on-surface-variant">/ month</span> · SAR {p.price_annual} <span className="text-on-surface-variant">/ year</span>
+                {tl("SAR")}{' '}{p.price_monthly} <span className="text-on-surface-variant">/ month</span>{' '}{tl("· SAR")}{' '}{p.price_annual} <span className="text-on-surface-variant">/ year</span>
               </div>
               <div className="text-[12px] text-on-surface-variant">
                 {p.features.length} feature{p.features.length === 1 ? '' : 's'}
-                {' · '}{p.session_limit_minutes ? `${p.session_limit_minutes} min per visit` : 'no visit limit'}
+                {' · '}{p.session_limit_minutes ? tl("{0} min per visit", { 0: p.session_limit_minutes }) : tl("no visit limit")}
                 {' · '}{p.registrations} signup{p.registrations === 1 ? '' : 's'}
               </div>
-              <div><button type="button" className={btn.ghost} onClick={() => setEditing(p)}>Edit</button></div>
+              <div><button type="button" className={btn.ghost} onClick={() => setEditing(p)}>{tl("Edit")}</button></div>
             </div>
           ))}
         </div>
@@ -112,7 +113,7 @@ function PlanEditor({ plan, onClose, onSaved }) {
       onSaved();
     } catch (err) {
       setErrors(fieldErrors(err));
-      toast.error(errorMessage(err, 'Please fix the highlighted fields.'));
+      toast.error(errorMessage(err, tl("Please fix the highlighted fields.")));
     } finally {
       setSaving(false);
     }
@@ -123,52 +124,52 @@ function PlanEditor({ plan, onClose, onSaved }) {
   return (
     <Drawer
       open
-      title={isNew ? 'New plan' : plan.display_name}
+      title={isNew ? tl("New plan") : plan.display_name}
       onClose={onClose}
       footer={(
         <>
-          <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-          <button type="button" className={btn.primary} disabled={saving} onClick={save}>{saving ? 'Saving…' : isNew ? 'Create plan' : 'Save plan'}</button>
+          <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
+          <button type="button" className={btn.primary} disabled={saving} onClick={save}>{saving ? tl("Saving…") : isNew ? tl("Create plan") : tl("Save plan")}</button>
         </>
       )}
     >
       <label className="flex flex-col gap-1">
-        <span className={labelCls}>Plan code <span className="text-primary">*</span></span>
-        <input className={inputCls} value={form.name} onChange={(e) => set('name')(e.target.value)} disabled={!isNew} placeholder="e.g. student" />
-        <span className="text-[10px] text-on-surface-variant/60">{isNew ? 'Short, unique, lowercase — used internally.' : "Can't be changed after creation."}</span>
+        <span className={labelCls}>{tl("Plan code")}{' '}<span className="text-primary">*</span></span>
+        <input className={inputCls} value={form.name} onChange={(e) => set('name')(e.target.value)} disabled={!isNew} placeholder={tl("e.g. student")} />
+        <span className="text-[10px] text-on-surface-variant/60">{isNew ? tl("Short, unique, lowercase — used internally.") : tl("Can't be changed after creation.")}</span>
         {err('name')}
       </label>
       <BilingualField
-        label="Plan name" required
+        label={tl("Plan name")} required
         value={{ en: form.display_name, ar: form.display_name_ar }}
         onChange={(v) => { set('display_name')(v.en); set('display_name_ar')(v.ar); }}
         error={errors.display_name || errors.display_name_ar}
       />
       <BilingualField
-        label="Description" multiline
+        label={tl("Description")} multiline
         value={{ en: form.description, ar: form.description_ar }}
         onChange={(v) => { set('description')(v.en); set('description_ar')(v.ar); }}
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1">
-          <span className={labelCls}>Monthly price (SAR) <span className="text-primary">*</span></span>
+          <span className={labelCls}>{tl("Monthly price (SAR)")}{' '}<span className="text-primary">*</span></span>
           <input className={inputCls} type="number" min="0" step="0.01" value={form.price_monthly} onChange={(e) => set('price_monthly')(e.target.value)} />
           {err('price_monthly')}
         </label>
         <label className="flex flex-col gap-1">
-          <span className={labelCls}>Yearly price (SAR) <span className="text-primary">*</span></span>
+          <span className={labelCls}>{tl("Yearly price (SAR)")}{' '}<span className="text-primary">*</span></span>
           <input className={inputCls} type="number" min="0" step="0.01" value={form.price_annual} onChange={(e) => set('price_annual')(e.target.value)} />
           {err('price_annual')}
         </label>
         <label className="flex flex-col gap-1">
-          <span className={labelCls}>Max minutes per visit</span>
-          <input className={inputCls} type="number" min="0" value={form.session_limit_minutes ?? ''} placeholder="Unlimited" onChange={(e) => set('session_limit_minutes')(e.target.value === '' ? '' : Number(e.target.value))} />
+          <span className={labelCls}>{tl("Max minutes per visit")}</span>
+          <input className={inputCls} type="number" min="0" value={form.session_limit_minutes ?? ''} placeholder={tl("Unlimited")} onChange={(e) => set('session_limit_minutes')(e.target.value === '' ? '' : Number(e.target.value))} />
           {err('session_limit_minutes')}
         </label>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
-          <span className={labelCls}>Features (one per line)</span>
+          <span className={labelCls}>{tl("Features (one per line)")}</span>
           <textarea className={inputCls} rows={6} value={form.featuresText} onChange={(e) => set('featuresText')(e.target.value)} />
           {err('features')}
         </label>
@@ -180,7 +181,7 @@ function PlanEditor({ plan, onClose, onSaved }) {
       </div>
       <label className="flex items-center gap-2 text-[13px] text-on-surface">
         <input type="checkbox" checked={!!form.is_active} onChange={(e) => set('is_active')(e.target.checked)} />
-        Show this plan on the website and signup
+        {tl("Show this plan on the website and signup")}
       </label>
     </Drawer>
   );

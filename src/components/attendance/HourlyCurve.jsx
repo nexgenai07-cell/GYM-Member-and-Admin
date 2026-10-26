@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function HourlyCurve({ hourly }) {
   if (!hourly) {
@@ -28,17 +29,17 @@ export default function HourlyCurve({ hourly }) {
       <div>
         <div className="flex items-center justify-between">
           <span className="font-label-md text-label-md uppercase text-primary tracking-wider font-bold">
-            Your timing
+            {tl("Your timing")}
           </span>
           <span className="px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface font-label-md text-label-md uppercase">
-            Last 90 days
+            {tl("Last 90 days")}
           </span>
         </div>
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
-          Your visits vs gym load
+          {tl("Your visits vs gym load")}
         </h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          Bars: when you check in. Line: when everyone checks in.
+          {tl("Bars: when you check in. Line: when everyone checks in.")}
         </p>
       </div>
 
@@ -94,7 +95,7 @@ export default function HourlyCurve({ hourly }) {
           <span>00:00</span>
           <span>06:00</span>
           <span>12:00</span>
-          <span className="text-primary font-bold">{peakHour != null ? `${pad(peakHour)} (you)` : '18:00'}</span>
+          <span className="text-primary font-bold">{peakHour != null ? tl("{0} (you)", { 0: pad(peakHour) }) : '18:00'}</span>
           <span>23:00</span>
         </div>
       </div>
@@ -105,12 +106,12 @@ export default function HourlyCurve({ hourly }) {
         </span>
         <div className="flex flex-col">
           <span className="font-title-md text-title-md text-on-surface leading-tight">
-            {quiet != null ? 'Quietest time' : 'Not enough data yet'}
+            {quiet != null ? tl("Quietest time") : tl("Not enough data yet")}
           </span>
           <span className="font-body-md text-body-md text-on-surface-variant text-[12px]">
             {quiet != null
-              ? `The gym is quietest around ${pad(quiet)}${peakHour != null ? `; you usually arrive around ${pad(peakHour)}` : ''}.`
-              : 'This fills in as members check in over the coming days.'}
+              ? tl("The gym is quietest around {0}{1}.", { 0: pad(quiet), 1: peakHour != null ? `; you usually arrive around ${pad(peakHour)}` : '' })
+              : tl("This fills in as members check in over the coming days.")}
           </span>
         </div>
       </div>

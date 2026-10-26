@@ -10,6 +10,7 @@ import VideoStage from '../../components/player/VideoStage';
 import CoachNotes from '../../components/player/CoachNotes';
 import SyllabusSidebar from '../../components/player/SyllabusSidebar';
 import SessionSummaryDock from '../../components/player/SessionSummaryDock';
+import { tl } from '../../i18n';
 
 export default function Player() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function Player() {
 
   const handleStartWorkout = async () => {
     if (!course) {
-      toast.error('No active course. Enroll in one from the Courses page.');
+      toast.error(tl("No active course. Enroll in one from the Courses page."));
       return;
     }
 
@@ -66,7 +67,7 @@ export default function Player() {
           : course.title,
       });
 
-      toast.success('Workout started! Log sets in Machine Guide or here.');
+      toast.success(tl("Workout started! Log sets in Machine Guide or here."));
       setLogged(true);
       setTimeout(() => setLogged(false), 3000);
     } catch (e) {
@@ -80,10 +81,10 @@ export default function Player() {
     if (!enrollment) return;
     try {
       await catalogService.completeModule(enrollment.id, moduleId);
-      toast.success('Module completed! 🎉');
+      toast.success(tl("Module completed! 🎉"));
       refetchPlayer();
     } catch (e) {
-      toast.error('Failed to mark module complete');
+      toast.error(tl("Failed to mark module complete"));
     }
   };
 
@@ -106,11 +107,10 @@ export default function Player() {
             </span>
           </div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wide mb-3">
-            No Active Course
+            {tl("No Active Course")}
           </h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-md mx-auto mb-6">
-            Enroll in a course to unlock the guided player with workout tracking,
-            exercise videos, and progress monitoring.
+            {tl("Enroll in a course to unlock the guided player with workout tracking, exercise videos, and progress monitoring.")}
           </p>
           <button
             onClick={handleBrowseCourses}
@@ -118,7 +118,7 @@ export default function Player() {
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">menu_book</span>
-            <span>Browse Courses</span>
+            <span>{tl("Browse Courses")}</span>
           </button>
         </motion.div>
       </div>

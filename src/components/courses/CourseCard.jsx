@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import CountUp from '../CountUp';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -61,7 +62,7 @@ export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
           {/* Enrollment badge */}
           {enrolled && (
             <div className="absolute top-space-sm right-space-sm bg-primary-container text-on-primary-container font-label-md text-label-md uppercase tracking-wider px-space-xs py-space-2xs rounded-sm">
-              Enrolled
+              {tl("Enrolled")}
             </div>
           )}
 
@@ -141,9 +142,9 @@ export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
       <div className="p-space-md pt-0">
         <div className="flex items-center justify-between mb-space-sm">
           <span className="font-headline-md text-headline-md text-on-surface tabular-nums">
-            {course.free_for_me ? 'Free' : (
+            {course.free_for_me ? tl("Free") : (
               <>
-                SAR{' '}
+                {tl("SAR")}{' '}
                 <CountUp
                   to={Number(course.price) || 0}
                   duration={1.2}
@@ -154,7 +155,7 @@ export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
             )}
           </span>
           <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-            {course.free_for_me && Number(course.price) > 0 ? 'Included in your plan' : 'Lifetime access'}
+            {course.free_for_me && Number(course.price) > 0 ? tl("Included in your plan") : tl("Lifetime access")}
           </span>
         </div>
 
@@ -177,7 +178,7 @@ export default function CourseCard({ course, index = 0, enrolled, onEnroll }) {
             {enrolled ? 'check_circle' : 'touch_app'}
           </span>
           <span className="relative z-10">
-            {enrolled ? 'Enrolled' : course.free_for_me ? 'Enroll' : 'Buy & enroll'}
+            {enrolled ? tl("Enrolled") : course.free_for_me ? tl("Enroll") : tl("Buy & enroll")}
           </span>
         </motion.button>
       </div>

@@ -10,11 +10,12 @@ import { formatDate, formatRemaining } from '../../utils/membershipTime';
 import { formatSAR } from '../../utils/money';
 import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { tl, locale } from '../../i18n';
 
 const FILTERS = [
-  ['', 'All', 'total'], ['active', 'Active', 'active'], ['expiring', 'Expiring (14 days)', 'expiring'],
-  ['expired', 'Expired', 'expired'], ['frozen', 'Frozen', 'frozen'], ['none', 'No membership', 'none'],
-  ['inactive', 'Deactivated', 'inactive'],
+  ['', tl("All"), 'total'], ['active', tl("Active"), 'active'], ['expiring', tl("Expiring (14 days)"), 'expiring'],
+  ['expired', tl("Expired"), 'expired'], ['frozen', tl("Frozen"), 'frozen'], ['none', tl("No membership"), 'none'],
+  ['inactive', tl("Deactivated"), 'inactive'],
 ];
 const BADGE = {
   active: 'bg-emerald-500/15 text-emerald-400', expiring: 'bg-amber-500/15 text-amber-300',
@@ -89,7 +90,7 @@ export default function AdminMembers() {
 
   return (
     <div className="p-8 bg-background min-h-screen">
-      <PageHeader title="Members" subtitle="Search by name, email, phone or Iqama. Open a member to extend, freeze, message or reset their password." />
+      <PageHeader title={tl("Members")} subtitle={tl("Search by name, email, phone or Iqama. Open a member to extend, freeze, message or reset their password.")} />
 
       <div className="flex gap-1 mb-4 flex-wrap" role="tablist">
         {FILTERS.map(([id, label, key]) => (
@@ -101,31 +102,31 @@ export default function AdminMembers() {
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap items-center">
-        <input className={`${inputCls} max-w-sm`} placeholder="Search name, email, phone, Iqama…" value={search} aria-label="Search members"
+        <input className={`${inputCls} max-w-sm`} placeholder={tl("Search name, email, phone, Iqama…")} value={search} aria-label={tl("Search members")}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         {selected.length > 0 && (
           <div className="flex gap-2 items-center">
             <span className="text-[12px] text-on-surface-variant">{selected.length} selected</span>
-            <button type="button" className={btn.ghost} disabled={busy} onClick={() => setDialog({ kind: 'message', ids: selected })}>Message</button>
-            <button type="button" className={btn.ghost} disabled={busy} onClick={() => setDialog({ kind: 'freeze', ids: selected })}>Freeze</button>
-            <button type="button" className={btn.ghost} disabled={busy} onClick={() => bulk('export')}>Export CSV</button>
-            <button type="button" className={btn.ghost} onClick={() => setSelected([])}>Clear</button>
+            <button type="button" className={btn.ghost} disabled={busy} onClick={() => setDialog({ kind: 'message', ids: selected })}>{tl("Message")}</button>
+            <button type="button" className={btn.ghost} disabled={busy} onClick={() => setDialog({ kind: 'freeze', ids: selected })}>{tl("Freeze")}</button>
+            <button type="button" className={btn.ghost} disabled={busy} onClick={() => bulk('export')}>{tl("Export CSV")}</button>
+            <button type="button" className={btn.ghost} onClick={() => setSelected([])}>{tl("Clear")}</button>
           </div>
         )}
       </div>
 
-      {loading && !data.results.length ? <Empty>Loading…</Empty> : !data.results.length ? <Empty>No members here.</Empty> : (
+      {loading && !data.results.length ? <Empty>{tl("Loading…")}</Empty> : !data.results.length ? <Empty>{tl("No members here.")}</Empty> : (
         <div className="bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-[#1a1a1e]">
                 <th className="p-3 w-8">
-                  <input type="checkbox" aria-label="Select page" checked={allOnPage}
+                  <input type="checkbox" aria-label={tl("Select page")} checked={allOnPage}
                     onChange={() => setSelected(allOnPage ? selected.filter((id) => !data.results.some((m) => m.id === id))
                       : [...new Set([...selected, ...data.results.map((m) => m.id)])])} />
                 </th>
-                <th className="p-3">Member</th><th className="p-3">Iqama</th><th className="p-3">Plan</th>
-                <th className="p-3">Expires</th><th className="p-3">Status</th>
+                <th className="p-3">{tl("Member")}</th><th className="p-3">{tl("Iqama")}</th><th className="p-3">{tl("Plan")}</th>
+                <th className="p-3">{tl("Expires")}</th><th className="p-3">{tl("Status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -133,15 +134,15 @@ export default function AdminMembers() {
                 <tr key={m.id} className={`border-b border-[#1a1a1e] last:border-0 hover:bg-[#131316] cursor-pointer ${m.is_active ? '' : 'opacity-60'}`}
                   onClick={() => openFile(m.id)}>
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" aria-label={`Select ${m.full_name}`} checked={selected.includes(m.id)} onChange={() => toggle(m.id)} />
+                    <input type="checkbox" aria-label={tl("Select {0}", { 0: m.full_name })} checked={selected.includes(m.id)} onChange={() => toggle(m.id)} />
                   </td>
                   <td className="p-3"><div className="text-on-surface font-bold">{m.full_name}</div><div className="text-[11px] text-on-surface-variant">{m.email}{m.phone && ` · ${m.phone}`}</div></td>
                   <td className="p-3 font-mono text-on-surface-variant">{m.iqama_number || '—'}</td>
                   <td className="p-3 text-on-surface">{m.plan || '—'}</td>
                   <td className="p-3 text-on-surface-variant">{m.expiry_date ? `${formatDate(m.expiry_date)} · ${formatRemaining(m.time_remaining)}` : '—'}</td>
                   <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${BADGE[m.membership_status]}`}>{m.membership_status === 'none' ? 'No plan' : m.membership_status}</span>
-                    {!m.is_active && <span className="ml-1 text-[10px] text-rose-300 uppercase font-bold">Deactivated</span>}
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${BADGE[m.membership_status]}`}>{m.membership_status === 'none' ? tl("No plan") : m.membership_status}</span>
+                    {!m.is_active && <span className="ml-1 text-[10px] text-rose-300 uppercase font-bold">{tl("Deactivated")}</span>}
                   </td>
                 </tr>
               ))}
@@ -153,9 +154,9 @@ export default function AdminMembers() {
       <div className="flex items-center justify-between mt-3 text-[12px] text-on-surface-variant">
         <span>{data.count} member{data.count === 1 ? '' : 's'}</span>
         <div className="flex gap-2">
-          <button type="button" className={btn.ghost} disabled={!data.previous} onClick={() => setPage((p) => p - 1)}>Previous</button>
-          <span className="self-center">Page {page}</span>
-          <button type="button" className={btn.ghost} disabled={!data.next} onClick={() => setPage((p) => p + 1)}>Next</button>
+          <button type="button" className={btn.ghost} disabled={!data.previous} onClick={() => setPage((p) => p - 1)}>{tl("Previous")}</button>
+          <span className="self-center">{tl("Page")}{' '}{page}</span>
+          <button type="button" className={btn.ghost} disabled={!data.next} onClick={() => setPage((p) => p + 1)}>{tl("Next")}</button>
         </div>
       </div>
 
@@ -164,18 +165,18 @@ export default function AdminMembers() {
         onClose={() => setFile(null)}
         footer={file && (
           <div className="flex gap-2 flex-wrap">
-            {file.membership && <button type="button" className={btn.primary} onClick={() => setDialog({ kind: 'extend', id: file.id })}>Extend</button>}
+            {file.membership && <button type="button" className={btn.primary} onClick={() => setDialog({ kind: 'extend', id: file.id })}>{tl("Extend")}</button>}
             {file.membership && (file.membership_status === 'frozen'
-              ? <button type="button" className={btn.ghost} disabled={busy} onClick={() => run(file.id, 'unfreeze', {}, 'Unfrozen')}>Unfreeze</button>
-              : <button type="button" className={btn.ghost} onClick={() => setDialog({ kind: 'freeze', id: file.id })}>Freeze</button>)}
-            <button type="button" className={btn.ghost} onClick={() => setDialog({ kind: 'message', id: file.id })}>Message</button>
+              ? <button type="button" className={btn.ghost} disabled={busy} onClick={() => run(file.id, 'unfreeze', {}, 'Unfrozen')}>{tl("Unfreeze")}</button>
+              : <button type="button" className={btn.ghost} onClick={() => setDialog({ kind: 'freeze', id: file.id })}>{tl("Freeze")}</button>)}
+            <button type="button" className={btn.ghost} onClick={() => setDialog({ kind: 'message', id: file.id })}>{tl("Message")}</button>
             <button type="button" className={btn.ghost} disabled={busy}
-              onClick={() => window.confirm(`Email ${file.email} a temporary password? Their current password stops working.`) && run(file.id, 'reset_password', {}, 'Temporary password emailed')}>
-              Reset password
+              onClick={() => window.confirm(tl("Email {0} a temporary password? Their current password stops working.", { 0: file.email })) && run(file.id, 'reset_password', {}, 'Temporary password emailed')}>
+              {tl("Reset password")}
             </button>
             {file.is_active
-              ? <button type="button" className={btn.danger} disabled={busy} onClick={() => window.confirm(`Deactivate ${file.full_name}? They can't log in until reactivated.`) && run(file.id, 'deactivate', {}, 'Deactivated')}>Deactivate</button>
-              : <button type="button" className={btn.primary} disabled={busy} onClick={() => run(file.id, 'reactivate', {}, 'Reactivated')}>Reactivate</button>}
+              ? <button type="button" className={btn.danger} disabled={busy} onClick={() => window.confirm(tl("Deactivate {0}? They can't log in until reactivated.", { 0: file.full_name })) && run(file.id, 'deactivate', {}, 'Deactivated')}>{tl("Deactivate")}</button>
+              : <button type="button" className={btn.primary} disabled={busy} onClick={() => run(file.id, 'reactivate', {}, 'Reactivated')}>{tl("Reactivate")}</button>}
           </div>
         )}
       >
@@ -185,7 +186,7 @@ export default function AdminMembers() {
       <ActionDialog dialog={dialog} busy={busy} onClose={() => setDialog(null)}
         onSubmit={(fields) => (dialog.ids
           ? bulk(dialog.kind, fields)
-          : run(dialog.id, dialog.kind, fields, { extend: 'Membership extended', freeze: 'Membership frozen', message: 'Message sent' }[dialog.kind]))} />
+          : run(dialog.id, dialog.kind, fields, { extend: 'Membership extended', freeze: 'Membership frozen', message: tl("Message sent") }[dialog.kind]))} />
     </div>
   );
 }
@@ -195,31 +196,31 @@ function MemberFile({ file }) {
   return (
     <div className="flex flex-col gap-5 text-[13px]">
       <div className="grid grid-cols-2 gap-3">
-        <Info label="Plan" value={m?.plan?.display_name || 'No membership'} />
-        <Info label="Status" value={file.membership_status === 'frozen' ? `Frozen until ${formatDate(file.frozen_until)}` : file.membership_status} />
-        <Info label="Expires" value={m ? `${formatDate(m.expiry_date)} (${formatRemaining(m.time_remaining)})` : '—'} />
-        <Info label="Iqama · Pass" value={m ? `${m.iqama_number || '—'} · ${m.pass_id}` : '—'} />
-        <Info label="Locker credit" value={formatSAR(file.locker_credit)} />
-        <Info label="Visits" value={m?.total_check_ins ?? 0} />
+        <Info label={tl("Plan")} value={m?.plan?.display_name || 'No membership'} />
+        <Info label={tl("Status")} value={file.membership_status === 'frozen' ? `Frozen until ${formatDate(file.frozen_until)}` : file.membership_status} />
+        <Info label={tl("Expires")} value={m ? `${formatDate(m.expiry_date)} (${formatRemaining(m.time_remaining)})` : '—'} />
+        <Info label={tl("Iqama · Pass")} value={m ? `${m.iqama_number || '—'} · ${m.pass_id}` : '—'} />
+        <Info label={tl("Locker credit")} value={formatSAR(file.locker_credit)} />
+        <Info label={tl("Visits")} value={m?.total_check_ins ?? 0} />
       </div>
-      {file.must_change_password && <p className="text-amber-300 text-[12px]">Must change password at next login.</p>}
-      <Section title="Facilities">
-        {file.facilities.length ? file.facilities.map((f) => <div key={f.name}>{f.name} · until {formatDate(f.expires_on)}</div>) : <span className="text-on-surface-variant">None</span>}
+      {file.must_change_password && <p className="text-amber-300 text-[12px]">{tl("Must change password at next login.")}</p>}
+      <Section title={tl("Facilities")}>
+        {file.facilities.length ? file.facilities.map((f) => <div key={f.name}>{f.name}{' '}{tl("· until")}{' '}{formatDate(f.expires_on)}</div>) : <span className="text-on-surface-variant">{tl("None")}</span>}
       </Section>
-      <Section title="Recent payments">
+      <Section title={tl("Recent payments")}>
         {file.recent_payments.length ? file.recent_payments.map((p, i) => (
           <div key={i} className="flex justify-between gap-2">
-            <span className="truncate">{new Date(p.date).toLocaleDateString()} · {p.description}</span>
+            <span className="truncate">{new Date(p.date).toLocaleDateString(locale)} · {p.description}</span>
             <span className="shrink-0">{formatSAR(p.amount)}</span>
           </div>
-        )) : <span className="text-on-surface-variant">None</span>}
+        )) : <span className="text-on-surface-variant">{tl("None")}</span>}
       </Section>
-      <Section title="Recent visits">
+      <Section title={tl("Recent visits")}>
         {file.recent_visits.length ? file.recent_visits.map((v, i) => (
-          <div key={i}>{new Date(v.check_in).toLocaleString()} {v.check_out ? `→ ${new Date(v.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '· in the gym'} · {v.zone}</div>
-        )) : <span className="text-on-surface-variant">None</span>}
+          <div key={i}>{new Date(v.check_in).toLocaleString(locale)} {v.check_out ? `→ ${new Date(v.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : tl("· in the gym")} · {v.zone}</div>
+        )) : <span className="text-on-surface-variant">{tl("None")}</span>}
       </Section>
-      {file.iqama_number && <Link to={`/admin/member-lookup?iqama=${file.iqama_number}`} className="text-primary text-[12px] hover:underline">Open in Member Lookup (check in) →</Link>}
+      {file.iqama_number && <Link to={`/admin/member-lookup?iqama=${file.iqama_number}`} className="text-primary text-[12px] hover:underline">{tl("Open in Member Lookup (check in) →")}</Link>}
     </div>
   );
 }
@@ -231,52 +232,52 @@ function ActionDialog({ dialog, busy, onClose, onSubmit }) {
     return () => clearTimeout(id);
   }, [dialog]);
   if (!dialog) return null;
-  const title = { extend: 'Extend membership', freeze: 'Freeze membership', message: 'Send a message' }[dialog.kind];
+  const title = { extend: 'Extend membership', freeze: 'Freeze membership', message: tl("Send a message") }[dialog.kind];
   return (
     <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="w-full max-w-md bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl p-5 flex flex-col gap-3"
         onSubmit={(e) => { e.preventDefault(); onSubmit(f); }}>
-        <h3 className="text-on-surface font-bold uppercase tracking-wider">{title}{dialog.ids ? ` · ${dialog.ids.length} members` : ''}</h3>
+        <h3 className="text-on-surface font-bold uppercase tracking-wider">{title}{dialog.ids ? tl(" · {0} members", { 0: dialog.ids.length }) : ''}</h3>
         {dialog.kind === 'extend' && (
           <>
-            <label className="flex flex-col gap-1"><span className={labelCls}>Months</span>
+            <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Months")}</span>
               <select className={inputCls} value={f.months} onChange={(e) => setF({ ...f, months: Number(e.target.value) })}>
                 {[1, 2, 3, 6, 12].map((n) => <option key={n} value={n}>{n}</option>)}
               </select></label>
-            <label className="flex flex-col gap-1"><span className={labelCls}>Payment</span>
+            <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Payment")}</span>
               <select className={inputCls} value={f.payment} onChange={(e) => setF({ ...f, payment: e.target.value })}>
-                <option value="cash">Cash at desk</option><option value="card_terminal">Card terminal at desk</option>
-                <option value="complimentary">Complimentary (no payment)</option>
+                <option value="cash">{tl("Cash at desk")}</option><option value="card_terminal">{tl("Card terminal at desk")}</option>
+                <option value="complimentary">{tl("Complimentary (no payment)")}</option>
               </select></label>
             {f.payment !== 'complimentary' && (
-              <label className="flex flex-col gap-1"><span className={labelCls}>Amount received (SAR)</span>
+              <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Amount received (SAR)")}</span>
                 <input className={inputCls} inputMode="decimal" required value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></label>
             )}
-            <label className="flex flex-col gap-1"><span className={labelCls}>Note (optional)</span>
+            <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Note (optional)")}</span>
               <input className={inputCls} maxLength={120} value={f.note || ''} onChange={(e) => setF({ ...f, note: e.target.value })} /></label>
-            <p className="text-[11px] text-on-surface-variant">Added after the current expiry (or from today if expired). Desk payments appear in the member’s payment history and in revenue.</p>
+            <p className="text-[11px] text-on-surface-variant">{tl("Added after the current expiry (or from today if expired). Desk payments appear in the member’s payment history and in revenue.")}</p>
           </>
         )}
         {dialog.kind === 'freeze' && (
           <>
-            <label className="flex flex-col gap-1"><span className={labelCls}>Days (1–90)</span>
+            <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Days (1–90)")}</span>
               <input className={inputCls} type="number" min="1" max="90" value={f.days ?? ''} onChange={(e) => setF({ ...f, days: Number(e.target.value) })} /></label>
-            <p className="text-[11px] text-on-surface-variant">No gym access during the freeze; the expiry date moves forward by the same number of days. Unfreezing early gives back the unused days.</p>
+            <p className="text-[11px] text-on-surface-variant">{tl("No gym access during the freeze; the expiry date moves forward by the same number of days. Unfreezing early gives back the unused days.")}</p>
           </>
         )}
         {dialog.kind === 'message' && (
           <>
-            <label className="flex flex-col gap-1"><span className={labelCls}>Title</span>
+            <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Title")}</span>
               <input className={inputCls} maxLength={120} required value={f.title || ''} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
-            <label className="flex flex-col gap-1"><span className={labelCls}>Message</span>
+            <label className="flex flex-col gap-1"><span className={labelCls}>{tl("Message")}</span>
               <textarea className={inputCls} rows={4} maxLength={2000} required value={f.message || ''} onChange={(e) => setF({ ...f, message: e.target.value })} /></label>
-            <p className="text-[11px] text-on-surface-variant">Appears in the member portal’s notifications.</p>
+            <p className="text-[11px] text-on-surface-variant">{tl("Appears in the member portal’s notifications.")}</p>
           </>
         )}
         <div className="flex gap-2 justify-end">
-          <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-          <button type="submit" className={btn.primary} disabled={busy}>{busy ? 'Saving…' : 'Confirm'}</button>
+          <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
+          <button type="submit" className={btn.primary} disabled={busy}>{busy ? tl("Saving…") : tl("Confirm")}</button>
         </div>
       </form>
     </div>

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { tl } from '../../i18n';
 
 export default function CurriculumGrid({ courses = [] }) {
   const navigate = useNavigate();
@@ -11,10 +12,10 @@ export default function CurriculumGrid({ courses = [] }) {
           menu_book
         </span>
         <p className="font-title-md text-title-md text-on-surface mt-3">
-          No Published Courses
+          {tl("No Published Courses")}
         </p>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          This trainer hasn't published any courses yet.
+          {tl("This trainer hasn't published any courses yet.")}
         </p>
       </div>
     );
@@ -24,10 +25,10 @@ export default function CurriculumGrid({ courses = [] }) {
     <div className="flex flex-col gap-space-md">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider">
-          Courses by this trainer
+          {tl("Courses by this trainer")}
         </h2>
         <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-          {courses.length} Programs Active
+          {courses.length}{' '}{tl("Programs Active")}
         </span>
       </div>
 
@@ -54,7 +55,7 @@ export default function CurriculumGrid({ courses = [] }) {
                 <div className="w-full h-full bg-gradient-to-br from-primary-container/30 to-secondary-container/20" />
               )}
               <div className="absolute top-2 right-2 bg-surface-container-lowest/90 px-space-xs py-space-2xs rounded font-label-md text-label-md text-primary uppercase">
-                {c.duration_weeks} Weeks
+                {c.duration_weeks}{' '}{tl("Weeks")}
               </div>
             </div>
 
@@ -71,10 +72,10 @@ export default function CurriculumGrid({ courses = [] }) {
 
               <div className="mt-space-sm flex items-center justify-between pt-space-xs">
                 <span className="font-headline-md text-headline-md text-on-surface">
-                  {Number(c.price) > 0 ? `SAR ${Number(c.price).toFixed(0)}` : 'Free'}
+                  {Number(c.price) > 0 ? tl("SAR {0}", { 0: Number(c.price).toFixed(0) }) : tl("Free")}
                 </span>
                 <span className="font-label-md text-label-md text-primary flex items-center gap-space-2xs group-hover:translate-x-1 transition-transform">
-                  View Syllabus
+                  {tl("View Syllabus")}
                   <span className="material-symbols-outlined text-title-md">
                     arrow_forward
                   </span>

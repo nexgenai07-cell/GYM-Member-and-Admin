@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { attendanceService } from '../../services/attendanceService';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -9,10 +10,10 @@ export default function MilestoneTiers({ milestones, onClaim }) {
   const handleClaim = async (id) => {
     try {
       await attendanceService.claimMilestone(id);
-      toast.success('Milestone claimed! 🎉');
+      toast.success(tl("Milestone claimed! 🎉"));
       onClaim?.();
     } catch (e) {
-      toast.error('Failed to claim');
+      toast.error(tl("Failed to claim"));
     }
   };
 
@@ -20,7 +21,7 @@ export default function MilestoneTiers({ milestones, onClaim }) {
     return (
       <div className="text-center py-10 bg-surface-container-low rounded-xl">
         <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">emoji_events</span>
-        <p className="text-on-surface-variant mt-2">No milestones configured</p>
+        <p className="text-on-surface-variant mt-2">{tl("No milestones configured")}</p>
       </div>
     );
   }
@@ -30,14 +31,14 @@ export default function MilestoneTiers({ milestones, onClaim }) {
       <div className="flex items-center justify-between">
         <div>
           <span className="font-label-md text-label-md uppercase text-primary tracking-widest font-bold">
-            Incentive Engines
+            {tl("Incentive Engines")}
           </span>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase">
-            Milestone Reward Tiers
+            {tl("Milestone Reward Tiers")}
           </h2>
         </div>
         <span className="font-label-md text-label-md uppercase text-on-surface-variant">
-          Continuous Streak unlocks automated perks
+          {tl("Continuous Streak unlocks automated perks")}
         </span>
       </div>
 
@@ -82,7 +83,7 @@ export default function MilestoneTiers({ milestones, onClaim }) {
                     ? 'bg-surface-container-high text-primary'
                     : 'bg-surface-container-low text-on-surface-variant'
                 }`}>
-                  {isClaimed ? 'Claimed' : isActive ? `${m.current_days}/${m.target_days} Days` : `${m.current_days}/${m.target_days}`}
+                  {isClaimed ? tl("Claimed") : isActive ? `${m.current_days}/${m.target_days} Days` : `${m.current_days}/${m.target_days}`}
                 </span>
               </div>
 
@@ -96,7 +97,7 @@ export default function MilestoneTiers({ milestones, onClaim }) {
               {isClaimed && (
                 <div className="pt-space-sm flex items-center justify-between">
                   <span className="font-label-md text-label-md text-on-surface uppercase font-bold">
-                    Coupon: {m.reward_code}
+                    {tl("Coupon:")}{' '}{m.reward_code}
                   </span>
                 </div>
               )}
@@ -104,8 +105,8 @@ export default function MilestoneTiers({ milestones, onClaim }) {
               {isActive && (
                 <div className="pt-space-sm flex flex-col gap-space-2xs">
                   <div className="flex justify-between text-on-surface-variant font-label-md text-label-md">
-                    <span>Progress ({m.progress}%)</span>
-                    <span className="text-on-surface font-bold">{m.days_left} Days Left</span>
+                    <span>{tl("Progress (")}{m.progress}%)</span>
+                    <span className="text-on-surface font-bold">{m.days_left}{' '}{tl("Days Left")}</span>
                   </div>
                   <div className="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
                     <motion.div
@@ -121,7 +122,7 @@ export default function MilestoneTiers({ milestones, onClaim }) {
                       className="mt-2 w-full py-2 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-md text-[11px] uppercase tracking-wider font-bold"
                       type="button"
                     >
-                      Claim Reward
+                      {tl("Claim Reward")}
                     </button>
                   )}
                 </div>
@@ -129,7 +130,7 @@ export default function MilestoneTiers({ milestones, onClaim }) {
 
               {isLocked && (
                 <div className="pt-space-sm flex items-center justify-between text-on-surface-variant font-label-md text-label-md">
-                  <span>Target: {m.target_days} Days</span>
+                  <span>{tl("Target:")}{' '}{m.target_days}{' '}{tl("Days")}</span>
                   <span className="material-symbols-outlined text-[18px]">lock_clock</span>
                 </div>
               )}

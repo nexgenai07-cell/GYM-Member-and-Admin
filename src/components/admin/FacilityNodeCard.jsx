@@ -1,24 +1,25 @@
 // src/components/admin/FacilityNodeCard.jsx
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { tl } from '../../i18n';
 
 const STATUS_STYLE = {
   optimal: {
-    label: 'OPTIMAL',
+    label: tl("OPTIMAL"),
     color: 'text-emerald-400',
     bg: 'bg-emerald-400/10',
     dot: 'bg-emerald-400',
     bar: 'bg-emerald-400',
   },
   elevated: {
-    label: 'ELEVATED',
+    label: tl("ELEVATED"),
     color: 'text-primary',
     bg: 'bg-primary/10',
     dot: 'bg-primary',
     bar: 'bg-primary',
   },
   congested: {
-    label: 'CONGESTED',
+    label: tl("CONGESTED"),
     color: 'text-error',
     bg: 'bg-error/10',
     dot: 'bg-error',
@@ -51,7 +52,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            Facilities right now
+            {tl("Facilities right now")}
           </span>
           <span className="flex items-center gap-1.5">
             <span
@@ -66,12 +67,12 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
         </div>
 
         <h3 className="font-headline-md text-headline-md uppercase text-on-surface">
-          Facility load
+          {tl("Facility load")}
         </h3>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1 text-[13px]">
           {list.length > 0
-            ? `${list.length} active node${list.length > 1 ? 's' : ''} · ${totalVisits} visits today`
-            : "Set facility capacities in Admin → Facilities to track load"}
+            ? tl("{0} active node{1} · {2} visits today", { 0: list.length, 1: list.length > 1 ? 's' : '', 2: totalVisits })
+            : tl("Set facility capacities in Admin → Facilities to track load")}
         </p>
       </div>
 
@@ -79,7 +80,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
       <div className="my-4 p-4 bg-surface-container-lowest rounded-xl">
         <div className="flex items-center justify-between mb-3">
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-            Aggregate Occupancy
+            {tl("Aggregate Occupancy")}
           </span>
           <span className="font-title-md text-title-md text-on-surface tabular-nums">
             {totalActive}/{totalCapacity}
@@ -97,7 +98,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
 
         <div className="flex justify-between items-center mt-2">
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase">
-            {overallUtil}% utilization
+            {overallUtil}{tl("% utilization")}
           </span>
           <span
             className={`font-label-md text-[10px] uppercase font-bold ${overallStyle.color}`}
@@ -123,7 +124,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
             domain_disabled
           </span>
           <p className="font-label-md text-[11px] text-on-surface-variant mt-2">
-            No facility activity yet
+            {tl("No facility activity yet")}
           </p>
         </div>
       ) : (
@@ -176,7 +177,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
                 </div>
 
                 <span className="font-label-md text-[9px] text-on-surface-variant">
-                  {node.visits_today} visits today
+                  {node.visits_today}{' '}{tl("visits today")}
                 </span>
               </motion.div>
             );
@@ -190,7 +191,7 @@ export default function FacilityNodeCard({ nodes = [], loading }) {
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">tune</span>
-        <span>Manage facilities</span>
+        <span>{tl("Manage facilities")}</span>
       </button>
     </motion.div>
   );

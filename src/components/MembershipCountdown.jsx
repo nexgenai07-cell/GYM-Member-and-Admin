@@ -3,6 +3,7 @@
 // registration was approved (membership.start_date) to membership.expiry_date.
 import { motion } from 'framer-motion';
 import { formatDate } from '../utils/membershipTime';
+import { tl } from '../i18n';
 
 function Figure({ value, unit }) {
   return (
@@ -21,7 +22,7 @@ export default function MembershipCountdown({ membership, loading }) {
     return (
       <div className="rounded-lg bg-surface-container p-space-lg flex items-center gap-space-sm">
         <span className="material-symbols-outlined text-on-surface-variant">card_membership</span>
-        <span className="font-body-md text-on-surface-variant">No active membership.</span>
+        <span className="font-body-md text-on-surface-variant">{tl("No active membership.")}</span>
       </div>
     );
   }
@@ -39,15 +40,15 @@ export default function MembershipCountdown({ membership, loading }) {
       className={`rounded-lg p-space-lg shadow-md flex flex-col gap-space-md ${
         expired ? 'bg-error/10 border border-error/40' : 'bg-surface-container'
       }`}
-      aria-label="Membership time remaining"
+      aria-label={tl("Membership time remaining")}
     >
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
         <div className="flex flex-col gap-space-2xs">
           <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
-            Membership · {membership.plan?.name || 'Plan'}
+            {tl("Membership ·")}{' '}{membership.plan?.name || tl("Plan")}
           </span>
           {expired ? (
-            <span className="font-headline-lg text-[36px] leading-none text-error uppercase">Expired</span>
+            <span className="font-headline-lg text-[36px] leading-none text-error uppercase">{tl("Expired")}</span>
           ) : (
             <div className="flex items-end gap-space-lg">
               <Figure value={t.months ?? 0} unit={t.months === 1 ? 'month' : 'months'} />
@@ -60,8 +61,8 @@ export default function MembershipCountdown({ membership, loading }) {
         </div>
 
         <dl className="grid grid-cols-2 gap-x-space-lg gap-y-space-2xs text-right md:text-left">
-          <dt className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">Started (approved)</dt>
-          <dt className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">Expires</dt>
+          <dt className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">{tl("Started (approved)")}</dt>
+          <dt className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">{tl("Expires")}</dt>
           <dd className="font-title-md text-[15px] text-on-surface">{formatDate(membership.start_date)}</dd>
           <dd className={`font-title-md text-[15px] ${ending || expired ? 'text-error' : 'text-on-surface'}`}>
             {formatDate(membership.expiry_date)}
@@ -76,7 +77,7 @@ export default function MembershipCountdown({ membership, loading }) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={used}
-          aria-label="Share of the plan used"
+          aria-label={tl("Share of the plan used")}
         >
           <div
             className={`h-full rounded-full ${expired || ending ? 'bg-error' : 'bg-primary-container'}`}
@@ -85,8 +86,8 @@ export default function MembershipCountdown({ membership, loading }) {
         </div>
         <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">
           {expired
-            ? 'Renew to keep access'
-            : `${t.total_days_remaining ?? 0} of ${t.plan_total_days ?? 0} days left${ending ? ' · ending soon' : ''}`}
+            ? tl("Renew to keep access")
+            : tl("{0} of {1} days left{2}", { 0: t.total_days_remaining ?? 0, 1: t.plan_total_days ?? 0, 2: ending ? ' · ending soon' : '' })}
         </span>
       </div>
     </motion.section>

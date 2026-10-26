@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl, locale } from '../i18n';
 
 const cardV = {
   hidden: { opacity: 0, y: 24 },
@@ -12,15 +13,15 @@ const cardV = {
 export default function BiometricStream({ session }) {
   const metrics = session
     ? [
-      { label: 'Volume moved', icon: 'fitness_center', value: Number(session.tonnage_kg).toLocaleString(), unit: 'kg',
+      { label: tl("Volume moved"), icon: 'fitness_center', value: Number(session.tonnage_kg).toLocaleString(locale), unit: 'kg',
         caption: `${session.total_sets} sets · ${session.total_reps} reps` },
-      { label: 'Duration', icon: 'timer', value: String(session.duration_minutes || 0), unit: 'min',
-        caption: session.completed_at ? new Date(session.completed_at).toLocaleString() : '' },
-      { label: 'Energy (est.)', icon: 'local_fire_department', value: String(session.calories || 0), unit: 'kcal',
-        caption: 'Estimated from session length' },
+      { label: tl("Duration"), icon: 'timer', value: String(session.duration_minutes || 0), unit: 'min',
+        caption: session.completed_at ? new Date(session.completed_at).toLocaleString(locale) : '' },
+      { label: tl("Energy (est.)"), icon: 'local_fire_department', value: String(session.calories || 0), unit: 'kcal',
+        caption: tl("Estimated from session length") },
       session.avg_velocity
-        ? { label: 'Avg bar speed', icon: 'speed', value: Number(session.avg_velocity).toFixed(2), unit: 'm/s', caption: 'From logged velocity' }
-        : { label: 'Avg effort', icon: 'speed', value: session.rpe_avg ? String(session.rpe_avg) : '—', unit: session.rpe_avg ? 'RPE' : '',
+        ? { label: tl("Avg bar speed"), icon: 'speed', value: Number(session.avg_velocity).toFixed(2), unit: 'm/s', caption: tl("From logged velocity") }
+        : { label: tl("Avg effort"), icon: 'speed', value: session.rpe_avg ? String(session.rpe_avg) : '—', unit: session.rpe_avg ? 'RPE' : '',
           caption: session.rpe_avg ? 'Average RPE logged' : 'Log RPE with your sets to see this' },
     ]
     : [];
@@ -30,7 +31,7 @@ export default function BiometricStream({ session }) {
       <div className="flex items-center justify-between gap-space-sm flex-wrap">
         <div className="flex items-center gap-space-xs">
           <span className="material-symbols-outlined text-primary">monitoring</span>
-          <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide m-0">Last session</h3>
+          <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide m-0">{tl("Last session")}</h3>
         </div>
         {session && (
           <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{session.workout_name}</span>
@@ -39,7 +40,7 @@ export default function BiometricStream({ session }) {
 
       {!session ? (
         <div className="rounded-lg bg-surface-container p-space-lg text-on-surface-variant text-[13px]">
-          Finish your first workout to see its volume, duration and effort here.
+          {tl("Finish your first workout to see its volume, duration and effort here.")}
         </div>
       ) : (
         <motion.div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md"

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { tl, locale } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 const SPRING = { type: 'spring', stiffness: 380, damping: 32 };
@@ -32,7 +33,7 @@ export default function RecentLogs({ workouts: all = [], loading }) {
       >
         <div className="flex items-center justify-between mb-space-md">
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider">
-            Recent workouts
+            {tl("Recent workouts")}
           </h3>
         </div>
         <div className="flex flex-col gap-2">
@@ -58,10 +59,10 @@ export default function RecentLogs({ workouts: all = [], loading }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-space-sm">
         <div>
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wider m-0">
-            Recent workouts
+            {tl("Recent workouts")}
           </h3>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-            Your completed workouts.
+            {tl("Your completed workouts.")}
           </p>
         </div>
 
@@ -97,10 +98,10 @@ export default function RecentLogs({ workouts: all = [], loading }) {
             fitness_center
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-2">
-            No workouts yet
+            {tl("No workouts yet")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Your first session will appear here.
+            {tl("Your first session will appear here.")}
           </p>
         </div>
       ) : (
@@ -133,8 +134,8 @@ export default function RecentLogs({ workouts: all = [], loading }) {
                       {w.name}
                     </span>
                     <span className="font-label-md text-label-md text-on-surface-variant">
-                      {new Date(w.started_at).toLocaleString()} ·{' '}
-                      {w.total_exercises} exercises · {w.total_sets} sets
+                      {new Date(w.started_at).toLocaleString(locale)} ·{' '}
+                      {w.total_exercises}{' '}{tl("exercises ·")}{' '}{w.total_sets} sets
                     </span>
                   </div>
                 </div>
@@ -142,16 +143,16 @@ export default function RecentLogs({ workouts: all = [], loading }) {
                 <div className="grid grid-cols-3 md:flex items-center gap-space-lg">
                   <div className="flex flex-col md:text-right">
                     <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                      Tonnage
+                      {tl("Tonnage")}
                     </span>
                     <span className="font-title-md text-title-md text-on-surface">
-                      {Number(w.total_tonnage_kg || 0).toLocaleString()} kg
+                      {Number(w.total_tonnage_kg || 0).toLocaleString(locale)} kg
                     </span>
                   </div>
 
                   <div className="flex flex-col md:text-right">
                     <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                      Duration
+                      {tl("Duration")}
                     </span>
                     <span className="font-title-md text-title-md text-on-surface">
                       {w.duration_minutes || 0} min
@@ -160,7 +161,7 @@ export default function RecentLogs({ workouts: all = [], loading }) {
 
                   <div className="flex flex-col md:text-right">
                     <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                      Status
+                      {tl("Status")}
                     </span>
                     <span
                       className={`font-label-md text-label-md font-bold uppercase ${

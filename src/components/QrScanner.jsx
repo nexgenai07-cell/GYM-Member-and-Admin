@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import jsQR from 'jsqr';
+import { tl } from '../i18n';
 
 const SCAN_MS = 250;
 
@@ -100,7 +101,7 @@ export default function QrScanner({ open, title = 'Scan QR code', manualLabel = 
           <div className="w-full max-w-sm bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <h3 className="font-headline-md text-headline-md text-on-surface uppercase">{title}</h3>
-              <button type="button" onClick={onClose} aria-label="Close"
+              <button type="button" onClick={onClose} aria-label={tl("Close")}
                 className="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-error">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -124,7 +125,7 @@ export default function QrScanner({ open, title = 'Scan QR code', manualLabel = 
                 <input id="qr-manual" value={manual} onChange={(e) => setManual(e.target.value)} autoComplete="off"
                   className="flex-1 bg-surface-container text-on-surface px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary" />
                 <button type="submit" className="px-4 rounded bg-primary-container text-on-primary-container font-bold uppercase text-[11px]">
-                  Go
+                  {tl("Go")}
                 </button>
               </div>
             </form>

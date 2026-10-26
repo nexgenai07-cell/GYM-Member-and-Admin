@@ -8,16 +8,17 @@ import { shopService } from '../../services/shopService';
 import PayDialog from '../../components/payments/PayDialog';
 import { errorMessage } from '../../utils/apiError';
 import { formatSAR } from '../../utils/money';
+import { tl, locale } from '../../i18n';
 
 const ORDER_STATUS = {
-  pending: { label: 'Awaiting payment', cls: 'bg-primary-container/20 text-primary' },
-  paid: { label: 'Paid — preparing', cls: 'bg-emerald-400/15 text-emerald-400' },
-  preparing: { label: 'Preparing', cls: 'bg-emerald-400/15 text-emerald-400' },
-  ready: { label: 'Ready for pickup', cls: 'bg-emerald-400/25 text-emerald-300' },
-  dispatched: { label: 'In your locker', cls: 'bg-emerald-400/25 text-emerald-300' },
-  completed: { label: 'Collected', cls: 'bg-surface-container-high text-on-surface-variant' },
-  cancelled: { label: 'Cancelled', cls: 'bg-surface-container-high text-on-surface-variant' },
-  refunded: { label: 'Refunded', cls: 'bg-error/20 text-error' },
+  pending: { label: tl("Awaiting payment"), cls: 'bg-primary-container/20 text-primary' },
+  paid: { label: tl("Paid — preparing"), cls: 'bg-emerald-400/15 text-emerald-400' },
+  preparing: { label: tl("Preparing"), cls: 'bg-emerald-400/15 text-emerald-400' },
+  ready: { label: tl("Ready for pickup"), cls: 'bg-emerald-400/25 text-emerald-300' },
+  dispatched: { label: tl("In your locker"), cls: 'bg-emerald-400/25 text-emerald-300' },
+  completed: { label: tl("Collected"), cls: 'bg-surface-container-high text-on-surface-variant' },
+  cancelled: { label: tl("Cancelled"), cls: 'bg-surface-container-high text-on-surface-variant' },
+  refunded: { label: tl("Refunded"), cls: 'bg-error/20 text-error' },
 };
 
 export default function Shop() {
@@ -82,7 +83,7 @@ export default function Shop() {
   const addToCart = async (product) => {
     try {
       await shopService.addToCart(product.id, 1);
-      toast.success(`Added ${product.name}`);
+      toast.success(tl("Added {0}", { 0: product.name }));
       refetchCart();
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to add');
@@ -92,7 +93,7 @@ export default function Shop() {
   const removeItem = async (itemId) => {
     try {
       await shopService.removeCartItem(itemId);
-      toast.success('Removed');
+      toast.success(tl("Removed"));
       refetchCart();
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to remove');
@@ -115,10 +116,10 @@ export default function Shop() {
     try {
       const res = await shopService.applyPromo(promoInput.trim());
       setPromo(res);
-      toast.success(`${res.code}: ${res.discount_percent}% off`);
+      toast.success(tl("{0}: {1}% off", { 0: res.code, 1: res.discount_percent }));
     } catch (e) {
       setPromo(null);
-      toast.error(errorMessage(e, 'Invalid promo code'));
+      toast.error(errorMessage(e, tl("Invalid promo code")));
     }
   };
 
@@ -138,21 +139,21 @@ export default function Shop() {
       refetchOrders();
       setPayOrder(order);
     } catch (e) {
-      toast.error(errorMessage(e, 'Checkout failed'));
+      toast.error(errorMessage(e, tl("Checkout failed")));
     } finally {
       setCheckingOut(false);
     }
   };
 
   const cancelOrder = async (order) => {
-    if (!window.confirm(`Cancel order ${order.order_number}?`)) return;
+    if (!window.confirm(tl("Cancel order {0}?", { 0: order.order_number }))) return;
     try {
       await shopService.cancelOrder(order.order_number);
-      toast.success('Order cancelled');
+      toast.success(tl("Order cancelled"));
       refetchOrders();
       refetchProducts();
     } catch (e) {
-      toast.error(errorMessage(e, 'Could not cancel'));
+      toast.error(errorMessage(e, tl("Could not cancel")));
     }
   };
 
@@ -166,14 +167,14 @@ export default function Shop() {
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 text-primary mb-2">
               <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-                Gym Shop
+                {tl("Gym Shop")}
               </span>
             </div>
             <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-              Supplements & Gear
+              {tl("Supplements & Gear")}
             </h1>
             <p className="font-body-lg text-body-lg text-on-surface-variant mt-2">
-              Order here, pay by card, STC Pay or locker credit, and collect from your locker or the front desk.
+              {tl("Order here, pay by card, STC Pay or locker credit, and collect from your locker or the front desk.")}
             </p>
           </div>
 
@@ -194,10 +195,10 @@ export default function Shop() {
             </div>
             <div>
               <span className="font-label-md text-[10px] uppercase text-primary font-bold">
-                Your cart
+                {tl("Your cart")}
               </span>
               <div className="font-body-md text-body-md text-on-surface-variant">
-                {itemCount} items · {formatSAR(cartSubtotal)}
+                {itemCount}{' '}{tl("items ·")}{' '}{formatSAR(cartSubtotal)}
               </div>
             </div>
             <span className="material-symbols-outlined text-primary">
@@ -208,7 +209,7 @@ export default function Shop() {
       </section>
 
       <div className="px-space-xl flex gap-1" role="tablist">
-        {[['products', 'Products'], ['orders', `My orders${orders?.length ? ` (${orders.length})` : ''}`]].map(([id, label]) => (
+        {[['products', tl("Products")], ['orders', `My orders${orders?.length ? ` (${orders.length})` : ''}`]].map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={`px-4 py-2 rounded-t text-[11px] font-bold uppercase tracking-wider ${tab === id ? 'bg-surface-container text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}>
             {label}
@@ -223,7 +224,7 @@ export default function Shop() {
           ) : !orders?.length ? (
             <div className="text-center py-16 bg-surface-container-low rounded-xl">
               <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">receipt_long</span>
-              <p className="font-title-md text-title-md text-on-surface mt-3">No orders yet</p>
+              <p className="font-title-md text-title-md text-on-surface mt-3">{tl("No orders yet")}</p>
             </div>
           ) : orders.map((o) => {
             const st = ORDER_STATUS[o.status] || { label: o.status, cls: 'bg-surface-container-high text-on-surface-variant' };
@@ -232,8 +233,8 @@ export default function Shop() {
                 <div className="flex flex-col">
                   <span className="font-title-md text-title-md text-on-surface">{o.order_number}</span>
                   <span className="text-on-surface-variant text-[12px]">
-                    {new Date(o.created_at).toLocaleString()} · {o.item_count} item{o.item_count === 1 ? '' : 's'} ·{' '}
-                    {o.delivery_method === 'counter' ? 'Front desk pickup' : `Locker ${o.locker_number || ''}`}
+                    {new Date(o.created_at).toLocaleString(locale)} · {o.item_count} item{o.item_count === 1 ? '' : 's'} ·{' '}
+                    {o.delivery_method === 'counter' ? tl("Front desk pickup") : tl("Locker {0}", { 0: o.locker_number || '' })}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -242,9 +243,9 @@ export default function Shop() {
                   {o.status === 'pending' && (
                     <>
                       <button type="button" onClick={() => setPayOrder(o)}
-                        className="px-3 py-1.5 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">Pay</button>
+                        className="px-3 py-1.5 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">{tl("Pay")}</button>
                       <button type="button" onClick={() => cancelOrder(o)}
-                        className="px-3 py-1.5 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">Cancel</button>
+                        className="px-3 py-1.5 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">{tl("Cancel")}</button>
                     </>
                   )}
                 </div>
@@ -268,7 +269,7 @@ export default function Shop() {
               }`}
               type="button"
             >
-              All Products
+              {tl("All Products")}
             </button>
             {cats.map((c) => (
               <button
@@ -292,7 +293,7 @@ export default function Shop() {
             </span>
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={tl("Search products...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-surface-container-lowest text-on-surface text-body-md pl-10 pr-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"
@@ -305,12 +306,12 @@ export default function Shop() {
       <section className="px-space-xl py-space-xl">
         {prodError && (
           <div className="mb-4 p-4 rounded-lg bg-error/10 border border-error/30 flex items-center justify-between">
-            <span className="text-on-surface">Failed to load products.</span>
+            <span className="text-on-surface">{tl("Failed to load products.")}</span>
             <button
               onClick={refetchProducts}
               className="px-3 py-1 rounded bg-primary-container text-on-primary-container text-[11px] uppercase font-bold"
             >
-              Retry
+              {tl("Retry")}
             </button>
           </div>
         )}
@@ -330,12 +331,12 @@ export default function Shop() {
               shopping_bag
             </span>
             <p className="font-title-md text-title-md text-on-surface mt-3">
-              No products
+              {tl("No products")}
             </p>
             <p className="font-body-md text-body-md text-on-surface-variant">
               {list.length === 0
-                ? 'The shop has no products yet — check back soon.'
-                : 'Try a different filter or search.'}
+                ? tl("The shop has no products yet — check back soon.")
+                : tl("Try a different filter or search.")}
             </p>
           </div>
         ) : (
@@ -420,8 +421,8 @@ export default function Shop() {
                       }`}
                     >
                       {p.is_out_of_stock
-                        ? 'Out of Stock'
-                        : p.stock_label || `In Stock (${p.stock_quantity})`}
+                        ? tl("Out of Stock")
+                        : p.stock_label || tl("In Stock ({0})", { 0: p.stock_quantity })}
                     </span>
                   </div>
 
@@ -468,7 +469,7 @@ export default function Shop() {
                       <span className="material-symbols-outlined text-[14px]">
                         add_shopping_cart
                       </span>
-                      <span>Add</span>
+                      <span>{tl("Add")}</span>
                     </button>
                   </div>
                 </div>
@@ -501,10 +502,10 @@ export default function Shop() {
               <div className="p-5 bg-surface-container-low flex items-center justify-between">
                 <div>
                   <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-                    Your cart
+                    {tl("Your cart")}
                   </span>
                   <h3 className="font-headline-md text-headline-md text-on-surface uppercase">
-                    Checkout
+                    {tl("Checkout")}
                   </h3>
                 </div>
                 <button
@@ -525,7 +526,7 @@ export default function Shop() {
                       shopping_cart
                     </span>
                     <p className="font-title-md text-title-md text-on-surface-variant mt-3">
-                      Cart is empty
+                      {tl("Cart is empty")}
                     </p>
                   </div>
                 ) : (
@@ -571,7 +572,7 @@ export default function Shop() {
                             className="ml-2 text-error hover:underline text-[10px] uppercase font-bold"
                             type="button"
                           >
-                            Remove
+                            {tl("Remove")}
                           </button>
                         </div>
                       </div>
@@ -587,13 +588,13 @@ export default function Shop() {
                 <div className="p-5 bg-surface-container-low border-t border-surface-container-high flex flex-col gap-3">
                   <div className="flex gap-2">
                     <input value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                      placeholder="Promo code" aria-label="Promo code"
+                      placeholder={tl("Promo code")} aria-label={tl("Promo code")}
                       className="flex-1 bg-surface-container-lowest text-on-surface px-3 py-2 rounded border border-surface-container-high focus:outline-none focus:border-primary uppercase" />
                     <button type="button" onClick={applyPromo}
-                      className="px-3 rounded bg-surface-container-high text-on-surface text-[10px] font-bold uppercase">Apply</button>
+                      className="px-3 rounded bg-surface-container-high text-on-surface text-[10px] font-bold uppercase">{tl("Apply")}</button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Pickup">
-                    {[['locker', 'Locker pickup'], ['counter', 'Front desk']].map(([id, label]) => (
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={tl("Pickup")}>
+                    {[['locker', tl("Locker pickup")], ['counter', tl("Front desk")]].map(([id, label]) => (
                       <button key={id} type="button" role="radio" aria-checked={delivery === id} onClick={() => setDelivery(id)}
                         className={`py-2 rounded text-[10px] font-bold uppercase ${delivery === id ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
                         {label}
@@ -601,9 +602,9 @@ export default function Shop() {
                     ))}
                   </div>
                   <div className="flex flex-col gap-1 text-[13px]">
-                    <div className="flex justify-between text-on-surface-variant"><span>Subtotal</span><span>{formatSAR(cartSubtotal)}</span></div>
+                    <div className="flex justify-between text-on-surface-variant"><span>{tl("Subtotal")}</span><span>{formatSAR(cartSubtotal)}</span></div>
                     {promo && <div className="flex justify-between text-primary"><span>{promo.code}</span><span>-{formatSAR(discount)}</span></div>}
-                    <div className="flex justify-between text-on-surface-variant"><span>VAT</span><span>added at checkout</span></div>
+                    <div className="flex justify-between text-on-surface-variant"><span>{tl("VAT")}</span><span>{tl("added at checkout")}</span></div>
                   </div>
                   <button
                     onClick={checkout}
@@ -615,7 +616,7 @@ export default function Shop() {
                     }`}
                     type="button"
                   >
-                    {checkingOut ? 'Placing order…' : 'Place order & pay'}
+                    {checkingOut ? tl("Placing order…") : tl("Place order & pay")}
                   </button>
                 </div>
               )}
@@ -626,9 +627,9 @@ export default function Shop() {
 
       <PayDialog
         request={payOrder ? { purpose: 'shop_order', order_number: payOrder.order_number } : null}
-        title={payOrder ? `Order ${payOrder.order_number}` : ''}
+        title={payOrder ? tl("Order {0}", { 0: payOrder.order_number }) : ''}
         allowCredit
-        onPaid={() => { toast.success('Order paid — we’re preparing it'); refetchOrders(); }}
+        onPaid={() => { toast.success(tl("Order paid — we’re preparing it")); refetchOrders(); }}
         onClose={() => { setPayOrder(null); refetchOrders(); setTab('orders'); }}
       />
     </div>

@@ -52,6 +52,7 @@ import TrainerHours from './pages/admin/TrainerHours';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import NotFound from './pages/NotFound';
+import { tl } from './i18n';
 
 
 /* ============================================
@@ -63,7 +64,7 @@ function AuthLoader() {
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 rounded-full border-4 border-primary-container/30 border-t-primary-container animate-spin" />
         <span className="font-label-md text-[11px] text-on-surface-variant uppercase tracking-widest">
-          Authenticating...
+          {tl("Authenticating...")}
         </span>
       </div>
     </div>

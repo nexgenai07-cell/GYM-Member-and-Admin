@@ -1,5 +1,6 @@
 // src/components/admin/ArenaHeatmap.jsx
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function ArenaHeatmap({ data, loading }) {
   const zones = data?.zones || [];
@@ -11,27 +12,27 @@ export default function ArenaHeatmap({ data, loading }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <span className="font-label-md text-[10px] uppercase tracking-widest text-primary">
-            Today
+            {tl("Today")}
           </span>
           <h2 className="font-headline-lg text-headline-lg uppercase text-on-surface">
-            Busy zones
+            {tl("Busy zones")}
           </h2>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <span className="flex items-center gap-1 font-label-md text-[10px] text-on-surface-variant">
             <span className="w-2 h-2 rounded-full bg-error" />
-            Critical (&gt;85%)
+            {tl("Critical (>85%)")}
           </span>
           <span className="flex items-center gap-1 font-label-md text-[10px] text-on-surface-variant">
             <span className="w-2 h-2 rounded-full bg-primary" />
-            Elevated (60–84%)
+            {tl("Elevated (60–84%)")}
           </span>
           <span className="flex items-center gap-1 font-label-md text-[10px] text-on-surface-variant">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            Nominal (&lt;60%)
+            {tl("Nominal (<60%)")}
           </span>
           <span className="font-label-md text-[10px] text-primary font-bold">
-            {activeNow} active · {totalToday} today
+            {activeNow}{' '}{tl("active ·")}{' '}{totalToday} today
           </span>
         </div>
       </div>
@@ -51,10 +52,10 @@ export default function ArenaHeatmap({ data, loading }) {
             grid_view
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-3">
-            No zone activity today
+            {tl("No zone activity today")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Zones populate from member check-ins. Use the check-in flow to populate.
+            {tl("Zones populate from member check-ins. Use the check-in flow to populate.")}
           </p>
         </div>
       ) : (

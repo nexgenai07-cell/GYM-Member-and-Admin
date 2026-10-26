@@ -7,10 +7,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { dashboardService } from '../../services/dashboardService';
+import { tl } from '../../i18n';
+import LangToggle from '../../i18n/LangToggle';
 
 const POLL_MS = 60_000;
-const SEARCH_GROUPS = [['members', 'Members', 'person'], ['registrations', 'Registrations', 'how_to_reg'],
-  ['orders', 'Shop orders', 'shopping_bag'], ['machines', 'Machines', 'precision_manufacturing']];
+const SEARCH_GROUPS = [['members', tl("Members"), 'person'], ['registrations', tl("Registrations"), 'how_to_reg'],
+  ['orders', tl("Shop orders"), 'shopping_bag'], ['machines', tl("Machines"), 'precision_manufacturing']];
 
 function useClickOutside(ref, handler) {
   useEffect(() => {
@@ -100,9 +102,9 @@ export default function AdminHeader() {
         {/* Live load */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] shrink-0">
           <span className={`w-2 h-2 rounded-full ${occ ? 'bg-emerald-400 animate-pulse' : 'bg-[#2a2a2e]'}`} />
-          <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">Gym now</span>
+          <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">{tl("Gym now")}</span>
           <span className="text-[12px] text-on-surface font-bold">
-            {occ ? (occ.capacity ? `${occ.current}/${occ.capacity} · ${occ.percent}%` : `${occ.current} in`) : '—'}
+            {occ ? (occ.capacity ? `${occ.current}/${occ.capacity} · ${occ.percent}%` : tl("{0} in", { 0: occ.current })) : '—'}
           </span>
         </div>
 
@@ -117,17 +119,17 @@ export default function AdminHeader() {
                 value={q}
                 onChange={(e) => { setQ(e.target.value); if (e.target.value.trim().length < 2) setResults(null); }}
                 onFocus={() => results && setOpen('search')}
-                placeholder="Search members, Iqama, orders, machines…"
-                aria-label="Search"
+                placeholder={tl("Search members, Iqama, orders, machines…")}
+                aria-label={tl("Search")}
                 className="bg-transparent text-on-surface text-[13px] flex-1 outline-none placeholder:text-on-surface-variant/50"
               />
-              <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1e] text-on-surface-variant text-[10px] font-mono">Ctrl K</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1e] text-on-surface-variant text-[10px] font-mono">{tl("Ctrl K")}</kbd>
             </div>
             <AnimatePresence>
               {open === 'search' && results && (
                 <Panel className="w-96 left-0 right-auto">
                   {!anyResults ? (
-                    <p className="px-4 py-6 text-center text-[12px] text-on-surface-variant">No matches for “{q.trim()}”.</p>
+                    <p className="px-4 py-6 text-center text-[12px] text-on-surface-variant">{tl("No matches for “")}{q.trim()}”.</p>
                   ) : SEARCH_GROUPS.filter(([k]) => results[k]?.length).map(([k, label, icon]) => (
                     <div key={k} className="py-1 border-b border-[#1a1a1e] last:border-0">
                       <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">{label}</div>
@@ -148,9 +150,10 @@ export default function AdminHeader() {
             </AnimatePresence>
           </div>
 
+          <LangToggle />
           {/* Alerts */}
           <div className="relative" ref={alertsRef}>
-            <button type="button" onClick={() => setOpen(open === 'alerts' ? null : 'alerts')} aria-label={`Alerts (${alerts.total})`}
+            <button type="button" onClick={() => setOpen(open === 'alerts' ? null : 'alerts')} aria-label={tl("Alerts ({0})", { 0: alerts.total })}
               className="relative w-9 h-9 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] flex items-center justify-center hover:bg-[#1a1a1e]">
               <span className="material-symbols-outlined text-on-surface-variant text-[20px]">notifications</span>
               {alerts.total > 0 && (
@@ -162,9 +165,9 @@ export default function AdminHeader() {
             <AnimatePresence>
               {open === 'alerts' && (
                 <Panel className="w-96">
-                  <div className="px-4 py-3 border-b border-[#1a1a1e] text-[13px] text-on-surface font-bold uppercase tracking-wider">Needs attention</div>
+                  <div className="px-4 py-3 border-b border-[#1a1a1e] text-[13px] text-on-surface font-bold uppercase tracking-wider">{tl("Needs attention")}</div>
                   {!alerts.items.length ? (
-                    <p className="px-4 py-8 text-center text-[12px] text-on-surface-variant">All caught up — nothing waiting.</p>
+                    <p className="px-4 py-8 text-center text-[12px] text-on-surface-variant">{tl("All caught up — nothing waiting.")}</p>
                   ) : alerts.items.map((a) => (
                     <button key={a.key} type="button" onClick={() => go(a.path)}
                       className="w-full flex items-start gap-3 px-4 py-3 hover:bg-[#1a1a1e] text-left border-b border-[#1a1a1e]/50 last:border-0">
@@ -208,15 +211,15 @@ export default function AdminHeader() {
                     <div className="text-[12px] text-on-surface-variant truncate">{user?.email}</div>
                   </div>
                   <div className="p-2">
-                    <MenuItem icon="settings" label="System settings" onClick={() => go('/admin/settings')} />
-                    <MenuItem icon="lock_reset" label="Change password" onClick={() => go('/dashboard/change-password')} />
-                    <MenuItem icon="public" label="Open public website" onClick={() => { close(); window.open(import.meta.env.VITE_PUBLIC_SITE_URL || 'https://smart-gym-three.vercel.app', '_blank', 'noopener'); }} />
+                    <MenuItem icon="settings" label={tl("System settings")} onClick={() => go('/admin/settings')} />
+                    <MenuItem icon="lock_reset" label={tl("Change password")} onClick={() => go('/dashboard/change-password')} />
+                    <MenuItem icon="public" label={tl("Open public website")} onClick={() => { close(); window.open(import.meta.env.VITE_PUBLIC_SITE_URL || 'https://smart-gym-three.vercel.app', '_blank', 'noopener'); }} />
                   </div>
                   <div className="p-2 border-t border-[#1a1a1e]">
                     <button type="button" onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-error/10 text-error">
                       <span className="material-symbols-outlined text-[18px]">logout</span>
-                      <span className="text-[12px] uppercase tracking-wider font-bold">Sign out</span>
+                      <span className="text-[12px] uppercase tracking-wider font-bold">{tl("Sign out")}</span>
                     </button>
                   </div>
                 </Panel>

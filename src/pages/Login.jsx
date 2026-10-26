@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import BrandingPanel from '../components/auth/BrandingPanel';
 import LoginForm from '../components/auth/LoginForm';
+import { tl } from '../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -17,7 +18,7 @@ export default function Login() {
   try {
     setLoading(true);
     const result = await login(data.email, data.password);
-    toast.success('Welcome back!');
+    toast.success(tl("Welcome back!"));
 
     // Redirect based on role
     const userRole = result.user?.role;
@@ -116,10 +117,10 @@ export default function Login() {
             </div>
             <div className="flex flex-col">
               <span className="font-headline-md text-headline-md tracking-wider text-on-surface uppercase leading-none">
-                Smart Gym
+                {tl("Smart Gym")}
               </span>
               <span className="font-label-md text-label-md text-primary tracking-widest uppercase">
-                Performance Core
+                {tl("Performance Core")}
               </span>
             </div>
           </motion.div>

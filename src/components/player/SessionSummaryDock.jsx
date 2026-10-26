@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function SessionSummaryDock({ onLog, logged }) {
   return (
@@ -15,10 +16,10 @@ export default function SessionSummaryDock({ onLog, logged }) {
         </div>
         <div className="flex flex-col">
           <span className="font-title-md text-title-md text-on-surface">
-            Train this module
+            {tl("Train this module")}
           </span>
           <span className="font-body-md text-body-md text-on-surface-variant">
-            Start a workout, then log your sets on the dashboard or by scanning each machine.
+            {tl("Start a workout, then log your sets on the dashboard or by scanning each machine.")}
           </span>
         </div>
       </div>
@@ -28,7 +29,7 @@ export default function SessionSummaryDock({ onLog, logged }) {
           to="/dashboard/machine-guide"
           className="flex-1 sm:flex-initial px-space-lg py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface transition-colors font-label-lg text-label-lg uppercase text-center"
         >
-          Machine guide
+          {tl("Machine guide")}
         </Link>
 
         <motion.button
@@ -47,7 +48,7 @@ export default function SessionSummaryDock({ onLog, logged }) {
           >
             {logged ? 'done_all' : 'cloud_upload'}
           </span>
-          <span>{logged ? 'Session Logged!' : 'Log Workout'}</span>
+          <span>{logged ? tl("Session Logged!") : tl("Log Workout")}</span>
         </motion.button>
       </div>
     </motion.div>

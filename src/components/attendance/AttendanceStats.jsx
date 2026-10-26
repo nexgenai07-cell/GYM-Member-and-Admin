@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import CountUp from '../CountUp';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -30,7 +31,7 @@ export default function AttendanceStats({ summary }) {
 
   const stats = [
     {
-      label: 'Current Streak',
+      label: tl("Current Streak"),
       sublabel: 'Cadence Velocity',
       value: String(summary.current_streak.value),
       unit: summary.current_streak.unit,
@@ -40,7 +41,7 @@ export default function AttendanceStats({ summary }) {
       progress: summary.current_streak.progress,
     },
     {
-      label: 'Month Check-Ins',
+      label: tl("Month Check-Ins"),
       sublabel: 'Cadence Frequency',
       value: String(summary.month_check_ins.value),
       unit: summary.month_check_ins.unit,
@@ -51,7 +52,7 @@ export default function AttendanceStats({ summary }) {
       footerRight: summary.month_check_ins.footer_right,
     },
     {
-      label: 'Workout Hours',
+      label: tl("Workout Hours"),
       sublabel: 'Time Under Load',
       value: String(summary.workout_hours.value),
       unit: summary.workout_hours.unit,
@@ -61,7 +62,7 @@ export default function AttendanceStats({ summary }) {
       footerRight: summary.workout_hours.footer_right,
     },
     {
-      label: 'Prime Window',
+      label: tl("Prime Window"),
       sublabel: 'Optimal Rhythm',
       value: summary.prime_window.value,
       unit: summary.prime_window.unit,

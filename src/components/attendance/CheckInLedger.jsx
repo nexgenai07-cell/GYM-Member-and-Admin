@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { attendanceService } from '../../services/attendanceService';
 import { useApi } from '../../hooks/useApi';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -28,9 +29,9 @@ export default function CheckInLedger() {
       a.download = 'attendance_ledger.csv';
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success('Ledger exported');
+      toast.success(tl("Ledger exported"));
     } catch (e) {
-      toast.error('Export failed');
+      toast.error(tl("Export failed"));
     }
   };
 
@@ -39,10 +40,10 @@ export default function CheckInLedger() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
         <div>
           <span className="font-label-md text-label-md uppercase text-primary tracking-widest font-bold">
-            History
+            {tl("History")}
           </span>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase">
-            Visit log
+            {tl("Visit log")}
           </h2>
         </div>
 
@@ -53,7 +54,7 @@ export default function CheckInLedger() {
             type="button"
           >
             <span className="material-symbols-outlined text-[16px]">file_download</span>
-            <span>Export CSV</span>
+            <span>{tl("Export CSV")}</span>
           </button>
         </div>
       </div>
@@ -71,14 +72,14 @@ export default function CheckInLedger() {
             {loading ? (
               <tr>
                 <td colSpan={6} className="text-center py-space-xl">
-                  <span className="text-on-surface-variant">Loading...</span>
+                  <span className="text-on-surface-variant">{tl("Loading...")}</span>
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-space-xl">
                   <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2">event_busy</span>
-                  <span className="text-on-surface-variant">No check-ins yet</span>
+                  <span className="text-on-surface-variant">{tl("No check-ins yet")}</span>
                 </td>
               </tr>
             ) : (
@@ -95,7 +96,7 @@ export default function CheckInLedger() {
                           ? 'bg-primary-container text-on-primary-container'
                           : 'bg-surface-container-high text-on-surface-variant'
                       }`}>
-                        {row.status}
+                        {tl(row.status)}
                       </span>
                     </div>
                   </td>
@@ -129,7 +130,7 @@ export default function CheckInLedger() {
       </div>
 
       <div className="flex items-center justify-between pt-space-xs text-on-surface-variant font-label-md text-label-md">
-        <span>Showing {rows.length} of {total} Visits</span>
+        <span>{tl("Showing")}{' '}{rows.length} of {total}{' '}{tl("Visits")}</span>
         <div className="flex items-center gap-space-xs">
           <button
             disabled={page === 1}
@@ -137,16 +138,16 @@ export default function CheckInLedger() {
             className="px-space-sm py-1 rounded bg-surface-container-high text-on-surface disabled:opacity-40"
             type="button"
           >
-            Previous
+            {tl("Previous")}
           </button>
-          <span className="px-space-xs text-on-surface">Page {page} / {totalPages}</span>
+          <span className="px-space-xs text-on-surface">{tl("Page")}{' '}{page} / {totalPages}</span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
             className="px-space-sm py-1 rounded bg-surface-container-high text-on-surface disabled:opacity-40"
             type="button"
           >
-            Next
+            {tl("Next")}
           </button>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { paymentsService } from '../../services/paymentsService';
 import { errorMessage } from '../../utils/apiError';
 import { formatSAR } from '../../utils/money';
 import MoyasarForm from './MoyasarForm';
+import { tl } from '../../i18n';
 
 export const RETURN_KEY = 'sg.payment.return';
 
@@ -59,7 +60,7 @@ export default function PayDialog({ request, title, allowCredit = false, onPaid,
       } catch { /* storage blocked */ }
       setStep('card');
     } catch (err) {
-      if (alive) { setError(errorMessage(err, 'Could not start the payment.')); setStep('choose'); }
+      if (alive) { setError(errorMessage(err, tl("Could not start the payment."))); setStep('choose'); }
     }
   }
 
@@ -72,7 +73,7 @@ export default function PayDialog({ request, title, allowCredit = false, onPaid,
       setStep('done');
       onPaid?.(data);
     } catch (err) {
-      setError(errorMessage(err, 'Payment failed.'));
+      setError(errorMessage(err, tl("Payment failed.")));
       setStep('choose');
     }
   }
@@ -94,13 +95,13 @@ export default function PayDialog({ request, title, allowCredit = false, onPaid,
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">Secure payment</span>
+                <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">{tl("Secure payment")}</span>
                 <h3 className="font-headline-md text-headline-md text-on-surface uppercase leading-tight">{title}</h3>
                 {amount !== null && (
                   <p className="font-title-md text-title-md text-on-surface mt-1">{formatSAR(amount)}</p>
                 )}
               </div>
-              <button type="button" onClick={onClose} disabled={step === 'working'} aria-label="Close"
+              <button type="button" onClick={onClose} disabled={step === 'working'} aria-label={tl("Close")}
                 className="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-error">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -113,20 +114,20 @@ export default function PayDialog({ request, title, allowCredit = false, onPaid,
                 <button type="button" onClick={() => startCard()}
                   className="w-full py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-bold uppercase tracking-wider text-[12px] flex items-center justify-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">credit_card</span>
-                  Card (mada / Visa / Mastercard) or STC Pay
+                  {tl("Card (mada / Visa / Mastercard) or STC Pay")}
                 </button>
                 {allowCredit && (
                   <button type="button" onClick={payWithCredit} disabled={credit === null}
                     className="w-full py-3 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-bold uppercase tracking-wider text-[12px] flex items-center justify-center gap-2 disabled:opacity-50">
                     <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
-                    Locker credit{credit !== null && ` (balance ${formatSAR(credit)})`}
+                    {tl("Locker credit")}{credit !== null && tl(" (balance {0})", { 0: formatSAR(credit) })}
                   </button>
                 )}
               </div>
             )}
 
             {step === 'working' && (
-              <p className="text-on-surface-variant text-[13px] py-6 text-center">Preparing payment…</p>
+              <p className="text-on-surface-variant text-[13px] py-6 text-center">{tl("Preparing payment…")}</p>
             )}
 
             {step === 'card' && intent?.payment && (
@@ -137,7 +138,7 @@ export default function PayDialog({ request, title, allowCredit = false, onPaid,
                 />
                 <p className="text-on-surface-variant text-[11px] flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">lock</span>
-                  Card details go straight to Moyasar and never reach our servers.
+                  {tl("Card details go straight to Moyasar and never reach our servers.")}
                 </p>
               </>
             )}
@@ -146,11 +147,11 @@ export default function PayDialog({ request, title, allowCredit = false, onPaid,
               <div className="flex flex-col items-center gap-3 py-4 text-center">
                 <span className="material-symbols-outlined text-[40px] text-emerald-400">check_circle</span>
                 <p className="font-title-md text-title-md text-on-surface">
-                  {intent?.status === 'paid' ? 'Payment complete' : 'Payment received — our team will follow up'}
+                  {intent?.status === 'paid' ? tl("Payment complete") : tl("Payment received — our team will follow up")}
                 </p>
                 <button type="button" onClick={onClose}
                   className="px-5 py-2 rounded bg-primary-container text-on-primary-container font-bold uppercase text-[11px]">
-                  Done
+                  {tl("Done")}
                 </button>
               </div>
             )}

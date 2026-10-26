@@ -1,6 +1,7 @@
 // src/components/profile/CompositionChart.jsx
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 const TIMEFRAMES = ['1M', '3M', '6M', '1Y', 'ALL'];
 
@@ -94,10 +95,10 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md mb-space-lg">
         <div>
           <span className="font-label-md text-label-md text-primary uppercase tracking-widest font-bold">
-            Telemetry History
+            {tl("Telemetry History")}
           </span>
           <h2 className="font-headline-md text-headline-md text-on-surface uppercase tracking-wide">
-            Lean Mass vs Body Fat %
+            {tl("Lean Mass vs Body Fat %")}
           </h2>
         </div>
 
@@ -125,10 +126,10 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
             insights
           </span>
           <p className="font-title-md text-title-md text-on-surface mt-3">
-            Not enough DEXA history
+            {tl("Not enough DEXA history")}
           </p>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Need at least 2 scans in this timeframe to plot the trend.
+            {tl("Need at least 2 scans in this timeframe to plot the trend.")}
           </p>
         </div>
       ) : (
@@ -137,11 +138,11 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
             <div className="absolute top-0 right-0 flex items-center gap-space-md font-label-md text-label-md">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-primary-container" />
-                <span className="text-on-surface">Lean Muscle Mass (kg)</span>
+                <span className="text-on-surface">{tl("Lean Muscle Mass (kg)")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-outline-variant" />
-                <span className="text-on-surface-variant">Body Fat % (DEXA)</span>
+                <span className="text-on-surface-variant">{tl("Body Fat % (DEXA)")}</span>
               </div>
             </div>
 
@@ -229,7 +230,7 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
                   x="530"
                   y="45"
                 >
-                  {latestLean.toFixed(1)} KG
+                  {latestLean.toFixed(1)}{' '}{tl("KG")}
                 </text>
               )}
               {latestBf !== undefined && (
@@ -267,7 +268,7 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md mt-space-lg pt-space-md border-t border-surface-container-high">
             <div>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                Lean Mass Change
+                {tl("Lean Mass Change")}
               </span>
               <p className="font-title-md text-title-md text-on-surface mt-1">
                 {(
@@ -277,13 +278,13 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
                 kg
               </p>
               <span className="font-label-md text-label-md text-primary">
-                Across {sorted.length} scans
+                {tl("Across")}{' '}{sorted.length} scans
               </span>
             </div>
 
             <div>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                Body Fat Change
+                {tl("Body Fat Change")}
               </span>
               <p className="font-title-md text-title-md text-on-surface mt-1">
                 {(
@@ -293,19 +294,19 @@ export default function CompositionChart({ dexaHistory = [], stats }) {
                 %
               </p>
               <span className="font-label-md text-label-md text-primary">
-                Net movement
+                {tl("Net movement")}
               </span>
             </div>
 
             <div>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                Total Tonnage
+                {tl("Total Tonnage")}
               </span>
               <p className="font-title-md text-title-md text-on-surface mt-1">
-                {Math.round((stats?.total_tonnage_all_time ?? 0) / 1000)} K kg
+                {Math.round((stats?.total_tonnage_all_time ?? 0) / 1000)}{' '}{tl("K kg")}
               </p>
               <span className="font-label-md text-label-md text-primary">
-                All-time lifted
+                {tl("All-time lifted")}
               </span>
             </div>
           </div>

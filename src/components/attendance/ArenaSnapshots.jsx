@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 const images = [
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAWTpQQZxWNLKQLpra2l594YhowLdXrb727C5jmZblvkjq6Ucr9I9lzdOgvA53tmjcw44tYKMXkQmSI0p8Ma4v9tmT7l_TfKRxtOv2HfEaly6iKivvJqnmnaX78uCPhtF40AV0BaakefxpFkiyVoP-J73sQQOesyqBDseduuAFSfwow7ZbMHOahXfU6yAYvUzW6NNPmLqGBG-4McC5DUQuns1Q-ueNCwH1vRYOxnItmHxqMj3ltRxOCCQ',
@@ -17,7 +18,7 @@ export default function ArenaSnapshots({ arenas }) {
           place
         </span>
         <p className="text-on-surface-variant mt-2">
-          Start checking in to unlock your top arena zones.
+          {tl("Start checking in to unlock your top arena zones.")}
         </p>
       </div>
     );

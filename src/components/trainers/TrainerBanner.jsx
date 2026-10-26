@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function TrainerBanner({ trainer }) {
   if (!trainer) return null;
@@ -13,24 +14,24 @@ export default function TrainerBanner({ trainer }) {
   // Build metrics from backend data
   const metrics = [
     {
-      label: 'Athlete Rating',
+      label: tl("Athlete Rating"),
       value: trainer.rating || '—',
       unit: '/ 5.0',
-      sub: `${trainer.total_reviews} Reviews`,
+      sub: tl("{0} Reviews", { 0: trainer.total_reviews }),
       icon: 'star',
     },
     {
-      label: 'Experience',
+      label: tl("Experience"),
       value: trainer.years_experience || 0,
       unit: 'YRS',
-      sub: 'Industry',
+      sub: tl("Industry"),
       icon: 'speed',
     },
     {
-      label: 'Athletes Coached',
+      label: tl("Athletes Coached"),
       value: trainer.total_students || 0,
       unit: '',
-      sub: 'Active Roster',
+      sub: tl("Active Roster"),
       icon: 'trophy',
     },
   ];
@@ -64,7 +65,7 @@ export default function TrainerBanner({ trainer }) {
               <div className="absolute bottom-2 left-2 bg-surface-container-lowest/90 px-space-xs py-space-2xs rounded-lg flex items-center gap-space-2xs backdrop-blur-sm">
                 <span className="w-2 h-2 rounded-full bg-primary-container animate-ping" />
                 <span className="font-label-md text-label-md text-primary tracking-widest uppercase">
-                  Accepting Athletes
+                  {tl("Accepting Athletes")}
                 </span>
               </div>
             )}
@@ -127,22 +128,22 @@ export default function TrainerBanner({ trainer }) {
             className="flex-1 min-w-[140px] bg-surface-container-low/90 rounded-lg p-space-md flex flex-col justify-between"
           >
             <div className="flex items-center justify-between text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase">Session Rate</span>
+              <span className="font-label-md text-label-md uppercase">{tl("Session Rate")}</span>
               <span className="material-symbols-outlined text-primary text-title-md">
                 payments
               </span>
             </div>
             <div className="mt-space-sm flex flex-col">
               <span className="font-title-lg text-title-lg text-primary leading-tight font-bold">
-                SAR {Number(trainer.hourly_rate).toFixed(2)}
+                {tl("SAR")}{' '}{Number(trainer.hourly_rate).toFixed(2)}
               </span>
               <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                Per 60-min session
+                {tl("Per 60-min session")}
               </span>
             </div>
             {trainer.is_verified && (
               <span className="font-label-md text-label-md text-on-surface-variant uppercase mt-space-2xs">
-                Verified Coach
+                {tl("Verified Coach")}
               </span>
             )}
           </motion.div>

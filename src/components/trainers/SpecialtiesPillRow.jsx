@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { tl } from '../../i18n';
 
 export default function SpecialtiesPillRow({ specialties = [] }) {
   if (!specialties || specialties.length === 0) return null;
@@ -11,7 +12,7 @@ export default function SpecialtiesPillRow({ specialties = [] }) {
       className="flex flex-wrap gap-space-xs items-center"
     >
       <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mr-space-xs">
-        Pillars:
+        {tl("Pillars:")}
       </span>
       {specialties.map((s, i) => (
         <motion.span

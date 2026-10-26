@@ -13,6 +13,7 @@ import AIDirectives from '../../components/AIDirectives';
 import FloorDensity from '../../components/FloorDensity';
 import RecentLogs from '../../components/RecentLogs';
 import MembershipCountdown from '../../components/MembershipCountdown';
+import { tl, locale } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -54,10 +55,10 @@ export default function Dashboard() {
     try {
       setStarting(true);
       await workoutsService.start({ name: 'Training Session' });
-      toast.success('Workout started — log sets below or scan a machine');
+      toast.success(tl("Workout started — log sets below or scan a machine"));
       refreshAll();
     } catch {
-      toast.error('Failed to start workout');
+      toast.error(tl("Failed to start workout"));
     } finally {
       setStarting(false);
     }
@@ -65,7 +66,7 @@ export default function Dashboard() {
 
   const streak = stats?.current_streak_days ?? 0;
   const totalWorkouts = stats?.total_workouts ?? 0;
-  const totalTonnage = Number(stats?.total_tonnage_all_time || 0).toLocaleString();
+  const totalTonnage = Number(stats?.total_tonnage_all_time || 0).toLocaleString(locale);
   const passId = user?.id?.toString().padStart(4, '0') || '0000';
   const displayName = user?.first_name || user?.full_name?.split(' ')[0] || 'Athlete';
 
@@ -102,7 +103,7 @@ export default function Dashboard() {
         >
           <motion.div variants={lineUp} className="flex items-center gap-space-sm flex-wrap">
             <span className="px-space-xs py-space-2xs bg-surface-container-high text-on-surface-variant font-label-md text-label-md rounded tracking-widest uppercase">
-              Member #{passId}
+              {tl("Member #")}{passId}
             </span>
           </motion.div>
 
@@ -110,7 +111,7 @@ export default function Dashboard() {
             variants={lineUp}
             className="font-headline-lg text-headline-lg text-on-surface tracking-wider uppercase m-0 leading-none"
           >
-            Welcome Back,{' '}
+            {tl("Welcome Back,")}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
               {displayName}
             </span>
@@ -118,10 +119,10 @@ export default function Dashboard() {
 
           <motion.p variants={lineUp} className="font-body-md text-body-md text-on-surface-variant max-w-xl">
             {loading
-              ? 'Loading your telemetry...'
+              ? tl("Loading your telemetry...")
               : totalWorkouts > 0
-              ? `You've logged ${totalWorkouts} workout${totalWorkouts === 1 ? '' : 's'} and moved ${totalTonnage} kg total.`
-              : 'Start your first workout to begin tracking progress.'}
+              ? tl("You've logged {0} workout{1} and moved {2} kg total.", { 0: totalWorkouts, 1: totalWorkouts === 1 ? '' : 's', 2: totalTonnage })
+              : tl("Start your first workout to begin tracking progress.")}
           </motion.p>
         </motion.div>
 
@@ -135,28 +136,28 @@ export default function Dashboard() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
         <DashboardStat
           icon="fitness_center"
-          label="Total Workouts"
+          label={tl("Total Workouts")}
           value={loading ? '—' : totalWorkouts}
           sub={stats?.recent_30d?.workouts ? `${stats.recent_30d.workouts} this month` : 'No recent activity'}
           accent={false}
         />
         <DashboardStat
           icon="bolt"
-          label="30-Day Tonnage"
+          label={tl("30-Day Tonnage")}
           value={loading ? '—' : `${Math.round(Number(stats?.recent_30d?.total_tonnage_kg ?? 0) / 1000)}k`}
           sub="kg lifted"
           accent={true}
         />
         <DashboardStat
           icon="local_fire_department"
-          label="Current Streak"
+          label={tl("Current Streak")}
           value={streak}
           sub="days"
           accent={true}
         />
         <DashboardStat
           icon="emoji_events"
-          label="Personal Records"
+          label={tl("Personal Records")}
           value={loading ? '—' : stats?.total_prs ?? 0}
           sub={`${stats?.total_prs ?? 0} exercises`}
           accent={false}

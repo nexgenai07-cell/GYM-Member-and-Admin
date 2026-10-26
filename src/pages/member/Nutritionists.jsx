@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { nutritionService } from '../../services/nutritionService';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -76,25 +77,25 @@ export default function Nutritionists() {
 
   const macros = [
     {
-      label: 'Calories',
+      label: tl("Calories"),
       consumed: consumed.calories || 0,
       target: targets.calories || 0,
       unit: 'kcal',
     },
     {
-      label: 'Protein',
+      label: tl("Protein"),
       consumed: Math.round(consumed.protein_g || 0),
       target: targets.protein_g || 0,
       unit: 'g',
     },
     {
-      label: 'Carbs',
+      label: tl("Carbs"),
       consumed: Math.round(consumed.carbs_g || 0),
       target: targets.carbs_g || 0,
       unit: 'g',
     },
     {
-      label: 'Fats',
+      label: tl("Fats"),
       consumed: Math.round(consumed.fats_g || 0),
       target: targets.fats_g || 0,
       unit: 'g',
@@ -118,12 +119,12 @@ export default function Nutritionists() {
   // ---- Handlers ----
   const handleLogMeal = async () => {
     if (!mealForm.description.trim()) {
-      toast.error('Please add a description');
+      toast.error(tl("Please add a description"));
       return;
     }
     try {
       await nutritionService.logMeal(mealForm);
-      toast.success('Meal logged!');
+      toast.success(tl("Meal logged!"));
       setShowMealModal(false);
       setMealForm({
         meal_type: 'breakfast',
@@ -142,7 +143,7 @@ export default function Nutritionists() {
   const handleAddWater = async (amount) => {
     try {
       await nutritionService.addWater(amount);
-      toast.success(`+${amount}ml`);
+      toast.success(tl("+{0}ml", { 0: amount }));
       refetchSummary();
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to add water');
@@ -152,7 +153,7 @@ export default function Nutritionists() {
   const handleRequestPlan = async (nutritionist) => {
     try {
       await nutritionService.requestPlan(nutritionist.id, 'hypertrophy');
-      toast.success(`Plan requested from ${nutritionist.user?.full_name}`);
+      toast.success(tl("Plan requested from {0}", { 0: nutritionist.user?.full_name }));
       refetchPlan();
       refetchSummary();
     } catch (e) {
@@ -169,13 +170,13 @@ export default function Nutritionists() {
             error
           </span>
           <p className="font-body-md text-on-surface mt-space-sm">
-            Failed to load nutritionists.
+            {tl("Failed to load nutritionists.")}
           </p>
           <button
             onClick={refetchNutritionists}
             className="mt-space-md px-space-md py-space-xs rounded bg-primary-container text-on-primary-container font-label-md uppercase"
           >
-            Retry
+            {tl("Retry")}
           </button>
         </div>
       </div>
@@ -248,8 +249,8 @@ export default function Nutritionists() {
                   nutritionists={others}
                   heading={
                     assignedNutritionistName
-                      ? 'Additional Specialists'
-                      : 'Elite Specialists'
+                      ? tl("Additional Specialists")
+                      : tl("Elite Specialists")
                   }
                   onRequestPlan={handleRequestPlan}
                 />
@@ -309,7 +310,7 @@ function NutritionHeader() {
           restaurant
         </span>
         <span className="font-label-md text-label-md uppercase tracking-widest font-bold">
-          Clinical Sports Nutrition
+          {tl("Clinical Sports Nutrition")}
         </span>
       </motion.div>
 
@@ -317,9 +318,9 @@ function NutritionHeader() {
         variants={lineUp}
         className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider leading-none m-0"
       >
-        Nutrition &amp;{' '}
+        {tl("Nutrition &")}{' '}
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
-          Macro Sync
+          {tl("Macro Sync")}
         </span>
       </motion.h1>
 
@@ -334,7 +335,7 @@ function NutritionHeader() {
         variants={lineUp}
         className="font-body-md text-body-md text-on-surface-variant mt-space-xs max-w-2xl"
       >
-        Track macros, log meals, and consult certified sports dietitians.
+        {tl("Track macros, log meals, and consult certified sports dietitians.")}
       </motion.p>
     </motion.div>
   );
@@ -383,7 +384,7 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
             </h2>
             {isAssigned && (
               <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container font-label-md text-[10px] uppercase font-bold tracking-widest">
-                Assigned
+                {tl("Assigned")}
               </span>
             )}
           </div>
@@ -394,7 +395,7 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
             {n.credentials}
           </span>
           <p className="font-body-md text-body-md text-on-surface-variant mt-2 line-clamp-2">
-            {n.bio || 'Sports nutrition specialist'}
+            {n.bio || tl("Sports nutrition specialist")}
           </p>
         </div>
 
@@ -407,14 +408,14 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
               star
             </span>
             <span className="font-title-md text-title-md text-on-surface">
-              {Number(n.rating) > 0 ? Number(n.rating).toFixed(1) : 'New'}
+              {Number(n.rating) > 0 ? Number(n.rating).toFixed(1) : tl("New")}
             </span>
             <span className="font-label-md text-[10px] text-outline uppercase ml-1">
               ({n.total_reviews})
             </span>
           </div>
           <span className="font-headline-md text-headline-md text-primary font-bold">
-            SAR {Number(n.hourly_rate).toFixed(0)}
+            {tl("SAR")}{' '}{Number(n.hourly_rate).toFixed(0)}
             <span className="font-label-md text-[10px] text-on-surface-variant ml-1">
               /hr
             </span>
@@ -431,7 +432,7 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
             }`}
             type="button"
           >
-            {isAssigned ? 'Currently Assigned' : 'Request Plan'}
+            {isAssigned ? tl("Currently Assigned") : tl("Request Plan")}
           </motion.button>
         </div>
       </div>
@@ -500,7 +501,7 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
               </div>
 
               <p className="font-body-md text-body-md text-on-surface-variant line-clamp-2">
-                {n.bio || 'Sports nutrition specialist'}
+                {n.bio || tl("Sports nutrition specialist")}
               </p>
 
               {Array.isArray(n.specialties) && n.specialties.length > 0 && (
@@ -525,7 +526,7 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
                     star
                   </span>
                   <span className="font-title-md text-title-md text-on-surface text-[13px]">
-                    {Number(n.rating) > 0 ? Number(n.rating).toFixed(1) : 'New'}
+                    {Number(n.rating) > 0 ? Number(n.rating).toFixed(1) : tl("New")}
                   </span>
                   <span className="font-label-md text-[9px] text-outline">
                     ({n.total_reviews})
@@ -533,7 +534,7 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-title-md text-title-md text-primary font-bold">
-                    SAR {Number(n.hourly_rate).toFixed(0)}/hr
+                    {tl("SAR")}{' '}{Number(n.hourly_rate).toFixed(0)}/hr
                   </span>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -542,7 +543,7 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
                     className="px-3 py-1 rounded bg-primary-container text-on-primary-container font-label-md text-[9px] uppercase tracking-wider font-bold"
                     type="button"
                   >
-                    Request
+                    {tl("Request")}
                   </motion.button>
                 </div>
               </div>
@@ -592,18 +593,18 @@ function MacroSyncPanel({
 
       <div>
         <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-          Live Telemetry
+          {tl("Live Telemetry")}
         </span>
         <h3 className="font-headline-md text-headline-md text-on-surface uppercase">
-          Today&apos;s Macros
+          {tl("Today's Macros")}
         </h3>
       </div>
 
       {plan && (
         <p className={`text-[12px] ${plan.reviewed_at ? 'text-on-surface-variant' : 'text-amber-300'}`}>
           {plan.reviewed_at
-            ? `Targets set by ${plan.nutritionist_name || 'your nutritionist'}.`
-            : `Starter targets for your goal — ${plan.nutritionist_name || 'your nutritionist'} will review them shortly.`}
+            ? tl("Targets set by {0}.", { 0: plan.nutritionist_name || 'your nutritionist' })
+            : tl("Starter targets for your goal — {0} will review them shortly.", { 0: plan.nutritionist_name || 'your nutritionist' })}
           {plan.notes && <span className="block mt-1 text-on-surface">{plan.notes}</span>}
         </p>
       )}
@@ -614,7 +615,7 @@ function MacroSyncPanel({
             restaurant_menu
           </span>
           <p className="font-body-md text-body-md text-on-surface-variant mt-2 px-4">
-            No active plan — request one from a nutritionist to unlock tracking.
+            {tl("No active plan — request one from a nutritionist to unlock tracking.")}
           </p>
         </div>
       ) : (
@@ -623,7 +624,7 @@ function MacroSyncPanel({
           <div className="p-space-md bg-surface-container-lowest rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="font-label-md text-[10px] uppercase text-outline">
-                Daily Target
+                {tl("Daily Target")}
               </span>
               <span className="font-label-md text-[10px] text-primary uppercase font-bold">
                 {plan.goal}
@@ -654,7 +655,7 @@ function MacroSyncPanel({
                   remaining > 0 ? 'text-primary font-bold' : 'text-outline'
                 }
               >
-                {remaining > 0 ? `${remaining} left` : 'Complete'}
+                {remaining > 0 ? tl("{0} left", { 0: remaining }) : tl("Complete")}
               </span>
             </div>
           </div>
@@ -688,12 +689,12 @@ function MacroSyncPanel({
                 </div>
                 <div className="flex justify-between mt-1.5">
                   <span className="font-label-md text-[9px] text-on-surface-variant uppercase">
-                    {pct}% of target
+                    {pct}{tl("% of target")}
                   </span>
                   <span className="font-label-md text-[9px] text-primary font-bold uppercase">
                     {m.target - m.consumed > 0
-                      ? `${m.target - m.consumed} left`
-                      : 'Complete'}
+                      ? tl("{0} left", { 0: m.target - m.consumed })
+                      : tl("Complete")}
                   </span>
                 </div>
               </div>
@@ -704,7 +705,7 @@ function MacroSyncPanel({
           <div className="bg-surface-container-lowest rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="font-title-md text-title-md text-on-surface text-[13px]">
-                Water
+                {tl("Water")}
               </span>
               <span className="font-label-md text-[10px] text-on-surface-variant tabular-nums">
                 {consumed.water_ml || 0} / {targets.water_ml || 4000} ml
@@ -738,17 +739,17 @@ function MacroSyncPanel({
           <div className="bg-surface-container-lowest rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="font-label-md text-[10px] text-outline uppercase tracking-wider">
-                DEXA Scan
+                {tl("DEXA Scan")}
               </span>
               <span className="font-label-md text-[10px] text-primary font-bold uppercase">
-                {latestDexa?.scan_date || 'No data'}
+                {latestDexa?.scan_date || tl("No data")}
               </span>
             </div>
             {latestDexa ? (
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <span className="font-label-md text-[9px] text-outline uppercase block">
-                    Body Fat
+                    {tl("Body Fat")}
                   </span>
                   <span className="font-title-md text-title-md text-on-surface tabular-nums">
                     {Number(latestDexa.body_fat_percent).toFixed(1)}%
@@ -756,7 +757,7 @@ function MacroSyncPanel({
                 </div>
                 <div>
                   <span className="font-label-md text-[9px] text-outline uppercase block">
-                    Lean
+                    {tl("Lean")}
                   </span>
                   <span className="font-title-md text-title-md text-on-surface tabular-nums">
                     {Number(latestDexa.lean_mass_kg).toFixed(1)}kg
@@ -764,18 +765,18 @@ function MacroSyncPanel({
                 </div>
                 <div>
                   <span className="font-label-md text-[9px] text-outline uppercase block">
-                    Visceral
+                    {tl("Visceral")}
                   </span>
                   <span className="font-title-md text-title-md text-primary tabular-nums">
                     {latestDexa.visceral_fat_kg
-                      ? `${Number(latestDexa.visceral_fat_kg).toFixed(1)}kg`
-                      : 'N/A'}
+                      ? tl("{0}kg", { 0: Number(latestDexa.visceral_fat_kg).toFixed(1) })
+                      : tl("N/A")}
                   </span>
                 </div>
               </div>
             ) : (
               <p className="font-body-md text-[11px] text-on-surface-variant">
-                No DEXA scan on record — upload one to track body composition.
+                {tl("No DEXA scan on record — upload one to track body composition.")}
               </p>
             )}
           </div>
@@ -787,7 +788,7 @@ function MacroSyncPanel({
             className="w-full py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container text-[11px] font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(229,25,55,0.3)]"
             type="button"
           >
-            Log a Meal
+            {tl("Log a Meal")}
           </motion.button>
         </>
       )}
@@ -828,7 +829,7 @@ function MealModal({ form, setForm, onSubmit, onClose }) {
       >
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-headline-md text-headline-md text-on-surface uppercase">
-            Log a Meal
+            {tl("Log a Meal")}
           </h3>
           <button
             onClick={onClose}
@@ -842,7 +843,7 @@ function MealModal({ form, setForm, onSubmit, onClose }) {
         <div className="flex flex-col gap-3">
           <div>
             <label className="font-label-md text-[10px] uppercase text-on-surface-variant block mb-1">
-              Meal Type
+              {tl("Meal Type")}
             </label>
             <select
               value={form.meal_type}
@@ -851,18 +852,18 @@ function MealModal({ form, setForm, onSubmit, onClose }) {
               }
               className="w-full bg-surface-container-low text-on-surface rounded-lg p-3 border border-surface-container-high focus:outline-none focus:border-primary"
             >
-              <option value="breakfast">Breakfast</option>
-              <option value="lunch">Lunch</option>
-              <option value="dinner">Dinner</option>
-              <option value="snack">Snack</option>
-              <option value="pre_workout">Pre-Workout</option>
-              <option value="post_workout">Post-Workout</option>
+              <option value="breakfast">{tl("Breakfast")}</option>
+              <option value="lunch">{tl("Lunch")}</option>
+              <option value="dinner">{tl("Dinner")}</option>
+              <option value="snack">{tl("Snack")}</option>
+              <option value="pre_workout">{tl("Pre-Workout")}</option>
+              <option value="post_workout">{tl("Post-Workout")}</option>
             </select>
           </div>
 
           <div>
             <label className="font-label-md text-[10px] uppercase text-on-surface-variant block mb-1">
-              Description
+              {tl("Description")}
             </label>
             <input
               type="text"
@@ -870,29 +871,29 @@ function MealModal({ form, setForm, onSubmit, onClose }) {
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder="e.g. Chicken + rice + broccoli"
+              placeholder={tl("e.g. Chicken + rice + broccoli")}
               className="w-full bg-surface-container-low text-on-surface rounded-lg p-3 border border-surface-container-high focus:outline-none focus:border-primary"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <NumberField
-              label="Calories"
+              label={tl("Calories")}
               value={form.calories}
               onChange={(v) => setForm({ ...form, calories: v })}
             />
             <NumberField
-              label="Protein (g)"
+              label={tl("Protein (g)")}
               value={form.protein_g}
               onChange={(v) => setForm({ ...form, protein_g: v })}
             />
             <NumberField
-              label="Carbs (g)"
+              label={tl("Carbs (g)")}
               value={form.carbs_g}
               onChange={(v) => setForm({ ...form, carbs_g: v })}
             />
             <NumberField
-              label="Fats (g)"
+              label={tl("Fats (g)")}
               value={form.fats_g}
               onChange={(v) => setForm({ ...form, fats_g: v })}
             />
@@ -910,7 +911,7 @@ function MealModal({ form, setForm, onSubmit, onClose }) {
             }`}
             type="button"
           >
-            {submitting ? 'Saving...' : 'Save Meal'}
+            {submitting ? tl("Saving...") : tl("Save Meal")}
           </motion.button>
         </div>
       </motion.div>
@@ -953,10 +954,10 @@ function EmptyState() {
         restaurant
       </span>
       <h3 className="font-headline-md text-headline-md text-on-surface uppercase mb-2 relative z-10">
-        No Nutritionists Yet
+        {tl("No Nutritionists Yet")}
       </h3>
       <p className="font-body-md text-on-surface-variant relative z-10">
-        Run <code className="px-2 py-0.5 bg-surface-container rounded">python manage.py seed_nutritionists</code> to load demo data.
+        {tl("Run")}{' '}<code className="px-2 py-0.5 bg-surface-container rounded">python manage.py seed_nutritionists</code>{' '}{tl("to load demo data.")}
       </p>
     </motion.div>
   );

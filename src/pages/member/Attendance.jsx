@@ -10,6 +10,7 @@ import HourlyCurve from '../../components/attendance/HourlyCurve';
 import MilestoneTiers from '../../components/attendance/MilestoneTiers';
 import CheckInLedger from '../../components/attendance/CheckInLedger';
 import ArenaSnapshots from '../../components/attendance/ArenaSnapshots';
+import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -39,7 +40,7 @@ export default function Attendance() {
     try {
       setCheckingOut(true);
       const res = await attendanceService.checkOut(open.id);
-      toast.success(`Checked out — ${res.duration_minutes ?? 0} min session`);
+      toast.success(tl("Checked out — {0} min session", { 0: res.duration_minutes ?? 0 }));
       refetchCheckIns();
       refetchSummary();
       setLedgerKey((k) => k + 1);
@@ -71,13 +72,13 @@ export default function Attendance() {
           <div className="flex items-center gap-space-xs text-primary">
             <span className="material-symbols-outlined text-[16px]">verified_user</span>
             <span className="font-label-md text-label-md uppercase tracking-widest">
-              Attendance
+              {tl("Attendance")}
             </span>
           </div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wide leading-none m-0">
-            Your{' '}
+            {tl("Your")}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-primary-container">
-              Gym Visits
+              {tl("Gym Visits")}
             </span>
           </h1>
         </div>
@@ -87,8 +88,8 @@ export default function Attendance() {
             <span className={`w-2.5 h-2.5 rounded-full ${open ? 'bg-emerald-400 animate-pulse' : 'bg-surface-container-highest'}`} />
             <span className="font-title-md text-title-md text-on-surface">
               {open
-                ? `In the gym since ${new Date(open.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                : 'Not checked in'}
+                ? tl("In the gym since {0}", { 0: new Date(open.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })
+                : tl("Not checked in")}
             </span>
           </div>
 
@@ -100,7 +101,7 @@ export default function Attendance() {
               type="button"
             >
               <span className="material-symbols-outlined text-[18px]">logout</span>
-              <span>{checkingOut ? 'Checking out…' : 'Check out'}</span>
+              <span>{checkingOut ? tl("Checking out…") : tl("Check out")}</span>
             </button>
           ) : (
             <Link
@@ -108,7 +109,7 @@ export default function Attendance() {
               className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-primary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider hover:bg-secondary-container transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">qr_code_2</span>
-              <span>Show entry pass</span>
+              <span>{tl("Show entry pass")}</span>
             </Link>
           )}
         </div>

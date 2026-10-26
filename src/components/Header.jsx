@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { notificationsService } from '../services/notificationsService';
 import { dashboardService } from '../services/dashboardService';
 import { membersService } from '../services/membersService';
+import { tl, locale } from '../i18n';
+import LangToggle from '../i18n/LangToggle';
 
 const POLL_MS = 60_000;
 const PUBLIC_SITE = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://smart-gym-three.vercel.app';
@@ -15,7 +17,7 @@ function timeAgo(iso) {
   if (s < 3600) return `${Math.floor(s / 60)} min ago`;
   if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
   if (s < 172800) return 'yesterday';
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(locale);
 }
 /* ============================================================
    HOOK: Click outside to close
@@ -138,14 +140,14 @@ export default function Header() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-container" />
             </span>
             <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
-              Gym now:
+              {tl("Gym now:")}
             </span>
             <span className="font-title-md text-title-md text-on-surface">
               {occupancy ? (occupancy.capacity ? `${occupancy.percent}%` : occupancy.current) : '—'}
             </span>
             {occupancy && (
               <span className="font-label-md text-label-md text-primary">
-                ({occupancy.label}{occupancy.capacity ? '' : ' · checked in'})
+                ({occupancy.label}{occupancy.capacity ? '' : tl(" · checked in")})
               </span>
             )}
           </div>
@@ -153,17 +155,18 @@ export default function Header() {
             <span className="material-symbols-outlined text-[16px] text-primary">
               schedule
             </span>
-            <span>Busiest: {occupancy?.peak_window || 'not enough data yet'}</span>
+            <span>{tl("Busiest:")}{' '}{occupancy?.peak_window || tl("not enough data yet")}</span>
           </div>
         </div>
 
         {/* ============ RIGHT: Actions & Profile ============ */}
         <div className="flex items-center gap-space-md">
+          <LangToggle />
           {/* --- Notifications --- */}
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => toggleDropdown('notifications')}
-              aria-label="Notifications"
+              aria-label={tl("Notifications")}
               className={`relative w-9 h-9 rounded bg-surface-container flex items-center justify-center hover:bg-surface-container-high transition-colors ${
                 openDropdown === 'notifications' ? 'bg-surface-container-high' : ''
               }`}
@@ -192,7 +195,7 @@ export default function Header() {
                   <div className="flex items-center justify-between px-space-md py-space-sm border-b border-surface-container-high">
                     <div className="flex items-center gap-2">
                       <h3 className="font-title-md text-title-md text-on-surface uppercase tracking-wider">
-                        Notifications
+                        {tl("Notifications")}
                       </h3>
                       {unreadCount > 0 && (
                         <span className="px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-md text-label-md font-bold">
@@ -206,7 +209,7 @@ export default function Header() {
                         className="font-label-md text-label-md text-primary uppercase tracking-wider hover:underline"
                         type="button"
                       >
-                        Mark all read
+                        {tl("Mark all read")}
                       </button>
                     )}
                   </div>
@@ -219,7 +222,7 @@ export default function Header() {
                           notifications_off
                         </span>
                         <span className="font-label-md text-label-md text-on-surface-variant uppercase">
-                          No notifications
+                          {tl("No notifications")}
                         </span>
                       </div>
                     ) : (
@@ -275,7 +278,7 @@ export default function Header() {
                       onClick={() => setOpenDropdown(null)}
                       className="w-full block text-center py-space-xs rounded font-label-md text-label-md text-primary uppercase tracking-wider hover:bg-surface-container-high transition-colors"
                     >
-                      View All Notifications
+                      {tl("View All Notifications")}
                     </Link>
                   </div>
                 </DropdownPanel>
@@ -287,7 +290,7 @@ export default function Header() {
           <div className="relative" ref={quickRef}>
             <button
               onClick={() => toggleDropdown('quick')}
-              aria-label="Quick actions"
+              aria-label={tl("Quick actions")}
               className={`w-9 h-9 rounded bg-surface-container flex items-center justify-center hover:bg-surface-container-high transition-colors ${
                 openDropdown === 'quick' ? 'bg-surface-container-high' : ''
               }`}
@@ -309,17 +312,17 @@ export default function Header() {
                 >
                   <div className="px-space-md py-space-xs border-b border-surface-container-high">
                     <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                      Quick Actions
+                      {tl("Quick Actions")}
                     </span>
                   </div>
 
                   <div className="p-space-xs">
-                    <QuickAction icon="qr_code_scanner" label="Scan Machine QR" onClick={() => go('/dashboard/machine-guide?scan=1')} />
-                    <QuickAction icon="badge" label="Show My Pass" onClick={() => go('/dashboard/profile#pass')} />
-                    <QuickAction icon="play_circle" label="Course Player" onClick={() => go('/dashboard/player')} />
-                    <QuickAction icon="restaurant" label="Log Meal" onClick={() => go('/dashboard/nutritionists')} />
-                    <QuickAction icon="shopping_bag" label="Open Shop" onClick={() => go('/dashboard/shop')} />
-                    <QuickAction icon="account_balance_wallet" label="Top Up Credit" onClick={() => go('/dashboard/payments')} />
+                    <QuickAction icon="qr_code_scanner" label={tl("Scan Machine QR")} onClick={() => go('/dashboard/machine-guide?scan=1')} />
+                    <QuickAction icon="badge" label={tl("Show My Pass")} onClick={() => go('/dashboard/profile#pass')} />
+                    <QuickAction icon="play_circle" label={tl("Course Player")} onClick={() => go('/dashboard/player')} />
+                    <QuickAction icon="restaurant" label={tl("Log Meal")} onClick={() => go('/dashboard/nutritionists')} />
+                    <QuickAction icon="shopping_bag" label={tl("Open Shop")} onClick={() => go('/dashboard/shop')} />
+                    <QuickAction icon="account_balance_wallet" label={tl("Top Up Credit")} onClick={() => go('/dashboard/payments')} />
                   </div>
                 </DropdownPanel>
               )}
@@ -340,7 +343,7 @@ export default function Header() {
                   {displayName}
                 </span>
                 <span className="font-label-md text-label-md text-primary uppercase tracking-wider font-bold">
-                  {tier || 'Member'}
+                  {tier || tl("Member")}
                 </span>
               </div>
               <Avatar src={avatar} initials={initials} size="w-8 h-8" />
@@ -377,16 +380,16 @@ export default function Header() {
 
                   {/* Links */}
                   <div className="p-space-xs">
-                    <DropdownLink icon="person" label="My Profile" onClick={() => go('/dashboard/profile')} />
-                    <DropdownLink icon="badge" label="Digital Pass" onClick={() => go('/dashboard/profile#pass')} />
-                    <DropdownLink icon="lock_reset" label="Change Password" onClick={() => go('/dashboard/change-password')} />
-                    <DropdownLink icon="credit_card" label="Membership & Payments" onClick={() => go('/dashboard/payments')} />
-                    <DropdownLink icon="event_available" label="Attendance History" onClick={() => go('/dashboard/attendance')} />
-                    <DropdownLink icon="notifications" label="Notifications" onClick={() => go('/dashboard/notifications')} />
+                    <DropdownLink icon="person" label={tl("My Profile")} onClick={() => go('/dashboard/profile')} />
+                    <DropdownLink icon="badge" label={tl("Digital Pass")} onClick={() => go('/dashboard/profile#pass')} />
+                    <DropdownLink icon="lock_reset" label={tl("Change Password")} onClick={() => go('/dashboard/change-password')} />
+                    <DropdownLink icon="credit_card" label={tl("Membership & Payments")} onClick={() => go('/dashboard/payments')} />
+                    <DropdownLink icon="event_available" label={tl("Attendance History")} onClick={() => go('/dashboard/attendance')} />
+                    <DropdownLink icon="notifications" label={tl("Notifications")} onClick={() => go('/dashboard/notifications')} />
                   </div>
 
                   <div className="p-space-xs border-t border-surface-container-high">
-                    <DropdownLink icon="help" label="Help & Support" onClick={() => { setOpenDropdown(null); window.open(`${PUBLIC_SITE}/contact`, '_blank', 'noopener'); }} />
+                    <DropdownLink icon="help" label={tl("Help & Support")} onClick={() => { setOpenDropdown(null); window.open(`${PUBLIC_SITE}/contact`, '_blank', 'noopener'); }} />
                   </div>
 
                   {/* Logout */}
@@ -400,7 +403,7 @@ export default function Header() {
                         logout
                       </span>
                       <span className="font-title-md text-title-md uppercase tracking-wider">
-                        Sign Out
+                        {tl("Sign Out")}
                       </span>
                     </button>
                   </div>
