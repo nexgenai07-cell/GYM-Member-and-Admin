@@ -151,7 +151,7 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
     setBusy(true);
     setErrors({});
     const body = {
-      first_name: f.first_name, last_name: f.last_name, phone: f.phone, role: f.role, department: f.department,
+      first_name: f.first_name, last_name: f.last_name, phone: f.phone, role: f.role,
       status: f.status, shift_start: f.shift_start || null, shift_end: f.shift_end || null,
       joined_at: f.joined_at || null, notes: f.notes,
     };
@@ -211,14 +211,13 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
         <Field label="Role" error={errors.role}
           hint={portalRole ? 'Can sign in to this admin portal.' : 'Listed for scheduling — no admin sign-in.'}>
           <select className={inputCls} value={f.role} disabled={isMe}
-            onChange={(e) => setF((p) => ({ ...p, role: e.target.value, department: isNew ? DEFAULT_DEPT[e.target.value] : p.department }))}>
+            onChange={(e) => setF((p) => ({ ...p, role: e.target.value, department: DEFAULT_DEPT[e.target.value] }))}>
             {(roles.some(([r]) => r === f.role) ? roles : ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </Field>
-        <Field label="Department" error={errors.department}>
-          <select className={inputCls} value={f.department} onChange={set('department')}>
-            {DEPARTMENTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+        <Field label="Department" hint="Set by the role.">
+          <input className={`${inputCls} opacity-70 cursor-not-allowed`} readOnly aria-readonly="true" tabIndex={-1}
+            value={(DEPARTMENTS.find(([v]) => v === (DEFAULT_DEPT[f.role] || f.department)) || [])[1] || ''} />
         </Field>
         <Field label="Status" error={errors.status} hint={f.status === 'suspended' ? 'Suspended accounts can’t sign in.' : undefined}>
           <select className={inputCls} value={f.status} onChange={set('status')} disabled={isMe}>

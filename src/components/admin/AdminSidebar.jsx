@@ -1,9 +1,34 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
 
 const HEALTH_MS = 60_000;
+const ACTIVITY_MS = 45_000;
+
+/**
+ * New activity per sidebar section since this admin last opened it ({ trainers: 1, … }).
+ * Opening a section marks it seen, so its bubble clears.
+ */
+function useActivity() {
+  const { pathname } = useLocation();
+  const [counts, setCounts] = useState({});
+  useEffect(() => {
+    let alive = true;
+    const load = () => api.get('/admin/activity/').then(({ data }) => { if (alive) setCounts(data); }).catch(() => {});
+    load();
+    const id = setInterval(load, ACTIVITY_MS);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+  useEffect(() => {
+    const section = pathname.split('/')[2];
+    if (!section || !(section in counts) || !counts[section]) return;
+    api.post('/admin/activity/', { section })
+      .then(() => setCounts((c) => ({ ...c, [section]: 0 })))
+      .catch(() => {});
+  }, [pathname, counts]);
+  return counts;
+}
 
 /** Measured round trip to the API (a light authenticated call), refreshed every minute. */
 function useApiHealth() {
@@ -90,6 +115,7 @@ const navGroups = [
 
 export default function AdminSidebar() {
   const health = useApiHealth();
+  const activity = useActivity();
   return (
     <aside className="fixed left-0 top-0 h-screen w-72 bg-[#08080a] z-50 flex flex-col border-r border-[#1a1a1e]">
       {/* ============ LOGO / BRAND ============ */}
@@ -146,7 +172,13 @@ export default function AdminSidebar() {
                     <span className="material-symbols-outlined text-[18px] leading-none">
                       {item.icon}
                     </span>
-                    <span className="leading-none">{item.label}</span>
+                    <span className="leading-none flex-1">{item.label}</span>
+                    {activity[item.path.split('/')[2]] > 0 && (
+                      <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold grid place-items-center normal-case tracking-normal ring-2 ring-[#08080a]"
+                        aria-label={`${activity[item.path.split('/')[2]]} new`}>
+                        {activity[item.path.split('/')[2]] > 99 ? '99+' : activity[item.path.split('/')[2]]}
+                      </span>
+                    )}
                   </NavLink>
                 </motion.div>
               ))}

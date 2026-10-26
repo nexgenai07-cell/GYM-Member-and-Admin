@@ -4,7 +4,7 @@
 // scan it in Admin → Member Lookup (or the member uses the face gate).
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { QRCodeSVG } from 'qrcode.react';
+import BrandedQR from '../../components/BrandedQR';
 import { membersService } from '../../services/membersService';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
 
@@ -56,7 +56,7 @@ export default function DigitalPass({ user, membership }) {
 
   const qr = (size) => (
     pass?.token ? (
-      <QRCodeSVG value={pass.token} size={size} level="M" bgColor="#ffffff" fgColor="#0a0a0a" />
+      <BrandedQR value={pass.token} size={size} bgColor="#ffffff" fgColor="#0a0a0a" />
     ) : (
       <div style={{ width: size, height: size }} className="bg-surface-container-high animate-pulse rounded" />
     )

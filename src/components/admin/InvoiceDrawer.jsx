@@ -188,7 +188,7 @@ export default function InvoiceDrawer({ transaction, onClose }) {
 
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => printReceipt(transaction)}
+              onClick={() => (transaction.receipt_url ? window.open(transaction.receipt_url, '_blank', 'noopener') : printReceipt(transaction))}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-primary-container hover:bg-secondary-container text-on-primary-container font-label-lg text-label-lg uppercase tracking-wider transition-all"
               type="button"
             >

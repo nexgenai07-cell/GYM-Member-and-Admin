@@ -272,6 +272,12 @@ export default function Payments() {
                             : 'bg-surface-container-high text-on-surface-variant'}`}>
                       {t.status === 'settled' ? 'paid' : t.status}
                     </span>
+                    {t.receipt_url && (
+                      <a href={t.receipt_url} target="_blank" rel="noreferrer" title="Receipt · إيصال"
+                        className="w-8 h-8 rounded bg-surface-container-high hover:bg-primary-container/30 text-on-surface-variant hover:text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}

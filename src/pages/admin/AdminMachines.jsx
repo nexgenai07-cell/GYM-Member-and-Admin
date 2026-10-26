@@ -3,7 +3,7 @@
 // (/dashboard/machine-guide?qr=TAG); print it and stick it on the machine.
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { QRCodeSVG } from 'qrcode.react';
+import BrandedQR from '../../components/BrandedQR';
 import { useApi } from '../../hooks/useApi';
 import { adminService } from '../../services/adminService';
 import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
@@ -263,7 +263,7 @@ function QrLabel({ machine, onClose, onRegenerate }) {
           </button>
         </div>
         <div className="bg-white rounded-lg p-4">
-          <QRCodeSVG id="machine-qr" value={link} size={200} level="M" bgColor="#ffffff" fgColor="#000000" />
+          <BrandedQR id="machine-qr" value={link} size={200} />
         </div>
         <div className="text-center">
           <div className="font-mono text-primary font-bold">{machine.qr_tag_id}</div>

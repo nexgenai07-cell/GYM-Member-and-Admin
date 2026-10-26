@@ -294,6 +294,13 @@ export default function AdminRegistrations() {
                       </td>
                       <td className="px-4 py-3 text-[13px] text-on-surface">
                         {r.full_name}
+                        {(r.address || r.address_lat) && (
+                          <a className="block text-[11px] text-primary underline truncate max-w-[200px]" target="_blank" rel="noreferrer"
+                            title={r.address}
+                            href={r.address_lat ? `https://www.google.com/maps?q=${r.address_lat},${r.address_lng}` : `https://www.google.com/maps/search/${encodeURIComponent(r.address)}`}>
+                            {r.address || 'Map'}
+                          </a>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-[12px] text-on-surface-variant">
                         {r.email}
@@ -305,7 +312,7 @@ export default function AdminRegistrations() {
                         {r.plan_name} · {r.duration_months} mo
                         {r.facilities?.length > 0 && (
                           <div className="mt-1 text-[11px] text-on-surface-variant whitespace-normal max-w-[200px]">
-                            + {r.facilities.map((f) => f.name).join(', ')}
+                            + {r.facilities.map((f) => `${f.name} (${f.months} mo)`).join(', ')}
                           </div>
                         )}
                       </td>
@@ -326,6 +333,9 @@ export default function AdminRegistrations() {
                         >
                           {r.payment_status}
                         </span>
+                        {r.receipt_url && (
+                          <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-1 normal-case tracking-normal text-[11px] text-primary underline">Receipt</a>
+                        )}
                         {r.payment_failure_reason && (
                           <div className="mt-1 normal-case tracking-normal text-[11px] text-rose-400 max-w-[220px] whitespace-normal">
                             {r.payment_failure_reason}
