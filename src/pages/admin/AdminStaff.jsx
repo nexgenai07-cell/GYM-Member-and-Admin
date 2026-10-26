@@ -11,6 +11,7 @@ import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { tl, locale } from '../../i18n';
+import SaudiPhoneInput from '../../components/SaudiPhoneInput';
 
 const ROLES = [['admin', tl("Admin")], ['manager', tl("Manager")], ['trainer', tl("Trainer")], ['nutritionist', tl("Nutritionist")], ['receptionist', tl("Receptionist")]];
 const DEPARTMENTS = [['executive', tl("Executive")], ['operations', tl("Operations")], ['coaching', tl("Coaching")], ['clinical', tl("Clinical")], ['front_desk', tl("Front desk")], ['facility', tl("Facility")]];
@@ -208,7 +209,7 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
         )}
         <Field label={tl("First name")} error={errors.first_name}><input className={inputCls} value={f.first_name} onChange={set('first_name')} /></Field>
         <Field label={tl("Last name")} error={errors.last_name}><input className={inputCls} value={f.last_name} onChange={set('last_name')} /></Field>
-        <Field label={tl("Phone")} error={errors.phone}><input className={inputCls} value={f.phone} onChange={set('phone')} /></Field>
+        <Field label={tl("Phone")} error={errors.phone}><SaudiPhoneInput value={f.phone} onChange={(phone) => setF((p) => ({ ...p, phone }))} /></Field>
         <Field label={tl("Role")} error={errors.role}
           hint={portalRole ? tl("Can sign in to this admin portal.") : tl("Listed for scheduling — no admin sign-in.")}>
           <select className={inputCls} value={f.role} disabled={isMe}

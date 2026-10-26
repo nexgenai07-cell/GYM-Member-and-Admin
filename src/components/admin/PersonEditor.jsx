@@ -7,6 +7,7 @@ import { Drawer, ImageUploader } from '../site/SiteUi';
 import { btn, inputCls, labelCls } from '../site/siteStyles';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { tl } from '../../i18n';
+import SaudiPhoneInput from '../SaudiPhoneInput';
 
 function Field({ label, error, children, className = '' }) {
   return (
@@ -95,7 +96,7 @@ export default function PersonEditor({ person: trainer, kind = 'trainer', api, o
         <Field label={tl("First name")} error={errors.first_name}><input className={inputCls} value={f.first_name} onChange={set('first_name')} /></Field>
         <Field label={tl("Last name")} error={errors.last_name}><input className={inputCls} value={f.last_name} onChange={set('last_name')} /></Field>
         <Field label={tl("Title")} error={errors.title}><input className={inputCls} value={f.title} onChange={set('title')} placeholder={tl("Strength & conditioning coach")} /></Field>
-        <Field label={tl("Phone")} error={errors.phone}><input className={inputCls} value={f.phone || ''} onChange={set('phone')} /></Field>
+        <Field label={tl("Phone")} error={errors.phone}><SaudiPhoneInput value={f.phone || ''} onChange={(phone) => setF((p) => ({ ...p, phone }))} /></Field>
         <Field label={tl("Credentials")} error={errors.credentials}><input className={inputCls} value={f.credentials} onChange={set('credentials')} placeholder={tl("NASM-CPT, CSCS")} /></Field>
         <Field label={tl("Years of experience")} error={errors.years_experience}>
           <input className={inputCls} type="number" min="0" max="60" value={f.years_experience} onChange={set('years_experience')} /></Field>
