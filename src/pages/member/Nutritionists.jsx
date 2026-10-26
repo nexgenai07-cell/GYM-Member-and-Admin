@@ -1,9 +1,11 @@
 // src/pages/member/Nutritionists.jsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { nutritionService } from '../../services/nutritionService';
+import { formatSAR } from '../../utils/money';
 import { tl } from '../../i18n';
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -33,6 +35,8 @@ const cardV = {
 // PAGE
 // ============================================================
 export default function Nutritionists() {
+  const navigate = useNavigate();
+  const openProfile = (n) => navigate(`/dashboard/nutritionists/${n.id}`);
   // ---- API data ----
   const {
     data: nutritionists,
@@ -47,7 +51,7 @@ export default function Nutritionists() {
     { showError: false }
   );
 
-  const { data: plan, refetch: refetchPlan } = useApi(
+  const { data: plan } = useApi(
     () => nutritionService.myPlan(),
     [],
     { showError: false }
@@ -114,7 +118,7 @@ export default function Nutritionists() {
   const isFeaturedAssigned =
     assignedNutritionistName &&
     featured &&
-    assignedNutritionistName === featured.user?.full_name;
+    (plan?.nutritionist_id ? plan.nutritionist_id === featured.id : assignedNutritionistName === featured.user?.full_name);
 
   // ---- Handlers ----
   const handleLogMeal = async () => {
@@ -147,17 +151,6 @@ export default function Nutritionists() {
       refetchSummary();
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Failed to add water');
-    }
-  };
-
-  const handleRequestPlan = async (nutritionist) => {
-    try {
-      await nutritionService.requestPlan(nutritionist.id, 'hypertrophy');
-      toast.success(tl("Plan requested from {0}", { 0: nutritionist.user?.full_name }));
-      refetchPlan();
-      refetchSummary();
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to request plan');
     }
   };
 
@@ -242,7 +235,7 @@ export default function Nutritionists() {
                   <FeaturedNutritionist
                     nutritionist={featured}
                     isAssigned={isFeaturedAssigned}
-                    onRequestPlan={() => handleRequestPlan(featured)}
+                    onOpen={() => openProfile(featured)}
                   />
                 )}
                 <SpecialistsGrid
@@ -252,7 +245,7 @@ export default function Nutritionists() {
                       ? tl("Additional Specialists")
                       : tl("Elite Specialists")
                   }
-                  onRequestPlan={handleRequestPlan}
+                  onOpen={openProfile}
                 />
               </>
             )}
@@ -344,7 +337,7 @@ function NutritionHeader() {
 // ============================================================
 // FEATURED NUTRITIONIST
 // ============================================================
-function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
+function FeaturedNutritionist({ nutritionist: n, isAssigned, onOpen }) {
   const initials = (n.user?.full_name || 'NN')
     .split(' ')
     .map((x) => x[0])
@@ -359,7 +352,11 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1, duration: 0.5, ease: EASE }}
-      className="relative bg-surface-container rounded-xl p-space-xl overflow-hidden shadow-xl"
+      onClick={onOpen}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+      className="relative bg-surface-container rounded-xl p-space-xl overflow-hidden shadow-xl cursor-pointer hover:ring-1 hover:ring-primary-container/60 transition-shadow"
     >
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-primary to-transparent" />
       <div className="absolute -right-16 -top-16 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl pointer-events-none" />
@@ -415,24 +412,19 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
             </span>
           </div>
           <span className="font-headline-md text-headline-md text-primary font-bold">
-            {tl("SAR")}{' '}{Number(n.hourly_rate).toFixed(0)}
-            <span className="font-label-md text-[10px] text-on-surface-variant ml-1">
-              /hr
+            {formatSAR(n.hourly_rate)}
+            <span className="font-label-md text-[10px] text-on-surface-variant ms-1">
+              / {tl("consultation")}
             </span>
           </span>
           <motion.button
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.96 }}
-            onClick={onRequestPlan}
-            disabled={isAssigned}
-            className={`px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${
-              isAssigned
-                ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed'
-                : 'bg-primary-container hover:bg-secondary-container text-on-primary-container'
-            }`}
+            onClick={(e) => { e.stopPropagation(); onOpen(); }}
+            className="px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-all bg-primary-container hover:bg-secondary-container text-on-primary-container"
             type="button"
           >
-            {isAssigned ? tl("Currently Assigned") : tl("Request Plan")}
+            {isAssigned ? tl("Your plan") : tl("View profile")}
           </motion.button>
         </div>
       </div>
@@ -443,7 +435,7 @@ function FeaturedNutritionist({ nutritionist: n, isAssigned, onRequestPlan }) {
 // ============================================================
 // SPECIALISTS GRID
 // ============================================================
-function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
+function SpecialistsGrid({ nutritionists, heading, onOpen }) {
   if (!nutritionists || nutritionists.length === 0) return null;
 
   return (
@@ -473,7 +465,11 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
               key={n.id}
               variants={cardV}
               whileHover={{ y: -4 }}
-              className="bg-surface-container rounded-xl p-5 flex flex-col gap-3 shadow-md hover:shadow-xl transition-all"
+              onClick={() => onOpen(n)}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') onOpen(n); }}
+              className="bg-surface-container rounded-xl p-5 flex flex-col gap-3 shadow-md hover:shadow-xl hover:ring-1 hover:ring-primary-container/60 transition-all cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 {photo ? (
@@ -534,16 +530,16 @@ function SpecialistsGrid({ nutritionists, heading, onRequestPlan }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-title-md text-title-md text-primary font-bold">
-                    {tl("SAR")}{' '}{Number(n.hourly_rate).toFixed(0)}/hr
+                    {formatSAR(n.hourly_rate)}
                   </span>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => onRequestPlan(n)}
+                    onClick={(e) => { e.stopPropagation(); onOpen(n); }}
                     className="px-3 py-1 rounded bg-primary-container text-on-primary-container font-label-md text-[9px] uppercase tracking-wider font-bold"
                     type="button"
                   >
-                    {tl("Request")}
+                    {tl("View")}
                   </motion.button>
                 </div>
               </div>

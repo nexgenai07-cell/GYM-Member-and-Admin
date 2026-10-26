@@ -1,249 +1,210 @@
-import { useState, useMemo } from 'react';
+// src/pages/member/Trainers.jsx
+// Coaches members can book: who's taking clients, when they work, what they cost.
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useApi } from '../../hooks/useApi';
 import { catalogService } from '../../services/catalogService';
-import { tl } from '../../i18n';
+import { formatSAR } from '../../utils/money';
+import { isAr, tl } from '../../i18n';
 
-const EASE = [0.22, 1, 0.36, 1];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS_AR = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+const SORTS = [['rating', 'Top rated'], ['price', 'Lowest price'], ['experience', 'Most experienced']];
 
-const gridV = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
-};
-const cardV = {
-  hidden: { opacity: 0, y: 24, scale: 0.96 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: 'spring', stiffness: 260, damping: 24 },
-  },
-};
+/** availability on days 0,1,2,3,5 → "Mon–Thu, Sat" */
+function workingDays(availability = []) {
+  const days = [...new Set(availability.filter((a) => a.is_active !== false).map((a) => a.day_of_week))].sort();
+  if (!days.length) return '';
+  const names = isAr ? DAYS_AR : DAYS;
+  const runs = [];
+  days.forEach((d) => {
+    const last = runs[runs.length - 1];
+    if (last && d === last[1] + 1) last[1] = d; else runs.push([d, d]);
+  });
+  return runs.map(([a, b]) => (a === b ? names[a] : `${names[a]}–${names[b]}`)).join(isAr ? '، ' : ', ');
+}
+
+const initials = (name = '') => name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || '?';
 
 export default function Trainers() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [show, setShow] = useState('all');            // all | open | verified
+  const [specialty, setSpecialty] = useState('');
+  const [sort, setSort] = useState('rating');
+  const { data, loading } = useApi(() => catalogService.trainers(), []);
+  const list = useMemo(() => (Array.isArray(data) ? data : data?.results || []), [data]);
 
-  const { data: trainers, loading } = useApi(
-    () => catalogService.trainers(),
-    []
-  );
+  const specialties = useMemo(() => {
+    const count = {};
+    list.forEach((t) => (t.specialties || []).forEach((s) => { count[s] = (count[s] || 0) + 1; }));
+    return Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([s]) => s);
+  }, [list]);
 
-  const list = Array.isArray(trainers) ? trainers : [];
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = list.filter((t) => (show !== 'verified' || t.is_verified)
+      && (show !== 'open' || (t.is_accepting_clients && t.offers_1on1))
+      && (!specialty || (t.specialties || []).includes(specialty))
+      && (!q || `${t.user?.full_name} ${t.title} ${(t.specialties || []).join(' ')}`.toLowerCase().includes(q)));
+    const by = {
+      rating: (a, b) => (Number(b.rating) - Number(a.rating)) || (b.total_reviews - a.total_reviews),
+      price: (a, b) => Number(a.hourly_rate) - Number(b.hourly_rate),
+      experience: (a, b) => (b.years_experience || 0) - (a.years_experience || 0),
+    }[sort];
+    return [...rows].sort(by);
+  }, [list, search, show, specialty, sort]);
 
-  const filtered = useMemo(() => {
-    let result = [...list];
-    if (verifiedOnly) result = result.filter((t) => t.is_verified);
-    if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.user?.full_name?.toLowerCase().includes(s) ||
-          t.title?.toLowerCase().includes(s) ||
-          t.specialties?.some((sp) => sp.toLowerCase().includes(s))
-      );
-    }
-    return result;
-  }, [list, search, verifiedOnly]);
+  const open = list.filter((t) => t.is_accepting_clients && t.offers_1on1);
+  const prices = open.map((t) => Number(t.hourly_rate)).filter((n) => n > 0);
+  const stats = [
+    [tl('Coaches'), list.length],
+    [tl('Taking new clients'), open.length],
+    [tl('Verified'), list.filter((t) => t.is_verified).length],
+    [tl('Sessions from'), prices.length ? formatSAR(Math.min(...prices)) : '—'],
+  ];
 
   return (
-    <div className="w-full px-space-xl py-space-xl flex flex-col gap-space-xl">
-      {/* Ambient background */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, rgba(128,128,128,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(128,128,128,0.05) 1px, transparent 1px)',
-            backgroundSize: '64px 64px',
-            maskImage:
-              'radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 80%)',
-            WebkitMaskImage:
-              'radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 80%)',
-          }}
-        />
-        <motion.div
-          className="absolute -top-40 right-[10%] w-[460px] h-[460px] rounded-full bg-primary-container/10 blur-3xl"
-          animate={{ x: [0, 34, 0], y: [0, 26, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
-
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-2 text-primary mb-2">
-          <span className="material-symbols-outlined text-[16px]">group</span>
-          <span className="font-label-md text-[10px] uppercase tracking-widest font-bold">
-            {tl("Elite Coaching Network")}
-          </span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wider">
-          {tl("Elite Trainers")}
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">
-          {tl("World-class specialists in VBT, powerlifting, biomechanics, and recovery. Click a trainer to view their full profile and book a session.")}
+    <div className="w-full px-space-xl py-space-xl flex flex-col gap-6">
+      <motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
+        <span className="flex items-center gap-2 text-primary text-[11px] font-bold uppercase tracking-widest">
+          <span className="material-symbols-outlined text-[16px]">sports</span>{tl('Personal training')}
+        </span>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wide">{tl('Trainers')}</h1>
+        <p className="text-on-surface-variant max-w-2xl">
+          {tl('Book a 1-on-1 session with a coach. Pick someone below to see their hours and choose a time.')}
         </p>
-      </motion.div>
+      </motion.header>
 
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-md">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setVerifiedOnly(false)}
-            className={`px-3 py-2 rounded text-[11px] font-bold uppercase tracking-wider transition-all ${
-              !verifiedOnly
-                ? 'bg-primary-container text-on-primary-container'
-                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
-            }`}
-            type="button"
-          >
-            {tl("All Trainers (")}{list.length})
-          </button>
-          <button
-            onClick={() => setVerifiedOnly(true)}
-            className={`px-3 py-2 rounded text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-              verifiedOnly
-                ? 'bg-primary-container text-on-primary-container'
-                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
-            }`}
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[14px]">verified</span>
-            {tl("Verified (")}{list.filter((t) => t.is_verified).length})
-          </button>
-        </div>
-
-        <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none z-10">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder={tl("Search by name, title, or specialty...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-container-lowest text-on-surface text-body-md pl-10 pr-4 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary"
-          />
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map(([label, value]) => (
+          <div key={label} className="rounded-xl bg-surface-container px-4 py-3 border border-surface-container-high">
+            <div className="text-[22px] font-bold text-on-surface leading-tight">{value}</div>
+            <div className="text-[11px] uppercase tracking-widest text-on-surface-variant">{label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Grid */}
+      <section className="flex flex-col gap-3 rounded-xl bg-surface-container-lowest border border-surface-container-high p-3">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="flex gap-1 p-1 rounded-lg bg-surface-container w-fit" role="tablist" aria-label={tl('Show')}>
+            {[['all', 'All'], ['open', 'Taking clients'], ['verified', 'Verified']].map(([id, label]) => (
+              <button key={id} type="button" role="tab" aria-selected={show === id} onClick={() => setShow(id)}
+                className={`px-3 py-1.5 rounded-md text-[12px] font-bold transition-colors ${
+                  show === id ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                {tl(label)}
+              </button>
+            ))}
+          </div>
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">search</span>
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} aria-label={tl('Search trainers')}
+              placeholder={tl('Search by name, title or specialty…')}
+              className="w-full bg-surface-container text-on-surface text-[14px] ps-10 pe-3 py-2.5 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary" />
+          </div>
+          <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
+            {tl('Sort')}
+            <select value={sort} onChange={(e) => setSort(e.target.value)}
+              className="bg-surface-container text-on-surface text-[13px] rounded-lg border border-surface-container-high px-2 py-2">
+              {SORTS.map(([id, label]) => <option key={id} value={id}>{tl(label)}</option>)}
+            </select>
+          </label>
+        </div>
+        {specialties.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap">
+            {['', ...specialties].map((s) => (
+              <button key={s || 'any'} type="button" onClick={() => setSpecialty(s)}
+                className={`px-3 py-1 rounded-full text-[12px] border transition-colors ${
+                  specialty === s ? 'bg-primary-container/20 border-primary-container text-on-surface'
+                    : 'border-surface-container-high text-on-surface-variant hover:text-on-surface'}`}>
+                {s || tl('Any specialty')}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-80 bg-surface-container rounded-xl animate-pulse" />
-          ))}
+          {[1, 2, 3].map((i) => <div key={i} className="h-64 rounded-xl bg-surface-container animate-pulse" />)}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-surface-container-low rounded-xl">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-            person_search
-          </span>
-          <p className="font-title-md text-title-md text-on-surface mt-3">
-            {tl("No trainers found")}
-          </p>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            {tl("Try a different search or filter.")}
-          </p>
+      ) : shown.length === 0 ? (
+        <div className="text-center py-16 rounded-xl bg-surface-container-low">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">person_search</span>
+          <p className="text-on-surface font-bold mt-3">{tl('No trainers found')}</p>
+          <p className="text-on-surface-variant text-[14px]">{tl('Try a different search or filter.')}</p>
         </div>
       ) : (
-        <motion.div
-          initial="hidden"
-          animate="show"
-          variants={gridV}
-          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
-            {filtered.map((t, i) => (
-              <motion.button
-                key={t.id}
-                layout
-                variants={cardV}
-                whileHover={{ y: -5 }}
-                onClick={() => navigate(`/dashboard/trainers/${t.id}`)}
-                className="text-left bg-surface-container rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group"
-                type="button"
-              >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden">
-                  {t.photo_url ? (
-                    <img
-                      src={t.photo_url}
-                      alt={t.user?.full_name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center text-on-primary-container font-bold text-[48px]">
-                      {t.user?.full_name?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent" />
-                  {t.is_verified && (
-                    <span className="absolute top-3 left-3 px-2 py-1 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[12px]">verified</span>
-                      {tl("Verified")}
-                    </span>
-                  )}
-                  <span className="absolute bottom-3 right-3 bg-surface-container-lowest/90 backdrop-blur px-2 py-1 rounded text-[10px] flex items-center gap-1">
-                    <span
-                      className="material-symbols-outlined text-primary-container text-[14px]"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      star
-                    </span>
-                    {t.rating || tl("New")}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="p-4 flex flex-col gap-3">
-                  <div>
-                    <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-                      {t.title}
-                    </span>
-                    <h3 className="font-headline-md text-headline-md text-on-surface uppercase mt-1 group-hover:text-primary transition-colors">
-                      {t.user?.full_name}
-                    </h3>
-                    <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">
-                      {t.credentials}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {(t.specialties || []).slice(0, 3).map((s) => (
-                      <span
-                        key={s}
-                        className="px-2 py-0.5 rounded bg-surface-container-lowest text-on-surface-variant text-[9px] font-bold uppercase tracking-wider"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-surface-container-high">
-                    <div>
-                      <span className="font-label-md text-[9px] text-on-surface-variant uppercase tracking-wider block">
-                        {tl("Rate")}
-                      </span>
-                      <span className="font-title-md text-title-md text-primary font-bold">
-                        ${t.hourly_rate}/hr
-                      </span>
-                    </div>
-                    <span className="px-4 py-2 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 group-hover:bg-secondary-container transition-colors">
-                      {tl("View Profile")}
-                      <span className="material-symbols-outlined text-[14px]">
-                        arrow_forward
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </motion.button>
-            ))}
+            {shown.map((t, i) => <TrainerCard key={t.id} t={t} index={i} onOpen={() => navigate(`/dashboard/trainers/${t.id}`)} />)}
           </AnimatePresence>
-        </motion.div>
+        </div>
       )}
     </div>
+  );
+}
+
+function TrainerCard({ t, index, onOpen }) {
+  const name = t.user?.full_name || tl('Coach');
+  const rated = t.total_reviews > 0;
+  const days = workingDays(t.availability);
+  const bookable = t.is_accepting_clients && t.offers_1on1;
+  return (
+    <motion.button type="button" layout onClick={onOpen}
+      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0, transition: { delay: Math.min(index, 8) * 0.04 } }} exit={{ opacity: 0 }}
+      className="group text-start rounded-xl bg-surface-container border border-surface-container-high hover:border-primary-container/60 overflow-hidden flex flex-col transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <div className="flex gap-4 p-4">
+        <div className="relative shrink-0">
+          {t.photo_url
+            ? <img src={t.photo_url} alt="" className="w-20 h-20 rounded-xl object-cover" />
+            : <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-surface-container-high to-surface-container-highest border border-primary-container/30 grid place-items-center text-[24px] font-bold text-primary">{initials(name)}</div>}
+          <span className={`absolute -bottom-1 -end-1 w-4 h-4 rounded-full ring-2 ring-surface-container ${bookable ? 'bg-emerald-400' : 'bg-on-surface-variant/50'}`}
+            title={bookable ? tl('Taking new clients') : tl('Not taking new clients')} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-bold text-[17px] text-on-surface truncate group-hover:text-primary transition-colors">{name}</h3>
+            {t.is_verified && <span className="material-symbols-outlined text-primary text-[18px]" title={tl('Verified')} style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>}
+          </div>
+          <p className="text-[13px] text-on-surface-variant truncate">{t.title}{t.credentials ? ` · ${t.credentials}` : ''}</p>
+          <div className="flex items-center gap-3 mt-2 text-[12px] text-on-surface-variant">
+            {rated ? (
+              <span className="flex items-center gap-1 text-on-surface">
+                <span className="material-symbols-outlined text-amber-400 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                {Number(t.rating).toFixed(1)} <span className="text-on-surface-variant">({t.total_reviews})</span>
+              </span>
+            ) : <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[11px]">{tl('New coach')}</span>}
+            {t.years_experience > 0 && <span>{tl('{n} yrs experience', { n: t.years_experience })}</span>}
+          </div>
+        </div>
+      </div>
+
+      {(t.specialties || []).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-4">
+          {t.specialties.slice(0, 4).map((s) => (
+            <span key={s} className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[11px]">{s}</span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-auto px-4 pt-4 pb-4 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] text-on-surface-variant flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+            <span className="truncate">{bookable ? (days || tl('Hours coming soon')) : tl('Not taking new clients')}</span>
+          </div>
+          <div className="text-on-surface font-bold text-[17px] mt-0.5">
+            {t.offers_1on1 && Number(t.hourly_rate) > 0 ? formatSAR(t.hourly_rate) : '—'}
+            <span className="text-[12px] font-normal text-on-surface-variant"> / {tl('session')}</span>
+          </div>
+        </div>
+        <span className="shrink-0 inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-primary-container text-on-primary-container text-[12px] font-bold">
+          {bookable ? tl('Book') : tl('View profile')}
+          <span className="material-symbols-outlined text-[16px] rtl:rotate-180">arrow_forward</span>
+        </span>
+      </div>
+    </motion.button>
   );
 }

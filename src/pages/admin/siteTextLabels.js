@@ -94,6 +94,7 @@ const FIELDS = {
   perMonth: 'Per-month text', add: 'Add button', remove: 'Remove button', whole: '“Whole plan” text', hint: 'Hint',
   pinned: 'After picking an address', status: 'Status label', read: 'Read link', showing: '“Showing” text',
   pre: 'Text before the email', post: 'Text after the email', noRef: 'No payment reference',
+  rail: 'Side caption', cue: 'Scroll cue',
 };
 
 const GOALS = { hyp: 'Hypertrophy', fat: 'Fat shred', end: 'Endurance', com: 'Combat / MMA', bio: 'Biomechanics', rec: 'Recovery' };
@@ -144,6 +145,7 @@ export function describeKey(key) {
   if (/^\d+$/.test(fieldCode)) { fieldNum = fieldCode; fieldCode = ''; }
 
   let field = fieldCode ? (FIELDS[fieldCode] || words(fieldCode)) : 'Text';
+  if (secBase === 'hero' && fieldCode === 'l') field = 'Headline line';   // home.hero.l1 → "Headline line 1"
   if (secBase === 'err') field = `${words(fieldCode || 'field')} — error message`;
   if (page === 'nav' || page === 'tab' || secBase === 'tab' || secBase === 'dot') field = `“${words(fieldCode)}” link`;
   if (fieldNum) field = itemNums.length ? `${field} ${fieldNum}` : `${field} ${fieldNum}`;

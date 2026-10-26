@@ -11,6 +11,18 @@ import { describeKey, groupBySection } from './siteTextLabels';
 
 const SEARCH_LIMIT = 150;   // only applies when listing every page at once
 
+// Website pages in the side nav, grouped the way an editor thinks about them.
+const PAGE_GROUPS = [
+  ['Pages', ['home', 'fac', 'svc', 'ins', 'art', 'ct']],
+  ['Join & payment', ['en', 'cam', 'pay']],
+  ['Shared parts', ['meta', 'nav', 'foot', 'tab', 'boot', 'nf']],
+];
+const PAGE_ICONS = {
+  home: 'home', fac: 'apartment', svc: 'fitness_center', ins: 'article', art: 'description', ct: 'mail',
+  en: 'how_to_reg', cam: 'photo_camera', pay: 'payments', meta: 'travel_explore', nav: 'menu',
+  foot: 'bottom_navigation', tab: 'phone_iphone', boot: 'hourglass_top', nf: 'help',
+};
+
 export default function SiteContent() {
   const [pages, setPages] = useState([]);
   const [page, setPage] = useState('home');
@@ -29,6 +41,16 @@ export default function SiteContent() {
     return () => { alive = false; };
   }, [pagesVersion]);
 
+  const groups = useMemo(() => {
+    const known = new Set(PAGE_GROUPS.flatMap(([, codes]) => codes));
+    const byCode = Object.fromEntries(pages.map((p) => [p.page, p]));
+    const out = PAGE_GROUPS.map(([name, codes]) => [name, codes.map((c) => byCode[c]).filter(Boolean)]);
+    const rest = pages.filter((p) => !known.has(p.page));
+    if (rest.length) out.push(['Other', rest]);
+    return out.filter(([, list]) => list.length);
+  }, [pages]);
+  const current = pages.find((p) => p.page === page);
+
   return (
     <div className="p-8 bg-background min-h-screen">
       <PageHeader
@@ -36,44 +58,65 @@ export default function SiteContent() {
         subtitle={tl("Every text and image on the public website. Changes go live within about a minute; anything can be reset to the original.")}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-        <nav aria-label={tl("Website pages")} className="flex lg:flex-col gap-1 overflow-x-auto">
-          {pages.map((p) => {
-            const edited = p.texts_customized + p.images_customized;
-            return (
-              <button
-                key={p.page}
-                type="button"
-                onClick={() => setPage(p.page)}
-                className={`text-left px-3 py-2 rounded text-[12px] font-bold uppercase tracking-wider whitespace-nowrap flex items-center justify-between gap-2 ${
-                  page === p.page ? 'bg-primary-container text-on-primary-container' : 'bg-[#0e0e0f] text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                <span>{p.label}</span>
-                <span className="text-[10px] opacity-70 font-normal normal-case">
-                  {p.texts + p.images}{edited ? tl(" · {0} edited", { 0: edited }) : ''}
-                </span>
-              </button>
-            );
-          })}
+      <div className="grid grid-cols-1 lg:grid-cols-[230px_1fr] gap-6 items-start">
+        <nav aria-label={tl("Website pages")} className="lg:sticky lg:top-4 flex lg:flex-col gap-4 overflow-x-auto lg:overflow-visible bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-2">
+          {groups.map(([name, list]) => (
+            <div key={name} className="flex lg:flex-col gap-0.5 shrink-0">
+              <span className="hidden lg:block px-2 pt-1 pb-1.5 text-[10px] uppercase tracking-widest text-on-surface-variant/70 font-bold">{tl(name)}</span>
+              {list.map((p) => {
+                const edited = p.texts_customized + p.images_customized;
+                const active = page === p.page;
+                return (
+                  <button
+                    key={p.page}
+                    type="button"
+                    onClick={() => setPage(p.page)}
+                    aria-current={active ? 'page' : undefined}
+                    className={`text-start px-2 py-1.5 rounded text-[13px] whitespace-nowrap flex items-center gap-2 transition-colors ${
+                      active ? 'bg-primary-container/15 text-on-surface ring-1 ring-primary-container/60' : 'text-on-surface-variant hover:text-on-surface hover:bg-[#131316]'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-[18px] ${active ? 'text-primary' : ''}`}>{PAGE_ICONS[p.page] || 'web'}</span>
+                    <span className="flex-1 truncate">{p.label}</span>
+                    {edited > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary" title={tl("{0} edited", { 0: edited })} />
+                    )}
+                    <span className="text-[10px] text-on-surface-variant/70 tabular-nums">{p.texts + p.images}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
-        <section>
-          <div className="flex gap-1 mb-4" role="tablist">
-            {['texts', 'images'].map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-                  tab === t ? 'bg-primary-container text-on-primary-container' : 'bg-[#131316] text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+        <section className="min-w-0">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-on-surface text-[20px] font-bold leading-tight">{current?.label || page}</h2>
+              {current && (
+                <p className="text-[12px] text-on-surface-variant">
+                  {tl("{0} texts · {1} images", { 0: current.texts, 1: current.images })}
+                  {current.texts_customized + current.images_customized > 0
+                    && ` · ${tl("{0} edited", { 0: current.texts_customized + current.images_customized })}`}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-1 p-1 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e]" role="tablist">
+              {[['texts', 'Texts', 'notes'], ['images', 'Images', 'image']].map(([t, label, icon]) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t}
+                  onClick={() => setTab(t)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-bold ${
+                    tab === t ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{icon}</span>{tl(label)}
+                </button>
+              ))}
+            </div>
           </div>
           {tab === 'texts'
             ? <TextsPanel page={page} onChanged={loadPages} />
@@ -93,6 +136,7 @@ function TextsPanel({ page, onChanged }) {
   const [allPages, setAllPages] = useState(false);
   const [onlyEdited, setOnlyEdited] = useState(false);
   const [busyKey, setBusyKey] = useState(null);
+  const [closed, setClosed] = useState({});         // section name -> collapsed
 
   const dirtyKeys = Object.keys(edits);
 
@@ -136,28 +180,19 @@ function TextsPanel({ page, onChanged }) {
     setEdits((all) => { const next = { ...all }; delete next[saved.key]; return next; });
   };
 
-  const save = async (row) => {
-    setBusyKey(row.key);
-    try {
-      applyRow(await api.updateText(row.key, valueOf(row)));
-      onChanged();
-      toast.success(tl("Saved"));
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusyKey(null);
-    }
-  };
-
   const saveAll = async () => {
     setBusyKey('*');
     let ok = 0;
     for (const key of dirtyKeys) {
-      try { applyRow(await api.updateText(key, edits[key])); ok += 1; } catch (err) { toast.error(`${key}: ${errorMessage(err)}`); }
+      try { applyRow(await api.updateText(key, edits[key])); ok += 1; } catch (err) { toast.error(`${describeKey(key).label}: ${errorMessage(err)}`); }
     }
     setBusyKey(null);
     onChanged();
     if (ok) toast.success(tl("Saved {0} text{1}", { 0: ok, 1: ok === 1 ? '' : 's' }));
+  };
+
+  const discard = () => {
+    if (window.confirm(tl("Throw away {0} unsaved change(s)?", { 0: dirtyKeys.length }))) setEdits({});
   };
 
   const reset = async (row) => {
@@ -174,7 +209,7 @@ function TextsPanel({ page, onChanged }) {
     }
   };
 
-  // The server searches keys and text; also match the readable labels shown here.
+  // Search over the internal key, both languages and the readable labels shown here.
   const matched = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return rows;
@@ -187,95 +222,161 @@ function TextsPanel({ page, onChanged }) {
   const shown = useMemo(() => matched.slice(0, limit), [matched, limit]);
   const groups = useMemo(() => groupBySection(shown, allPages), [shown, allPages]);
   const anchor = (name) => `sec-${name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+  const searching = !!q.trim();
+  const allClosed = groups.length > 0 && groups.every(([name]) => closed[name]);
+  const toggleAll = () => setClosed(allClosed ? {} : Object.fromEntries(groups.map(([name]) => [name, true])));
+
+  const chip = (on) => `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12px] transition-colors ${
+    on ? 'border-primary-container bg-primary-container/15 text-on-surface' : 'border-[#1a1a1e] text-on-surface-variant hover:text-on-surface'}`;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col md:flex-row gap-2 md:items-center">
-        <input
-          className={`${inputCls} md:w-80`}
-          placeholder={tl("Search by section, label or text (English or Arabic)")}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          aria-label={tl("Search texts")}
-        />
-        <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
-          <input type="checkbox" checked={allPages} onChange={(e) => setAllPages(e.target.checked)} />{' '}{tl("All pages")}
-        </label>
-        <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
-          <input type="checkbox" checked={onlyEdited} onChange={(e) => setOnlyEdited(e.target.checked)} />{' '}{tl("Edited only")}
-        </label>
-        <div className="flex-1" />
-        <button type="button" className={btn.primary} disabled={!dirtyKeys.length || busyKey === '*'} onClick={saveAll}>
-          {busyKey === '*' ? tl("Saving…") : tl("Save all{0}", { 0: dirtyKeys.length ? ` (${dirtyKeys.length})` : '' })}
-        </button>
+    <div className="flex flex-col gap-3 pb-20">
+      <div className="sticky top-0 z-10 -mx-1 px-1 py-2 bg-background/95 backdrop-blur flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[240px]">
+          <span className="material-symbols-outlined absolute start-2.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant pointer-events-none">search</span>
+          <input
+            type="search"
+            className={`${inputCls} ps-9`}
+            placeholder={tl("Search by section, label or text (English or Arabic)")}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            aria-label={tl("Search texts")}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className={chip(allPages)} aria-pressed={allPages} onClick={() => setAllPages((v) => !v)}>
+            <span className="material-symbols-outlined text-[16px]">select_all</span>{tl("All pages")}
+          </button>
+          <button type="button" className={chip(onlyEdited)} aria-pressed={onlyEdited} onClick={() => setOnlyEdited((v) => !v)}>
+            <span className="material-symbols-outlined text-[16px]">edit_note</span>{tl("Edited only")}
+          </button>
+          {groups.length > 1 && (
+            <>
+              <select className={`${inputCls} !w-auto max-w-[220px] !py-1.5`} value="" aria-label={tl("Jump to section")}
+                onChange={(e) => {
+                  const name = groups.find(([n]) => anchor(n) === e.target.value)?.[0];
+                  if (name) setClosed((c) => ({ ...c, [name]: false }));
+                  setTimeout(() => document.getElementById(e.target.value)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+                }}>
+                <option value="">{tl("Jump to section…")}</option>
+                {groups.map(([name, list]) => <option key={name} value={anchor(name)}>{tl(name)} ({list.length})</option>)}
+              </select>
+              <button type="button" className="text-[12px] whitespace-nowrap text-on-surface-variant hover:text-on-surface underline-offset-2 hover:underline" onClick={toggleAll}>
+                {allClosed ? tl("Expand all") : tl("Collapse all")}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {loading ? (
-        <Empty>{tl("Loading…")}</Empty>
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((i) => <div key={i} className="h-40 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] animate-pulse" />)}
+        </div>
       ) : matched.length === 0 ? (
-        <Empty>{tl("No texts match.")}</Empty>
+        <Empty>{onlyEdited ? tl("Nothing on this page has been edited yet.") : tl("No texts match.")}</Empty>
       ) : (
         <>
           {matched.length > limit && (
             <p className="text-[11px] text-on-surface-variant">
-              {tl("Showing the first")}{' '}{SEARCH_LIMIT} of {matched.length}{' '}{tl("— narrow the search to see the rest.")}
+              {tl("Showing the first {0} of {1} — narrow the search to see the rest.", { 0: SEARCH_LIMIT, 1: matched.length })}
             </p>
           )}
-          {groups.length > 1 && (
-            <label className="flex items-center gap-2 text-[12px] text-on-surface-variant">
-              {tl("Jump to section")}
-              <select className={`${inputCls} md:w-80`} value="" aria-label={tl("Jump to section")}
-                onChange={(e) => document.getElementById(e.target.value)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-                <option value="">{tl("Choose…")}</option>
-                {groups.map(([name, list]) => <option key={name} value={anchor(name)}>{name} ({list.length})</option>)}
-              </select>
-            </label>
-          )}
-          {groups.map(([name, list]) => (
-          <section key={name} id={anchor(name)} className="flex flex-col gap-2 scroll-mt-24">
-            <h3 className="mt-3 text-[12px] font-bold uppercase tracking-widest text-primary">
-              {name}{' '}<span className="text-on-surface-variant font-normal normal-case tracking-normal">· {list.length}</span>
-            </h3>
-          {list.map((row) => {
-            const dirty = !!edits[row.key];
-            const long = Math.max(row.default_en.length, row.en.length) > 80;
+          {groups.map(([name, list]) => {
+            const isOpen = searching || !closed[name];
+            const edited = list.filter((r) => r.is_customized).length;
+            const unsaved = list.filter((r) => edits[r.key]).length;
             return (
-              <div
-                key={row.key}
-                className={`bg-[#0e0e0f] border rounded-lg p-4 flex flex-col gap-2 ${dirty ? 'border-primary-container/60' : 'border-[#1a1a1e]'}`}
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[13px] font-bold text-on-surface">{row._label}</span>
-                  <code className="text-[10px] text-on-surface-variant/60" title={tl("Internal key")}>{row.key}</code>
-                  {row.is_customized && (
-                    <span className="px-1.5 py-0.5 rounded bg-primary-container/20 text-primary text-[9px] font-bold uppercase tracking-widest">{tl("Edited")}</span>
-                  )}
-                  {dirty && <span className="text-[10px] text-amber-400 uppercase tracking-widest">{tl("Unsaved")}</span>}
-                  <div className="flex-1" />
-                  {row.is_customized && (
-                    <button type="button" className={btn.ghost} disabled={busyKey === row.key} onClick={() => reset(row)}>{tl("Reset")}</button>
-                  )}
-                  <button type="button" className={btn.primary} disabled={!dirty || busyKey === row.key} onClick={() => save(row)}>
-                    {busyKey === row.key ? tl("Saving…") : tl("Save")}
-                  </button>
-                </div>
-                <BilingualField label="" value={valueOf(row)} onChange={(v) => change(row, v)} multiline={long} rows={3} />
-                {row.is_customized && (
-                  <details className="text-[11px] text-on-surface-variant">
-                    <summary className="cursor-pointer select-none">{tl("Original text")}</summary>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
-                      <p className="whitespace-pre-wrap">{row.default_en}</p>
-                      <p className="whitespace-pre-wrap text-right" dir="rtl" lang="ar">{row.default_ar}</p>
-                    </div>
-                  </details>
+              <section key={name} id={anchor(name)} className="scroll-mt-20 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] overflow-hidden">
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setClosed((c) => ({ ...c, [name]: !c[name] }))}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-start hover:bg-[#131316]"
+                >
+                  <span className={`material-symbols-outlined text-[20px] text-on-surface-variant transition-transform ${isOpen ? '' : '-rotate-90 rtl:rotate-90'}`}>expand_more</span>
+                  <h3 className="text-[14px] font-bold text-on-surface flex-1">{tl(name)}</h3>
+                  {unsaved > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold">{tl("{0} unsaved", { 0: unsaved })}</span>}
+                  {edited > 0 && <span className="px-2 py-0.5 rounded-full bg-primary-container/20 text-primary text-[10px] font-bold">{tl("{0} edited", { 0: edited })}</span>}
+                  <span className="text-[11px] text-on-surface-variant tabular-nums">{list.length}</span>
+                </button>
+                {isOpen && (
+                  <div className="divide-y divide-[#1a1a1e] border-t border-[#1a1a1e]">
+                    {list.map((row) => (
+                      <TextRow key={row.key} row={row} value={valueOf(row)} dirty={!!edits[row.key]}
+                        busy={busyKey === row.key} onChange={(v) => change(row, v)} onReset={() => reset(row)} />
+                    ))}
+                  </div>
                 )}
-              </div>
+              </section>
             );
           })}
-          </section>
-          ))}
         </>
       )}
+
+      {dirtyKeys.length > 0 && (
+        <div className="fixed bottom-4 inset-x-0 z-30 flex justify-center pointer-events-none px-4">
+          <div role="status" className="pointer-events-auto flex items-center gap-3 rounded-xl bg-[#18181b] border border-primary-container/50 shadow-2xl px-4 py-2.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="text-[13px] text-on-surface">
+              {tl("{0} unsaved change(s)", { 0: dirtyKeys.length })}
+            </span>
+            <button type="button" className={btn.ghost} disabled={busyKey === '*'} onClick={discard}>{tl("Discard")}</button>
+            <button type="button" className={btn.primary} disabled={busyKey === '*'} onClick={saveAll}>
+              {busyKey === '*' ? tl("Saving…") : tl("Save all")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TextRow({ row, value, dirty, busy, onChange, onReset }) {
+  const long = Math.max(row.default_en.length, row.en.length, value.en.length) > 70;
+  const field = `${inputCls} ${dirty ? '!border-amber-400/60' : ''}`;
+  const Tag = long ? 'textarea' : 'input';
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-[200px_1fr] gap-x-4 gap-y-2 px-4 py-3 ${dirty ? 'bg-amber-400/[0.03]' : ''}`}>
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[13px] font-bold text-on-surface">{row._label}</span>
+          {row.is_customized && !dirty && <span className="px-1.5 rounded bg-primary-container/20 text-primary text-[9px] font-bold uppercase tracking-wider">{tl("Edited")}</span>}
+          {dirty && <span className="px-1.5 rounded bg-amber-400/15 text-amber-300 text-[9px] font-bold uppercase tracking-wider">{tl("Unsaved")}</span>}
+        </div>
+        <code className="block text-[10px] text-on-surface-variant/50 truncate" title={tl("Internal key")}>{row.key}</code>
+        {row.is_customized && (
+          <button type="button" disabled={busy} onClick={onReset}
+            className="mt-1 inline-flex items-center gap-1 text-[11px] text-on-surface-variant hover:text-primary disabled:opacity-40">
+            <span className="material-symbols-outlined text-[14px]">restart_alt</span>{tl("Reset to original")}
+          </button>
+        )}
+      </div>
+      <div className="min-w-0 flex flex-col gap-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <label className="relative block">
+            <span className="sr-only">{tl("English")}</span>
+            <span className="absolute top-1.5 end-2 text-[9px] font-bold text-on-surface-variant/50 pointer-events-none">EN</span>
+            <Tag className={`${field} pe-8`} rows={long ? 3 : undefined} value={value.en} dir="ltr"
+              onChange={(e) => onChange({ ...value, en: e.target.value })} />
+          </label>
+          <label className="relative block">
+            <span className="sr-only">{tl("Arabic")}</span>
+            <span className="absolute top-1.5 start-2 text-[9px] font-bold text-on-surface-variant/50 pointer-events-none">AR</span>
+            <Tag className={`${field} text-right ps-8`} rows={long ? 3 : undefined} value={value.ar} dir="rtl" lang="ar"
+              onChange={(e) => onChange({ ...value, ar: e.target.value })} />
+          </label>
+        </div>
+        {row.is_customized && (
+          <details className="text-[11px] text-on-surface-variant">
+            <summary className="cursor-pointer select-none w-fit hover:text-on-surface">{tl("Show original text")}</summary>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1 rounded bg-[#131316] p-2">
+              <p className="whitespace-pre-wrap">{row.default_en}</p>
+              <p className="whitespace-pre-wrap text-right" dir="rtl" lang="ar">{row.default_ar}</p>
+            </div>
+          </details>
+        )}
+      </div>
     </div>
   );
 }

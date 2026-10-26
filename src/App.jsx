@@ -15,6 +15,7 @@ import Courses from './pages/member/Courses';
 import Player from './pages/member/Player';
 import Trainers from './pages/member/Trainers';
 import TrainerProfile from './pages/member/TrainerProfile';
+import NutritionistProfile from './pages/member/NutritionistProfile';
 import Nutritionists from './pages/member/Nutritionists';
 import Shop from './pages/member/Shop';
 import Attendance from './pages/member/Attendance';
@@ -222,6 +223,7 @@ function App() {
                 <Route path="trainers" element={<Trainers />} />
                 <Route path="trainers/:id" element={<TrainerProfile />} />
                 <Route path="nutritionists" element={<Nutritionists />} />
+                <Route path="nutritionists/:id" element={<NutritionistProfile />} />
                 <Route path="shop" element={<Shop />} />
                 <Route path="attendance" element={<Attendance />} />
                 <Route path="classes" element={<Classes />} />

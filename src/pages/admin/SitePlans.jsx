@@ -6,6 +6,7 @@ import { siteContentService as api } from '../../services/siteContentService';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { BilingualField, Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
 import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
+import { formatSAR } from '../../utils/money';
 import { tl } from '../../i18n';
 
 const NEW_PLAN = {
@@ -38,34 +39,79 @@ export default function SitePlans() {
         title={tl("Membership Plans")}
         subtitle={tl("Plans and prices on the public website and signup. Price changes apply to new signups only; plans can't be deleted because members and signups refer to them — hide them instead.")}
       >
-        <button type="button" className={btn.primary} onClick={() => setEditing(NEW_PLAN)}>{tl("+ Add plan")}</button>
+        <button type="button" className={`${btn.primary} inline-flex items-center gap-1`} onClick={() => setEditing(NEW_PLAN)}>
+          <span className="material-symbols-outlined text-[16px]">add</span>{tl("Add plan")}
+        </button>
       </PageHeader>
 
       {loading ? <Empty>{tl("Loading…")}</Empty> : !plans.length ? <Empty>{tl("No plans yet.")}</Empty> : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {plans.map((p) => (
-            <div key={p.id} className={`bg-[#0e0e0f] border border-[#1a1a1e] rounded-lg p-5 flex flex-col gap-3 ${p.is_active ? '' : 'opacity-60'}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-[18px] text-on-surface font-bold">{p.display_name}</div>
-                  <div className="text-[13px] text-on-surface-variant" dir="rtl" lang="ar">{p.display_name_ar || tl("— no Arabic name —")}</div>
-                  <code className="text-[10px] text-on-surface-variant">{p.name}</code>
+          {plans.map((p) => {
+            const missingAr = !p.display_name_ar || (p.features.length > 0 && (p.features_ar || []).length < p.features.length);
+            return (
+              <div key={p.id} className={`bg-[#0e0e0f] border rounded-lg overflow-hidden flex flex-col ${p.is_active ? 'border-[#1a1a1e]' : 'border-dashed border-[#26262b] opacity-70'}`}>
+                <div className={`h-1 ${p.is_active ? 'bg-gradient-to-r from-primary-container to-transparent' : 'bg-[#1a1a1e]'}`} />
+                <div className="p-5 flex flex-col gap-4 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-[20px] text-on-surface font-bold">{p.display_name}</span>
+                        {p.display_name_ar && <span className="text-[14px] text-on-surface-variant" dir="rtl" lang="ar">{p.display_name_ar}</span>}
+                      </div>
+                      <code className="text-[10px] text-on-surface-variant/60">{p.name}</code>
+                    </div>
+                    <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold ${p.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
+                      <span className="material-symbols-outlined text-[14px]">{p.is_active ? 'visibility' : 'visibility_off'}</span>
+                      {p.is_active ? tl("On website") : tl("Hidden")}
+                    </span>
+                  </div>
+
+                  <div className="flex items-end gap-5">
+                    <div>
+                      <div className="text-[26px] leading-none font-bold text-on-surface">{formatSAR(p.price_monthly)}</div>
+                      <div className="text-[11px] text-on-surface-variant mt-1">{tl("per month")}</div>
+                    </div>
+                    <div className="pb-0.5">
+                      <div className="text-[15px] font-bold text-on-surface-variant">{formatSAR(p.price_annual)}</div>
+                      <div className="text-[11px] text-on-surface-variant">{tl("per year")}</div>
+                    </div>
+                  </div>
+
+                  {p.features.length > 0 ? (
+                    <ul className="flex flex-col gap-1">
+                      {p.features.slice(0, 4).map((f) => (
+                        <li key={f} className="flex items-start gap-1.5 text-[12px] text-on-surface">
+                          <span className="material-symbols-outlined text-[15px] text-primary">check</span><span>{f}</span>
+                        </li>
+                      ))}
+                      {p.features.length > 4 && <li className="text-[11px] text-on-surface-variant ps-5">{tl("+{0} more", { 0: p.features.length - 4 })}</li>}
+                    </ul>
+                  ) : <p className="text-[12px] text-on-surface-variant italic">{tl("No features listed yet.")}</p>}
+
+                  <div className="flex flex-wrap gap-1.5 text-[11px] mt-auto">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1a1a1e] text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[13px]">timer</span>
+                      {p.session_limit_minutes ? tl("{0} min per visit", { 0: p.session_limit_minutes }) : tl("No visit limit")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1a1a1e] text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[13px]">how_to_reg</span>
+                      {tl(p.registrations === 1 ? "{0} signup" : "{0} signups", { 0: p.registrations })}
+                    </span>
+                    {missingAr && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-300" title={tl("Some Arabic text is missing — the website shows English instead.")}>
+                        <span className="material-symbols-outlined text-[13px]">translate</span>{tl("Arabic missing")}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${p.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
-                  {p.is_active ? tl("On website") : tl("Hidden")}
-                </span>
+                <div className="border-t border-[#1a1a1e] px-5 py-3">
+                  <button type="button" className={`${btn.ghost} inline-flex items-center gap-1`} onClick={() => setEditing(p)}>
+                    <span className="material-symbols-outlined text-[15px]">edit</span>{tl("Edit plan")}
+                  </button>
+                </div>
               </div>
-              <div className="text-[13px] text-on-surface">
-                {tl("SAR")}{' '}{p.price_monthly} <span className="text-on-surface-variant">/ month</span>{' '}{tl("· SAR")}{' '}{p.price_annual} <span className="text-on-surface-variant">/ year</span>
-              </div>
-              <div className="text-[12px] text-on-surface-variant">
-                {p.features.length} feature{p.features.length === 1 ? '' : 's'}
-                {' · '}{p.session_limit_minutes ? tl("{0} min per visit", { 0: p.session_limit_minutes }) : tl("no visit limit")}
-                {' · '}{p.registrations} signup{p.registrations === 1 ? '' : 's'}
-              </div>
-              <div><button type="button" className={btn.ghost} onClick={() => setEditing(p)}>{tl("Edit")}</button></div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

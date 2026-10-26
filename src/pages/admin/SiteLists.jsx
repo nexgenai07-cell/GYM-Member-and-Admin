@@ -12,6 +12,9 @@ import { tl, locale } from '../../i18n';
 
 const emptyValue = (fd) => (fd.i18n ? { en: '', ar: '' } : '');
 
+// "Facilities" → "facility", "Insights articles" → "insights article"
+const singular = (label) => label.toLowerCase().replace(/ies$/, 'y').replace(/s$/, '');
+
 export default function SiteLists() {
   const [schemas, setSchemas] = useState([]);
   const [active, setActive] = useState(null);
@@ -104,10 +107,15 @@ export default function SiteLists() {
         title={tl("Website Lists")}
         subtitle={tl("Facilities and Insights articles shown on the public website. Hidden items stay here but disappear from the site.")}
       >
-        {schema && <button type="button" className={btn.primary} onClick={() => setEditing({})}>{tl("+ Add")}{' '}{schema.label.replace(/s$/, '').toLowerCase()}</button>}
+        {schema && (
+          <button type="button" className={`${btn.primary} inline-flex items-center gap-1`} onClick={() => setEditing({})}>
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            {tl("Add {0}", { 0: tl(singular(schema.label)) })}
+          </button>
+        )}
       </PageHeader>
 
-      <div className="flex gap-1 mb-5" role="tablist">
+      <div className="flex gap-1 mb-5 p-1 w-fit rounded-lg bg-[#0e0e0f] border border-[#1a1a1e]" role="tablist">
         {schemas.map((s) => (
           <button
             key={s.name}
@@ -115,11 +123,12 @@ export default function SiteLists() {
             role="tab"
             aria-selected={active === s.name}
             onClick={() => setActive(s.name)}
-            className={`px-4 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-              active === s.name ? 'bg-primary-container text-on-primary-container' : 'bg-[#131316] text-on-surface-variant hover:text-on-surface'
+            className={`flex items-center gap-2 px-3 py-1.5 rounded text-[12px] font-bold ${
+              active === s.name ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            {s.label} <span className="opacity-60">({s.name === active ? items.length : s.count})</span>
+            {s.label}
+            <span className={`px-1.5 rounded-full text-[10px] ${active === s.name ? 'bg-black/20' : 'bg-[#1a1a1e]'}`}>{s.name === active ? items.length : s.count}</span>
           </button>
         ))}
       </div>
@@ -143,41 +152,54 @@ export default function SiteLists() {
             </thead>
             <tbody>
               {items.map((item, i) => (
-                <tr key={item.id} className={`border-b border-[#1a1a1e] last:border-0 ${item.is_active ? '' : 'opacity-50'}`}>
+                <tr key={item.id} className={`border-b border-[#1a1a1e] last:border-0 hover:bg-[#131316] transition-colors ${item.is_active ? '' : 'opacity-60'}`}>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <button type="button" aria-label={tl("Move up")} className="px-1 text-on-surface-variant disabled:opacity-20" disabled={busy || i === 0} onClick={() => move(i, -1)}>
+                    <button type="button" aria-label={tl("Move up")} className="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1a1a1e] disabled:opacity-20 disabled:hover:bg-transparent" disabled={busy || i === 0} onClick={() => move(i, -1)}>
                       <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
                     </button>
-                    <button type="button" aria-label={tl("Move down")} className="px-1 text-on-surface-variant disabled:opacity-20" disabled={busy || i === items.length - 1} onClick={() => move(i, 1)}>
+                    <button type="button" aria-label={tl("Move down")} className="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1a1a1e] disabled:opacity-20 disabled:hover:bg-transparent" disabled={busy || i === items.length - 1} onClick={() => move(i, 1)}>
                       <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
                     </button>
                   </td>
                   {schema?.has_image && (
                     <td className="px-4 py-3">
                       {item.image_url
-                        ? <img src={item.image_url} alt="" className="w-16 h-10 rounded object-cover border border-[#1a1a1e]" loading="lazy" />
-                        : <div className="w-16 h-10 rounded bg-[#1a1a1e]" />}
+                        ? <img src={item.image_url} alt="" className="w-20 h-12 rounded-md object-cover border border-[#1a1a1e]" loading="lazy" />
+                        : <div className="w-20 h-12 rounded-md bg-[#1a1a1e] grid place-items-center"><span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">image</span></div>}
                     </td>
                   )}
                   <td className="px-4 py-3 text-[13px] text-on-surface max-w-md">
-                    <div className="truncate">{item.data?.title?.en || '—'}</div>
+                    <div className="truncate font-bold">{item.data?.title?.en || '—'}</div>
                     <div className="truncate text-[12px] text-on-surface-variant" dir="rtl" lang="ar">{item.data?.title?.ar}</div>
                   </td>
-                  {choiceField && <td className="px-4 py-3 text-[12px] text-on-surface-variant">{item.data?.[choiceField.name] || '—'}</td>}
+                  {choiceField && (
+                    <td className="px-4 py-3">
+                      {item.data?.[choiceField.name]
+                        ? <span className="px-2 py-0.5 rounded-full bg-[#1a1a1e] text-[11px] text-on-surface-variant capitalize">{item.data[choiceField.name]}</span>
+                        : '—'}
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <button
                       type="button"
                       onClick={() => toggle(item)}
-                      className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        item.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'
+                      title={item.is_active ? tl("Click to hide from the website") : tl("Click to show on the website")}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold ${
+                        item.is_active ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25' : 'bg-[#1a1a1e] text-on-surface-variant hover:text-on-surface'
                       }`}
                     >
+                      <span className="material-symbols-outlined text-[14px]">{item.is_active ? 'visibility' : 'visibility_off'}</span>
                       {item.is_active ? tl("Visible") : tl("Hidden")}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <button type="button" className={`${btn.ghost} mr-2`} onClick={() => setEditing(item)}>{tl("Edit")}</button>
-                    <button type="button" className={btn.danger} onClick={() => remove(item)}>{tl("Delete")}</button>
+                    <button type="button" className={`${btn.ghost} inline-flex items-center gap-1 me-1`} onClick={() => setEditing(item)}>
+                      <span className="material-symbols-outlined text-[15px]">edit</span>{tl("Edit")}
+                    </button>
+                    <button type="button" aria-label={tl("Delete")} title={tl("Delete")} onClick={() => remove(item)}
+                      className="p-2 rounded text-on-surface-variant hover:text-rose-400 hover:bg-rose-500/10 align-middle">
+                      <span className="material-symbols-outlined text-[18px] block">delete</span>
+                    </button>
                   </td>
                 </tr>
               ))}
