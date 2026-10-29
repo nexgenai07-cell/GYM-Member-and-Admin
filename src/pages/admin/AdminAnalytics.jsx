@@ -204,7 +204,7 @@ export default function AdminAnalytics() {
   ];
 
   return (
-    <main className="p-space-xl flex flex-col gap-space-lg">
+    <main className="px-space-xl pt-space-xl pb-space-lg flex flex-col gap-space-lg">
       <PageHeader
         title={tl('Insights')}
         subtitle={tl(

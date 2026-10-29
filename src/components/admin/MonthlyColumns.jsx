@@ -4,7 +4,7 @@ import { tl } from '../../i18n';
 
 const W = 640;
 const H = 220;
-const PAD = { top: 16, right: 8, bottom: 26, left: 56 };
+const PAD = { top: 16, right: 8, bottom: 22, left: 56 };
 
 const niceMax = (v) => {
   if (v <= 0) return 100;
