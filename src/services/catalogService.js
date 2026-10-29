@@ -43,6 +43,14 @@ export const catalogService = {
     return data;
   },
 
+  /** Undo a day that was marked done by mistake. */
+  async uncompleteModule(enrollmentId, moduleId) {
+    const { data } = await api.delete(
+      `/catalog/enrollments/${enrollmentId}/modules/${moduleId}/complete/`
+    );
+    return data;
+  },
+
   async mySessions() {
     const { data } = await api.get('/catalog/sessions/');
     return data;

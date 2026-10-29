@@ -171,10 +171,27 @@ function MachineEditor({ machine, options, onClose, onSaved }) {
     }
   };
 
+  const remove = async () => {
+    if (!window.confirm(tl("Delete {0}? Its printed QR label will stop working.", { 0: machine.name }))) return;
+    setBusy(true);
+    try {
+      await adminService.deleteMachine(machine.id);
+      toast.success(tl("Machine deleted"));
+      onSaved(null, false);
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err, tl("Could not delete the machine")), { duration: 7000 });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Drawer open title={isNew ? tl("Add machine") : machine.name} onClose={onClose}
       subtitle={isNew ? tl("It gets a QR code as soon as it’s saved.") : tl("QR {0}", { 0: machine.qr_tag_id || 'not created yet' })}
       footer={<>
+        {!isNew && <button type="button" className={btn.danger} disabled={busy} onClick={remove}>{tl("Delete")}</button>}
+        <div className="flex-1" />
         <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
         <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : tl("Save")}</button>
       </>}>

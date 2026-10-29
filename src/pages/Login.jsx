@@ -13,27 +13,25 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const handleLogin = async (data) => {
-  try {
-    setLoading(true);
-    const result = await login(data.email, data.password);
-    toast.success(tl("Welcome back!"));
-
-    // Redirect based on role
-    const userRole = result.user?.role;
-    if (['admin', 'manager'].includes(userRole)) {
-      navigate('/admin');
-    } else {
-      navigate('/dashboard');
+    setServerError('');
+    try {
+      setLoading(true);
+      const result = await login(data.email, data.password);
+      toast.success(tl("Welcome back!"));
+      // Staff go to the console; anyone with a temporary password changes it first.
+      if (result.user?.must_change_password) navigate('/dashboard/change-password', { replace: true });
+      else navigate(['admin', 'manager'].includes(result.user?.role) ? '/admin' : '/dashboard', { replace: true });
+    } catch (e) {
+      setServerError(e.response
+        ? tl(e.response.data?.detail || 'Wrong email or password. Check both and try again.')
+        : tl('Network error — check your connection.'));
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    const msg = e.response?.data?.detail || 'Login failed. Please check your credentials.';
-    toast.error(msg);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen w-full bg-background flex">
@@ -126,7 +124,7 @@ export default function Login() {
           </motion.div>
 
           {/* ✅ Pass loading to LoginForm so the button can show a spinner/disable state */}
-          <LoginForm onSubmit={handleLogin} loading={loading} />
+          <LoginForm onSubmit={handleLogin} loading={loading} serverError={serverError} />
         </motion.div>
       </div>
     </div>

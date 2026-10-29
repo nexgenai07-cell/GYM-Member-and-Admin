@@ -8,6 +8,7 @@ import PhilosophyCard from '../../components/trainers/PhilosophyCard';
 import TelemetryImpact from '../../components/trainers/TelemetryImpact';
 import CurriculumGrid from '../../components/trainers/CurriculumGrid';
 import ReviewsList from '../../components/trainers/ReviewsList';
+import ReviewForm from '../../components/trainers/ReviewForm';
 import BookingPanel from '../../components/trainers/BookingPanel';
 import { tl } from '../../i18n';
 
@@ -15,7 +16,7 @@ export default function TrainerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: trainer, loading } = useApi(
+  const { data: trainer, loading, refetch } = useApi(
     () => catalogService.trainer(id),
     [id]
   );
@@ -69,6 +70,7 @@ export default function TrainerProfile() {
           <PhilosophyCard bio={trainer.bio} title={tl("Coaching Philosophy")} />
           <TelemetryImpact trainer={trainer} />
           <CurriculumGrid courses={trainer.courses || []} />
+          <ReviewForm key={trainer.my_review?.id || 'new'} trainer={trainer} onSaved={refetch} />
           <ReviewsList reviews={trainer.reviews || []} />
         </div>
 

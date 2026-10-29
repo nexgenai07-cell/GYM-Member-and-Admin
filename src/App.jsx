@@ -16,6 +16,9 @@ import Player from './pages/member/Player';
 import Trainers from './pages/member/Trainers';
 import TrainerProfile from './pages/member/TrainerProfile';
 import NutritionistProfile from './pages/member/NutritionistProfile';
+import NutritionPlan from './pages/member/NutritionPlan';
+import { ForgotPassword, ResetPassword } from './pages/PasswordReset';
+import { MobileNavProvider } from './layouts/MobileNav';
 import Nutritionists from './pages/member/Nutritionists';
 import Shop from './pages/member/Shop';
 import Attendance from './pages/member/Attendance';
@@ -102,7 +105,7 @@ function RootRedirect() {
 const CHANGE_PASSWORD_PATH = '/dashboard/change-password';
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading, mustChangePassword } = useAuth();
+  const { user, isAuthenticated, loading, mustChangePassword } = useAuth();
   const { pathname } = useLocation();
 
   if (loading) return <AuthLoader />;
@@ -115,6 +118,8 @@ function ProtectedRoute({ children }) {
       ? <ChangePassword forced />
       : <Navigate to={CHANGE_PASSWORD_PATH} replace />;
   }
+  // Admins and managers use the console, never the member pages.
+  if (['admin', 'manager'].includes(user?.role)) return <Navigate to="/admin" replace />;
 
   return children;
 }
@@ -149,13 +154,13 @@ function AdminProtectedRoute({ children }) {
    ============================================ */
 function MemberLayout({ children }) {
   return (
-    <>
+    <MobileNavProvider>
       <Sidebar />
-      <div className="pl-64">
+      <div className="lg:pl-64 min-w-0 overflow-x-hidden">
         <Header />
-        <main className="w-full pt-16 bg-background min-h-screen">{children}</main>
+        <main className="w-full min-w-0 pt-16 bg-background min-h-screen">{children}</main>
       </div>
-    </>
+    </MobileNavProvider>
   );
 }
 
@@ -169,6 +174,10 @@ function App() {
       {/* ============ PUBLIC / AUTH ============ */}
       <Route path="/login" element={<Login />} />
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/admin/forgot-password" element={<ForgotPassword staff />} />
+      <Route path="/admin/reset-password" element={<ResetPassword staff />} />
 
       {/* ============ ROOT — smart redirect ============ */}
       <Route path="/" element={<RootRedirect />} />
@@ -224,6 +233,7 @@ function App() {
                 <Route path="trainers/:id" element={<TrainerProfile />} />
                 <Route path="nutritionists" element={<Nutritionists />} />
                 <Route path="nutritionists/:id" element={<NutritionistProfile />} />
+                <Route path="nutrition-plan" element={<NutritionPlan />} />
                 <Route path="shop" element={<Shop />} />
                 <Route path="attendance" element={<Attendance />} />
                 <Route path="classes" element={<Classes />} />

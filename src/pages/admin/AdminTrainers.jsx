@@ -15,6 +15,7 @@ const TRAINER_API = {
   create: (b) => adminService.createTrainer(b),
   update: (id, b) => adminService.updateTrainer(id, b),
   upload: (id, f) => adminService.uploadTrainerPhoto(id, f),
+  remove: (id) => adminService.deleteTrainer(id),
 };
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { tl } from '../../i18n';
@@ -22,6 +23,9 @@ import { tl } from '../../i18n';
 const TRAINER_FILTERS = [['', tl("All")], ['verified', tl("Verified")], ['unverified', tl("Not verified")], ['hidden', tl("Hidden")]];
 const COURSE_FILTERS = [['', tl("All")], ['published', tl("Published")], ['draft', tl("Drafts")], ['pending', tl("In review")], ['archived', tl("Archived")]];
 const LEVELS = [['beginner', tl("Beginner")], ['intermediate', tl("Intermediate")], ['advanced', tl("Advanced")], ['all_levels', tl("All levels")]];
+// Same fixed list as the backend (apps/admin_api/catalog_ops.py COURSE_CATEGORIES).
+const COURSE_CATEGORIES = ['Training', 'Strength', 'Hypertrophy', 'Fat Loss', 'Endurance', 'Mobility',
+  'Combat', 'Recovery', 'Nutrition', 'Biometrics'];
 const STATUS_TONE = {
   published: 'bg-emerald-500/15 text-emerald-400', draft: 'bg-neutral-500/20 text-on-surface-variant',
   pending: 'bg-amber-500/15 text-amber-400', archived: 'bg-rose-500/15 text-rose-400',
@@ -326,7 +330,12 @@ function CourseEditor({ course, trainers, onClose, onSaved }) {
     <Drawer open title={f.id ? f.title : tl("New course")} onClose={onClose}
       subtitle={f.id ? tl("{0} · {1} enrolled", { 0: f.status_label, 1: f.total_enrolled }) : tl("Saved as a draft — members see it once you publish.")}
       footer={<>
-        {f.id && f.total_enrolled === 0 && <button type="button" className={btn.danger} onClick={remove}>{tl("Delete")}</button>}
+        {f.id && (
+          <button type="button" className={btn.danger} onClick={remove}
+            title={f.total_enrolled ? tl("Courses with enrolled members can’t be deleted — archive them instead.") : undefined}>
+            {tl("Delete")}
+          </button>
+        )}
         <div className="flex-1" />
         {f.id && f.status === 'published' && <button type="button" className={btn.ghost} disabled={busy} onClick={() => save('archived')}>{tl("Archive")}</button>}
         {f.id && f.status === 'archived' && <button type="button" className={btn.ghost} disabled={busy} onClick={() => save('draft')}>{tl("Back to draft")}</button>}
@@ -347,7 +356,12 @@ function CourseEditor({ course, trainers, onClose, onSaved }) {
           <select className={inputCls} value={f.trainer_id} onChange={set('trainer_id')}>
             {trainers.map((t) => <option key={t.id} value={t.id}>{t.user_name}{t.is_active ? '' : tl(" (hidden)")}</option>)}
           </select></Field>
-        <Field label={tl("Category")} error={errors.category}><input className={inputCls} value={f.category} onChange={set('category')} placeholder={tl("Strength")} /></Field>
+        <Field label={tl("Category")} error={errors.category}>
+          <select className={inputCls} value={f.category} onChange={set('category')}>
+            <option value="">{tl("Choose a category")}</option>
+            {COURSE_CATEGORIES.map((c) => <option key={c} value={c}>{tl(c)}</option>)}
+          </select>
+        </Field>
         <Field label={tl("Level")} error={errors.level}>
           <select className={inputCls} value={f.level} onChange={set('level')}>
             {LEVELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}

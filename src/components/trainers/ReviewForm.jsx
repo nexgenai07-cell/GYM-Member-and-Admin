@@ -1,0 +1,79 @@
+// src/components/trainers/ReviewForm.jsx
+// Leave (or edit) a 1–5 star review for a coach you've trained with.
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { catalogService } from '../../services/catalogService';
+import { errorMessage, fieldErrors } from '../../utils/apiError';
+import { tl } from '../../i18n';
+
+const MAX = 1000;
+
+export default function ReviewForm({ trainer, onSaved }) {
+  const mine = trainer.my_review;
+  const [rating, setRating] = useState(mine?.rating || 0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState(mine?.comment || '');
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+
+  if (!trainer.can_review) {
+    return trainer.review_hint ? (
+      <p className="text-[13px] text-on-surface-variant rounded-xl bg-surface-container-low p-4 flex gap-2">
+        <span className="material-symbols-outlined text-[18px]">info</span>{tl(trainer.review_hint)}
+      </p>
+    ) : null;
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const found = {};
+    if (!rating) found.rating = tl('Choose a rating from 1 to 5 stars.');
+    if (comment.trim().length > MAX) found.comment = tl('Keep your review under 1000 characters.');
+    setErrors(found);
+    if (Object.keys(found).length) return;
+    setBusy(true);
+    try {
+      await catalogService.reviewTrainer(trainer.id, { rating, comment: comment.trim() });
+      toast.success(mine ? tl('Your review was updated') : tl('Thanks — your review is live'));
+      onSaved?.();
+    } catch (err) {
+      setErrors(fieldErrors(err));
+      toast.error(errorMessage(err, tl('Couldn’t save your review.')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const shown = hover || rating;
+  return (
+    <form onSubmit={submit} noValidate className="rounded-xl bg-surface-container border border-surface-container-high p-4 flex flex-col gap-3">
+      <h3 className="text-on-surface font-bold">{mine ? tl('Your review') : tl('Rate your coach')}</h3>
+      <div>
+        <div className="flex gap-1" role="radiogroup" aria-label={tl('Rating')} onMouseLeave={() => setHover(0)}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={tl('{0} stars', { 0: n })}
+              onMouseEnter={() => setHover(n)} onClick={() => { setRating(n); setErrors((x) => ({ ...x, rating: '' })); }}
+              className="p-0.5">
+              <span className={`material-symbols-outlined text-[28px] ${n <= shown ? 'text-amber-400' : 'text-on-surface-variant/40'}`}
+                style={{ fontVariationSettings: n <= shown ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+            </button>
+          ))}
+        </div>
+        {errors.rating && <p role="alert" className="text-[12px] text-error mt-1">{errors.rating}</p>}
+      </div>
+      <div>
+        <textarea rows={3} value={comment} maxLength={MAX + 50} onChange={(e) => { setComment(e.target.value); setErrors((x) => ({ ...x, comment: '' })); }}
+          placeholder={tl('What was training with them like? (optional)')} aria-invalid={!!errors.comment}
+          className={`w-full bg-surface-container-low text-on-surface px-3 py-2 rounded-lg border text-[14px] focus:outline-none ${errors.comment ? 'border-error' : 'border-surface-container-high focus:border-primary'}`} />
+        <div className="flex justify-between text-[11px] mt-1">
+          <span className="text-error" role="alert">{errors.comment}</span>
+          <span className={comment.length > MAX ? 'text-error' : 'text-on-surface-variant'}>{comment.length}/{MAX}</span>
+        </div>
+      </div>
+      <button type="submit" disabled={busy}
+        className="w-fit px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-bold text-[13px] disabled:opacity-60">
+        {busy ? tl('Saving…') : mine ? tl('Update review') : tl('Post review')}
+      </button>
+    </form>
+  );
+}

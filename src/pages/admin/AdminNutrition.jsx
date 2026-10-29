@@ -15,6 +15,7 @@ const NUTRITIONIST_API = {
   create: (b) => adminService.createNutritionist(b),
   update: (id, b) => adminService.updateNutritionist(id, b),
   upload: (id, f) => adminService.uploadNutritionistPhoto(id, f),
+  remove: (id) => adminService.deleteNutritionist(id),
 };
 const GOALS = [['hypertrophy', tl("Build muscle")], ['fat_loss', tl("Fat loss")], ['recomp', tl("Recomposition")],
   ['maintenance', tl("Maintenance")], ['endurance', tl("Endurance")]];
@@ -81,7 +82,7 @@ function Plans() {
   const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState(null);
-  const { data, loading, refetch } = useApi(() => adminService.nutritionPlans({ status, q: q || undefined }), [status, q]);
+  const { data, loading, refetch } = useApi(() => adminService.nutritionPlans({ status, q: q || undefined }), [status, q], { poll: 30_000 });
   const list = Array.isArray(data) ? data : [];
   return (
     <>
@@ -142,6 +143,54 @@ function Field({ label, error, children, className = '' }) {
   );
 }
 
+/** What the member logged in the portal over the last 14 days, against the plan's targets. */
+function MealLogPanel({ memberId, targets }) {
+  const { data, loading } = useApi(() => adminService.memberMeals(memberId, 14), [memberId], { poll: 30_000 });
+  const days = Array.isArray(data) ? data : [];
+  const [openDay, setOpenDay] = useState(null);
+  const pct = (v, t) => (Number(t) > 0 ? Math.round((Number(v) / Number(t)) * 100) : 0);
+  return (
+    <div className="flex flex-col gap-2 border-t border-[#1a1a1e] pt-4">
+      <span className={labelCls}>{tl("Meal log — last 14 days")}</span>
+      {loading ? <div className="h-16 rounded bg-[#131316] animate-pulse" /> : days.length === 0 ? (
+        <p className="text-[12px] text-on-surface-variant">{tl("The member hasn’t logged any meals yet.")}</p>
+      ) : (
+        <div className="flex flex-col divide-y divide-[#1a1a1e] rounded-lg border border-[#1a1a1e]">
+          {days.map((d) => {
+            const isOpen = openDay === d.date;
+            const kcal = pct(d.calories, targets.target_calories);
+            return (
+              <div key={d.date}>
+                <button type="button" onClick={() => setOpenDay(isOpen ? null : d.date)}
+                  className="w-full flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-start hover:bg-[#131316] text-[12px]">
+                  <span className="text-on-surface font-bold w-28 shrink-0">{new Date(d.date).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                  <span className={kcal > 110 ? 'text-amber-300' : kcal >= 85 ? 'text-emerald-400' : 'text-on-surface-variant'}>
+                    {d.calories} / {targets.target_calories} {tl("kcal")} ({kcal}%)
+                  </span>
+                  <span className="text-on-surface-variant">P {d.protein_g}g · C {d.carbs_g}g · F {d.fats_g}g</span>
+                  <span className="text-on-surface-variant">{tl("Water")} {d.water_ml} ml</span>
+                  <span className="ms-auto text-on-surface-variant">{tl("{0} meals", { 0: d.meals.length })}</span>
+                </button>
+                {isOpen && d.meals.length > 0 && (
+                  <ul className="px-3 pb-2 flex flex-col gap-1">
+                    {d.meals.map((m) => (
+                      <li key={m.id} className="flex flex-wrap gap-x-3 text-[12px] bg-[#131316] rounded px-2 py-1">
+                        <span className="text-primary font-bold w-24 shrink-0">{tl(m.meal_label)}</span>
+                        <span className="text-on-surface flex-1 min-w-0 break-words">{m.description}</span>
+                        <span className="text-on-surface-variant">{m.calories} {tl("kcal")} · P {m.protein_g} · C {m.carbs_g} · F {m.fats_g}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlanEditor({ plan, onClose, onSaved }) {
   const [f, setF] = useState(plan);
   const [errors, setErrors] = useState({});
@@ -192,7 +241,15 @@ function PlanEditor({ plan, onClose, onSaved }) {
         <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
         <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : plan.reviewed_at ? tl("Save") : tl("Save & mark reviewed")}</button>
       </>}>
-      {!plan.reviewed_at && <p className="text-[12px] text-amber-300">{tl("These are the starter targets for the goal. Adjust them for this member and save.")}</p>}
+      {!plan.reviewed_at && (
+        <div className="flex gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-200">
+          <span className="material-symbols-outlined text-[18px]">pending_actions</span>
+          <span>
+            <b>{tl("Not reviewed yet.")}</b>{' '}
+            {tl("The member is on the default targets for “{0}”. Check their meal log below, adjust the numbers, add a note and press “Save & mark reviewed” — they’ll be notified.", { 0: tl(plan.goal_label) })}
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Field label={tl("Goal")} error={errors.goal}><select className={inputCls} value={f.goal} onChange={set('goal')}>{GOALS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
         <Field label={tl("Calories / day")} error={errors.target_calories}><input className={inputCls} type="number" value={f.target_calories} onChange={set('target_calories')} /></Field>
@@ -208,6 +265,8 @@ function PlanEditor({ plan, onClose, onSaved }) {
         <Field label={tl("Notes for the member")} error={errors.notes} className="col-span-2 md:col-span-3">
           <textarea className={inputCls} rows={3} value={f.notes} onChange={set('notes')} /></Field>
       </div>
+
+      <MealLogPanel memberId={plan.member_id} targets={f} />
 
       <form onSubmit={addScan} className="flex flex-col gap-3 border-t border-[#1a1a1e] pt-4">
         <span className={labelCls}>{tl("Body scans")}</span>

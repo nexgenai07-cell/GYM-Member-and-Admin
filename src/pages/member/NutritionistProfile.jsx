@@ -8,6 +8,7 @@ import { useApi } from '../../hooks/useApi';
 import { nutritionService } from '../../services/nutritionService';
 import { formatSAR } from '../../utils/money';
 import { errorMessage } from '../../utils/apiError';
+import PayDialog from '../../components/payments/PayDialog';
 import { tl } from '../../i18n';
 
 // Same starting targets the backend gives each goal (apps/nutrition/views.py GOAL_DEFAULTS).
@@ -28,6 +29,7 @@ export default function NutritionistProfile() {
   const { data: plan, refetch: refetchPlan } = useApi(() => nutritionService.myPlan(), [], { showError: false });
   const [goal, setGoal] = useState('hypertrophy');
   const [sending, setSending] = useState(false);
+  const [payPlan, setPayPlan] = useState(null);     // requested plan waiting for the consultation fee
 
   if (loading) {
     return (
@@ -62,10 +64,14 @@ export default function NutritionistProfile() {
   const request = async () => {
     setSending(true);
     try {
-      await nutritionService.requestPlan(n.id, goal);
-      toast.success(tl('Plan requested from {0}', { 0: name }));
+      const created = await nutritionService.requestPlan(n.id, goal);
+      if (created.status === 'pending_payment') {
+        setPayPlan(created);          // pay the consultation fee; the plan starts once paid
+        return;
+      }
+      toast.success(isMine ? tl('Goal updated — your nutritionist will review the new targets.') : tl('Plan requested from {0}', { 0: name }));
       refetchPlan();
-      navigate('/dashboard/nutritionists');
+      navigate('/dashboard/nutrition-plan');
     } catch (e) {
       toast.error(errorMessage(e, tl('Couldn’t request the plan. Please try again.')));
     } finally {
@@ -196,10 +202,24 @@ export default function NutritionistProfile() {
             {!n.is_accepting_clients ? tl('Not taking new clients')
               : sending ? tl('Sending…')
                 : isMine && activePlan.goal === goal ? tl('This is your current goal')
-                  : isMine ? tl('Switch goal') : tl('Request plan')}
+                  : isMine ? tl('Switch goal (free)')
+                    : Number(n.hourly_rate) > 0 ? tl('Request plan · {0}', { 0: formatSAR(n.hourly_rate) }) : tl('Request plan')}
           </button>
+          {!isMine && Number(n.hourly_rate) > 0 && n.is_accepting_clients && (
+            <p className="text-[11px] text-on-surface-variant -mt-2">
+              {tl('One-time consultation fee, paid by card, STC Pay or locker credit. Your plan starts as soon as it’s paid.')}
+            </p>
+          )}
         </aside>
       </div>
+
+      <PayDialog
+        request={payPlan ? { purpose: 'nutrition_plan', plan_id: payPlan.id } : null}
+        title={tl('Nutrition plan with {0}', { 0: name })}
+        allowCredit
+        onPaid={() => { toast.success(tl('Paid — your nutrition plan has started.')); setPayPlan(null); navigate('/dashboard/nutrition-plan'); }}
+        onClose={() => { setPayPlan(null); refetchPlan(); }}
+      />
     </div>
   );
 }

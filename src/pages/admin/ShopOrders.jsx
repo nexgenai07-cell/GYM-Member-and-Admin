@@ -1,9 +1,10 @@
 // src/pages/admin/ShopOrders.jsx
 // Fulfil shop orders (paid → preparing → ready / in locker → collected), refund them,
 // and settle payments that were taken but couldn't be delivered ("review").
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { opsService as api } from '../../services/opsService';
 import { errorMessage } from '../../utils/apiError';
 import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
@@ -50,10 +51,14 @@ export default function ShopOrders() {
 
   const [version, setVersion] = useState(0);
   const load = useCallback(() => setVersion((v) => v + 1), []);
+  const quiet = useRef(false);                 // background refresh: no loading state, no error toast
+  useAutoRefresh(() => { quiet.current = true; load(); }, 20_000);
   useEffect(() => {
     let alive = true;
+    const background = quiet.current;
+    quiet.current = false;
     (async () => {
-      setLoading(true);
+      if (!background) setLoading(true);
       try {
         const [orders, rv] = await Promise.all([
           tab === 'review' ? Promise.resolve(null) : api.orders({ status: tab, q }),
@@ -62,7 +67,7 @@ export default function ShopOrders() {
         if (!alive) return;
         if (orders) setData(orders);
         setReview(rv);
-      } catch (err) { toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
+      } catch (err) { if (!background) toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
   }, [tab, q, version]);

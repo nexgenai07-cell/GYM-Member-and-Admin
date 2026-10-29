@@ -38,3 +38,30 @@
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   user-select: none;
 }
+/* Long words, emails and links wrap instead of spilling out of their box. */
+body {
+  overflow-wrap: break-word;
+}
+/* Column headings stay on one line; cells break only words that can't fit any other way. */
+th {
+  white-space: nowrap;
+}
+td {
+  overflow-wrap: break-word;
+}
+input, select, textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Phones: pages use the full width with a 16px gutter (the desktop paddings are 32px). */
+@media (max-width: 640px) {
+  .px-space-xl { padding-left: 1rem; padding-right: 1rem; }
+  .py-space-xl { padding-top: 1rem; padding-bottom: 1rem; }
+  .p-space-xl, .p-8, .p-6 { padding: 1rem; }
+  .text-headline-lg { font-size: 1.75rem; line-height: 1.1; }
+  .text-headline-md { font-size: 1.35rem; line-height: 1.15; }
+  /* wide data tables scroll sideways inside their card instead of squashing their columns */
+  table { display: block; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  td { min-width: 6rem; }
+}

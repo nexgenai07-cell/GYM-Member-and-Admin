@@ -44,7 +44,10 @@ api.interceptors.response.use(
       window.dispatchEvent(new Event('auth:forbidden'));
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Sign-in and password-reset answers (e.g. "Wrong email or password") belong to the form
+    // that sent them — never treat them as an expired session.
+    const authForm = /\/auth\/(login|password\/(forgot|reset))\/?$/.test(originalRequest?.url || '');
+    if (error.response?.status === 401 && !originalRequest._retry && !authForm) {
       originalRequest._retry = true;
 
       const refreshToken = localStorage.getItem('refresh_token');

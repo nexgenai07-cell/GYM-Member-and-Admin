@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { dashboardService } from '../services/dashboardService';
 import { tl } from '../i18n';
+import { DrawerBackdrop } from '../layouts/MobileNav';
+import { drawerClasses, useMobileNav } from '../layouts/mobileNavContext';
 
 const navItems = [
   { path: '/dashboard', label: tl("Dashboard"), icon: 'grid_view', end: true },
@@ -12,6 +14,7 @@ const navItems = [
   { path: '/dashboard/courses', label: tl("Courses"), icon: 'sports_gymnastics' },
   { path: '/dashboard/player', label: tl("Player"), icon: 'play_circle' },
   { path: '/dashboard/trainers', label: tl("Trainers"), icon: 'group' },
+  { path: '/dashboard/nutrition-plan', label: tl("My Nutrition"), icon: 'nutrition' },
   { path: '/dashboard/nutritionists', label: tl("Nutritionists"), icon: 'restaurant' },
   { path: '/dashboard/shop', label: tl("Shop"), icon: 'shopping_bag' },
   { path: '/dashboard/attendance', label: tl("Attendance"), icon: 'event_available' },
@@ -32,9 +35,12 @@ export default function Sidebar() {
     const id = setInterval(load, 60_000);
     return () => { alive = false; clearInterval(id); };
   }, []);
+  const { open, setOpen } = useMobileNav();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest z-50 flex flex-col py-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <>
+    <DrawerBackdrop />
+    <aside className={`fixed left-0 top-0 h-screen w-64 max-w-[85vw] bg-surface-container-lowest z-50 flex flex-col py-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)] ${drawerClasses(open)}`}>
       {/* Brand hairline */}
       <motion.div
         initial={{ scaleX: 0 }}
@@ -86,6 +92,7 @@ export default function Sidebar() {
             <NavLink
               to={item.path}
               end={item.end}
+              onClick={() => setOpen(false)}
               className="group relative flex items-center gap-3 px-3 py-2 rounded-lg uppercase tracking-wider text-[12px] font-bold"
             >
               {({ isActive }) => (
@@ -159,5 +166,6 @@ export default function Sidebar() {
         </div>
       </motion.div>
     </aside>
+    </>
   );
 }

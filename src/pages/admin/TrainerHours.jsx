@@ -1,8 +1,9 @@
 // src/pages/admin/TrainerHours.jsx
 // Weekly 1:1 booking hours, hourly rate and booking switches per trainer, plus the
 // sessions members have booked (mark completed / no-show, or cancel with refund).
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { opsService as api } from '../../services/opsService';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { Drawer, Empty, PageHeader } from '../../components/site/SiteUi';
@@ -30,16 +31,20 @@ export default function TrainerHours() {
 
   const [version, setVersion] = useState(0);
   const load = useCallback(() => setVersion((v) => v + 1), []);
+  const quiet = useRef(false);                 // background refresh: no loading state, no error toast
+  useAutoRefresh(() => { quiet.current = true; load(); }, 30_000);
   useEffect(() => {
     let alive = true;
+    const background = quiet.current;
+    quiet.current = false;
     (async () => {
-      setLoading(true);
+      if (!background) setLoading(true);
       try {
         const [t, s] = await Promise.all([api.trainerHours(), api.trainerSessions({ scope })]);
         if (!alive) return;
         setTrainers(t);
         setSessions(s);
-      } catch (err) { toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
+      } catch (err) { if (!background) toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
   }, [scope, version]);

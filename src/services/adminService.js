@@ -111,6 +111,9 @@ export const adminService = {
     const { data } = await api.patch(`/admin/trainers/${id}/`, payload);
     return data;
   },
+  async deleteTrainer(id) {
+    await api.delete(`/admin/trainers/${id}/`);
+  },
 
   async uploadTrainerPhoto(id, file) {
     const form = new FormData();
@@ -207,6 +210,9 @@ export const adminService = {
     const { data } = await api.patch(`/admin/nutrition/nutritionists/${id}/`, payload);
     return data;
   },
+  async deleteNutritionist(id) {
+    await api.delete(`/admin/nutrition/nutritionists/${id}/`);
+  },
   async uploadNutritionistPhoto(id, file) {
     const form = new FormData();
     form.append('image', file);
@@ -223,6 +229,10 @@ export const adminService = {
   },
   async memberScans(memberId) {
     const { data } = await api.get(`/admin/nutrition/members/${memberId}/scans/`);
+    return data;
+  },
+  async memberMeals(memberId, days = 14) {
+    const { data } = await api.get(`/admin/nutrition/members/${memberId}/meals/`, { params: { days } });
     return data;
   },
   async addMemberScan(memberId, payload) {
@@ -283,6 +293,10 @@ export const adminService = {
   async updateMachine(id, payload) {
     const { data } = await api.patch(`/admin/machines/${id}/`, payload);
     return data;
+  },
+
+  async deleteMachine(id) {
+    await api.delete(`/admin/machines/${id}/`);
   },
 
   async regenerateQR(exerciseId) {

@@ -96,6 +96,10 @@ export const siteContentService = {
     const { data } = await api.patch(`${BASE}/plans/${id}/`, payload);
     return data;
   },
+  /** Only for plans nobody signed up for — the server explains otherwise. */
+  async deletePlan(id) {
+    await api.delete(`${BASE}/plans/${id}/`);
+  },
 
   // ---------- contact inbox ----------
   async messages(params = {}) {

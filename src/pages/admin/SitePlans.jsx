@@ -37,7 +37,7 @@ export default function SitePlans() {
     <div className="p-8 bg-background min-h-screen">
       <PageHeader
         title={tl("Membership Plans")}
-        subtitle={tl("Plans and prices on the public website and signup. Price changes apply to new signups only; plans can't be deleted because members and signups refer to them — hide them instead.")}
+        subtitle={tl("Plans and prices on the public website and signup. Price changes apply to new signups only. A plan can be deleted until someone signs up for it; after that, hide it instead.")}
       >
         <button type="button" className={`${btn.primary} inline-flex items-center gap-1`} onClick={() => setEditing(NEW_PLAN)}>
           <span className="material-symbols-outlined text-[16px]">add</span>{tl("Add plan")}
@@ -165,6 +165,20 @@ function PlanEditor({ plan, onClose, onSaved }) {
     }
   };
 
+  const remove = async () => {
+    if (!window.confirm(tl("Delete the plan “{0}”? This can’t be undone.", { 0: plan.display_name }))) return;
+    setSaving(true);
+    try {
+      await api.deletePlan(plan.id);
+      toast.success(tl("Plan deleted"));
+      onSaved();
+    } catch (e) {
+      toast.error(errorMessage(e, tl("Could not delete the plan")), { duration: 7000 });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const err = (f) => errors[f] && <span className="text-[11px] text-rose-400">{errors[f]}</span>;
 
   return (
@@ -174,6 +188,13 @@ function PlanEditor({ plan, onClose, onSaved }) {
       onClose={onClose}
       footer={(
         <>
+          {!isNew && (
+            <button type="button" className={btn.danger} disabled={saving} onClick={remove}
+              title={plan.registrations ? tl("Plans with signups can’t be deleted — hide them instead.") : undefined}>
+              {tl("Delete")}
+            </button>
+          )}
+          <div className="flex-1" />
           <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
           <button type="button" className={btn.primary} disabled={saving} onClick={save}>{saving ? tl("Saving…") : isNew ? tl("Create plan") : tl("Save plan")}</button>
         </>

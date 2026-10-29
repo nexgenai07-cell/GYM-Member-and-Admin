@@ -1,6 +1,8 @@
 // src/hooks/useApi.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
+
+const FOCUS_MIN_GAP_MS = 5_000;   // don't refetch on every quick tab switch
 
 /**
  * useApi — a simple data-fetching hook with loading/error/refetch.
@@ -8,28 +10,43 @@ import toast from 'react-hot-toast';
  * Usage:
  *   const { data, loading, error, refetch } = useApi(
  *     () => nutritionService.nutritionists(),
- *     []
+ *     [],
+ *     { poll: 30_000 }          // optional: refresh every 30 s while the tab is visible
  *   );
+ *
+ * Data also refreshes quietly when the tab or window becomes active again, so changes made
+ * elsewhere (another staff member, the member app, the public website) show up without a reload.
+ * `refetch()` keeps the current data on screen while it reloads (no skeleton flash).
  */
 export function useApi(fetcher, deps = [], options = {}) {
   const {
     immediate = true,
     showError = true,
     initialData = null,
+    poll = 0,
+    refreshOnFocus = true,
   } = options;
 
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(immediate);
   const [error, setError] = useState(null);
+  const lastFetch = useRef(0);
+  const hasData = useRef(initialData != null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const run = useCallback(async (quiet = false) => {
+    lastFetch.current = Date.now();
+    if (!quiet) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const result = await fetcher();
       setData(result);
+      hasData.current = result != null;
+      if (quiet) setError(null);
       return result;
     } catch (e) {
+      if (quiet) return null;          // background refresh: keep what's on screen
       // Ignore 404s for optional endpoints (no plan, no DEXA)
       const status = e?.response?.status;
       const silent = !showError || status === 404;
@@ -45,18 +62,38 @@ export function useApi(fetcher, deps = [], options = {}) {
       setError(e);
       return null; // don't throw — prevents unhandled rejections
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
-  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/use-memo
 
   useEffect(() => {
     if (immediate) {
-      fetchData();
+      run(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchData, immediate]);
+  }, [run, immediate]);
 
-  return { data, loading, error, refetch: fetchData };
+  // Quiet refresh when the page becomes visible again, and on an interval if asked.
+  useEffect(() => {
+    if (!immediate) return undefined;
+    const refresh = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetch.current > FOCUS_MIN_GAP_MS) run(true);
+    };
+    if (refreshOnFocus) {
+      window.addEventListener('focus', refresh);
+      document.addEventListener('visibilitychange', refresh);
+    }
+    const id = poll > 0 ? setInterval(refresh, poll) : null;
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+      if (id) clearInterval(id);
+    };
+  }, [run, immediate, poll, refreshOnFocus]);
+
+  /** Reload now; shows the loading state only when there's nothing on screen yet. */
+  const refetch = useCallback(() => run(hasData.current), [run]);
+
+  return { data, loading, error, refetch };
 }
 
 export default useApi;

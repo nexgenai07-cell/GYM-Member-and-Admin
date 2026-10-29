@@ -156,10 +156,12 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
       first_name: f.first_name, last_name: f.last_name, phone: f.phone, role: f.role,
       status: f.status, shift_start: f.shift_start || null, shift_end: f.shift_end || null,
       joined_at: f.joined_at || null, notes: f.notes,
+      ...(f.password ? { password: f.password } : {}),
     };
     try {
       const row = isNew ? await adminService.createStaff({ ...body, email: f.email }) : await adminService.updateStaff(person.id, body);
       if (row.warning) toast.error(row.warning, { duration: 8000 });
+      else if (f.password) toast.success(tl("Saved — {0} can sign in at /admin/login with the password you set (they’ll change it on first sign-in).", { 0: row.user_email }), { duration: 7000 });
       else if (row.can_sign_in && (isNew || !person.can_sign_in)) toast.success(tl("Saved — sign-in details emailed to {0}", { 0: row.user_email }));
       else toast.success(isNew ? tl("{0} added", { 0: row.user_name }) : 'Saved');
       onSaved();
@@ -217,6 +219,14 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
             {(roles.some(([r]) => r === f.role) ? roles : ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </Field>
+        {portalRole && (
+          <Field label={isNew ? tl("Starting password (optional)") : tl("Set a new password (optional)")} error={errors.password}
+            className="md:col-span-2"
+            hint={tl("Leave empty to email them a temporary password instead. Either way they choose their own password at first sign-in.")}>
+            <input className={inputCls} type="text" autoComplete="new-password" value={f.password || ''} onChange={set('password')}
+              placeholder={tl("At least 8 characters, not only numbers")} />
+          </Field>
+        )}
         <Field label={tl("Department")} hint={tl("Set by the role.")}>
           <input className={`${inputCls} opacity-70 cursor-not-allowed`} readOnly aria-readonly="true" tabIndex={-1}
             value={(DEPARTMENTS.find(([v]) => v === (DEFAULT_DEPT[f.role] || f.department)) || [])[1] || ''} />

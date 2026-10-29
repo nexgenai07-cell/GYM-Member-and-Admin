@@ -1,7 +1,8 @@
 // src/pages/admin/SiteInbox.jsx
 // Messages sent through the public website's contact form.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { siteContentService as api } from '../../services/siteContentService';
 import { errorMessage } from '../../utils/apiError';
 import { Empty, PageHeader } from '../../components/site/SiteUi';
@@ -31,14 +32,18 @@ export default function SiteInbox() {
 
   const [version, setVersion] = useState(0);
   const load = useCallback(() => setVersion((v) => v + 1), []);
+  const quiet = useRef(false);                 // background refresh: no loading state, no error toast
+  useAutoRefresh(() => { quiet.current = true; load(); }, 15_000);
   useEffect(() => {
     let alive = true;
+    const background = quiet.current;
+    quiet.current = false;
     (async () => {
-      setLoading(true);
+      if (!background) setLoading(true);
       try {
         const res = await api.messages(status ? { status } : {});
         if (alive) setData(res);
-      } catch (err) { toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
+      } catch (err) { if (!background) toast.error(errorMessage(err)); } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
   }, [status, version]);

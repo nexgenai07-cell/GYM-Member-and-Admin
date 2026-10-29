@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { tl } from '../../i18n';
 
-export default function SyllabusSidebar({ modules = [], enrollment, onCompleteModule }) {
+// Clicking a day only opens it; finishing a day is the explicit button under the video.
+export default function SyllabusSidebar({ modules = [], enrollment, selectedId, onSelect }) {
   const progress = enrollment?.progress_percent ?? 0;
   const completedCount = enrollment?.completed_count ?? 0;
   const totalModules = enrollment?.total_modules ?? modules.length;
@@ -40,7 +41,7 @@ export default function SyllabusSidebar({ modules = [], enrollment, onCompleteMo
           />
         </div>
         <div className="flex justify-between items-center text-label-md font-label-md text-on-surface-variant mt-1">
-          <span>{tl("Week")}{' '}{Object.keys(weeks).length} of {Object.keys(weeks).length}</span>
+          <span>{tl("Week {0} of {1}", { 0: modules.find((m) => m.is_current)?.week_number || Object.keys(weeks).length, 1: Object.keys(weeks).length })}</span>
           <span>{completedCount} / {totalModules}{' '}{tl("Modules")}</span>
         </div>
       </motion.div>
@@ -102,11 +103,12 @@ export default function SyllabusSidebar({ modules = [], enrollment, onCompleteMo
                 {weekModules.map((m) => (
                   <button
                     key={m.id}
-                    onClick={() => !m.is_completed && onCompleteModule?.(m.id)}
-                    disabled={m.is_completed}
-                    className={`flex items-center justify-between p-space-xs rounded-lg transition-colors text-left ${
-                      m.is_current
-                        ? 'bg-surface-container-high'
+                    onClick={() => onSelect?.(m)}
+                    aria-current={selectedId === m.id ? 'step' : undefined}
+                    title={tl("Open this day")}
+                    className={`flex items-center justify-between gap-2 p-space-xs rounded-lg transition-colors text-start ${
+                      selectedId === m.id
+                        ? 'bg-surface-container-high ring-1 ring-primary-container/60'
                         : 'hover:bg-surface-container-high'
                     }`}
                     type="button"

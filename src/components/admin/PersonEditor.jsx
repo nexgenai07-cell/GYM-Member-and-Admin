@@ -72,10 +72,27 @@ export default function PersonEditor({ person: trainer, kind = 'trainer', api, o
     }
   };
 
+  const remove = async () => {
+    if (!window.confirm(tl("Delete {0}? This can’t be undone.", { 0: f.user_name }))) return;
+    setBusy(true);
+    try {
+      await api.remove(f.id);
+      toast.success(tl("{0} deleted", { 0: f.user_name }));
+      onSaved();
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err, tl("Could not delete")), { duration: 7000 });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Drawer open title={f.id ? f.user_name : tl("Add {0}", { 0: noun })} onClose={onClose}
       subtitle={f.id ? f.user_email : tl("They appear in the member portal once saved (unless hidden).")}
       footer={<>
+        {f.id && api.remove && <button type="button" className={btn.danger} disabled={busy} onClick={remove}>{tl("Delete")}</button>}
+        <div className="flex-1" />
         <button type="button" className={btn.ghost} onClick={onClose}>{created ? tl("Done") : tl("Cancel")}</button>
         <button type="button" className={btn.primary} disabled={busy} onClick={save}>{busy ? tl("Saving…") : tl("Save")}</button>
       </>}>

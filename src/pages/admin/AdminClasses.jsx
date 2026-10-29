@@ -21,7 +21,7 @@ const NEW = { name: '', category: 'strength', level: 'all_levels', description: 
 export default function AdminClasses() {
   const [showPaused, setShowPaused] = useState(false);
   const [editing, setEditing] = useState(null);
-  const { data, loading, refetch } = useApi(() => classesService.adminList(showPaused ? { include_paused: 1 } : {}), [showPaused]);
+  const { data, loading, refetch } = useApi(() => classesService.adminList(showPaused ? { include_paused: 1 } : {}), [showPaused], { poll: 60_000 });
   const { data: stats, refetch: refetchStats } = useApi(() => classesService.stats(), []);
   const { data: trainers } = useApi(() => adminService.trainersAdmin(), []);
   const list = Array.isArray(data) ? data : [];

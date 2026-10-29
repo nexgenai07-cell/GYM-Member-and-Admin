@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { tl } from '../../i18n';
 
 const MIN_LENGTH = 8;   // backend: Django MinimumLengthValidator
+const STAFF_ROLES = ['admin', 'manager'];   // the roles that use the admin console
 
 const inputBase =
   'w-full bg-surface-container-low text-on-surface font-body-lg text-body-lg py-3 pl-11 pr-12 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/40 transition-all duration-300';
@@ -53,7 +54,7 @@ function PasswordField({ id, label, value, onChange, show, autoComplete, error }
  *                          has must_change_password set
  */
 export default function ChangePassword({ forced = false }) {
-  const { refreshUser, logout } = useAuth();
+  const { refreshUser, logout, user } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
   const [show, setShow] = useState(false);
@@ -85,10 +86,10 @@ export default function ChangePassword({ forced = false }) {
       toast.success(tl("Password changed"));
       if (forced) {
         try {
-          await refreshUser();        // clears must_change_password → the portal unlocks
-          navigate('/dashboard', { replace: true });
+          const me = await refreshUser();        // clears must_change_password → the portal unlocks
+          navigate(STAFF_ROLES.includes(me?.role) ? '/admin' : '/dashboard', { replace: true });
         } catch {
-          window.location.assign('/dashboard');   // password IS changed; a reload re-reads the user
+          window.location.assign('/');   // password IS changed; the root sends staff to /admin, members to /dashboard
         }
         return;
       }
@@ -111,8 +112,9 @@ export default function ChangePassword({ forced = false }) {
   };
 
   const signOut = async () => {
+    const staff = STAFF_ROLES.includes(user?.role);
     await logout();
-    navigate('/login', { replace: true });
+    navigate(staff ? '/admin/login' : '/login', { replace: true });
   };
 
   return (

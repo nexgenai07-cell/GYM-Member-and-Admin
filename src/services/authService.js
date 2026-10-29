@@ -38,6 +38,20 @@ export const authService = {
     return data;
   },
 
+  /** POST /auth/password/forgot/ — emails a reset link (same answer whether or not the account exists). */
+  async forgotPassword(email) {
+    const { data } = await api.post('/auth/password/forgot/', { email });
+    return data;
+  },
+
+  /** POST /auth/password/reset/ — uid + token come from the emailed link. */
+  async resetPassword(uid, token, newPassword, newPasswordConfirm) {
+    const { data } = await api.post('/auth/password/reset/', {
+      uid, token, new_password: newPassword, new_password_confirm: newPasswordConfirm,
+    });
+    return data;
+  },
+
   getCurrentUser() {
     const u = localStorage.getItem('user');
     return u ? JSON.parse(u) : null;

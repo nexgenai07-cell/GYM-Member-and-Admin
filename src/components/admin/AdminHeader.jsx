@@ -9,6 +9,7 @@ import api from '../../services/api';
 import { dashboardService } from '../../services/dashboardService';
 import { tl } from '../../i18n';
 import LangToggle from '../../i18n/LangToggle';
+import { MenuButton } from '../../layouts/MobileNav';
 
 const POLL_MS = 60_000;
 const SEARCH_GROUPS = [['members', tl("Members"), 'person'], ['registrations', tl("Registrations"), 'how_to_reg'],
@@ -97,12 +98,13 @@ export default function AdminHeader() {
   const anyResults = results && SEARCH_GROUPS.some(([k]) => results[k]?.length);
 
   return (
-    <header className="fixed top-0 left-72 right-0 h-16 bg-[#08080a]/95 backdrop-blur-xl z-40 border-b border-[#1a1a1e]">
-      <div className="h-16 w-full px-6 flex items-center justify-between gap-4">
+    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-[#08080a]/95 backdrop-blur-xl z-40 border-b border-[#1a1a1e]">
+      <div className="h-16 w-full px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4">
+        <MenuButton />
         {/* Live load */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] shrink-0">
           <span className={`w-2 h-2 rounded-full ${occ ? 'bg-emerald-400 animate-pulse' : 'bg-[#2a2a2e]'}`} />
-          <span className="font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">{tl("Gym now")}</span>
+          <span className="hidden sm:inline font-label-md text-[10px] text-on-surface-variant uppercase tracking-widest">{tl("Gym now")}</span>
           <span className="text-[12px] text-on-surface font-bold">
             {occ ? (occ.capacity ? `${occ.current}/${occ.capacity} · ${occ.percent}%` : tl("{0} in", { 0: occ.current })) : '—'}
           </span>
@@ -239,7 +241,7 @@ function Panel({ children, className = '' }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.98 }}
       transition={{ duration: 0.15 }}
-      className={`absolute right-0 top-full mt-2 max-h-[70vh] overflow-y-auto bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl shadow-2xl z-50 ${className}`}
+      className={`absolute right-0 top-full mt-2 max-w-[calc(100vw-1.5rem)] max-h-[70vh] overflow-y-auto bg-[#0e0e0f] border border-[#1a1a1e] rounded-xl shadow-2xl z-50 ${className}`}
     >
       {children}
     </motion.div>

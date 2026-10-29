@@ -3,6 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
 import { tl } from '../../i18n';
+import { DrawerBackdrop } from '../../layouts/MobileNav';
+import { drawerClasses, useMobileNav } from '../../layouts/mobileNavContext';
 
 const HEALTH_MS = 60_000;
 const ACTIVITY_MS = 45_000;
@@ -117,8 +119,11 @@ const navGroups = [
 export default function AdminSidebar() {
   const health = useApiHealth();
   const activity = useActivity();
+  const { open, setOpen } = useMobileNav();
   return (
-    <aside className="fixed left-0 top-0 h-screen w-72 bg-[#08080a] z-50 flex flex-col border-r border-[#1a1a1e]">
+    <>
+    <DrawerBackdrop />
+    <aside className={`fixed left-0 top-0 h-screen w-72 max-w-[85vw] bg-[#08080a] z-50 flex flex-col border-r border-[#1a1a1e] ${drawerClasses(open)}`}>
       {/* ============ LOGO / BRAND ============ */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
@@ -162,6 +167,7 @@ export default function AdminSidebar() {
                   <NavLink
                     to={item.path}
                     end={item.end}
+                    onClick={() => setOpen(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg uppercase tracking-wider transition-all duration-200 text-[12px] font-bold ${
                         isActive
@@ -214,5 +220,6 @@ export default function AdminSidebar() {
         </div>
       </motion.div>
     </aside>
+    </>
   );
 }

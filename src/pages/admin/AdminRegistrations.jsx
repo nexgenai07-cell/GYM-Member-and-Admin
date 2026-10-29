@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/adminService';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { formatDate, formatRemaining } from '../../utils/membershipTime';
 import { formatSAR } from '../../utils/money';
 import { errorMessage } from '../../utils/apiError';
@@ -47,8 +48,8 @@ export default function AdminRegistrations() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [rejecting, setRejecting] = useState(null);   // the registration being rejected
-  const load = async () => {
-    setLoading(true);
+  const load = async (background = false) => {
+    if (!background) setLoading(true);
     try {
       const [listRes, statsRes] = await Promise.all([
         adminService.registrations({ status: statusFilter, search }),
@@ -57,11 +58,13 @@ export default function AdminRegistrations() {
       setRegistrations(listRes.results || []);
       setStats(statsRes);
     } catch (err) {
-      toast.error(errorMessage(err, tl("Failed to load registrations")));
+      if (!background) toast.error(errorMessage(err, tl("Failed to load registrations")));
     } finally {
       setLoading(false);
     }
   };
+  // New website signups appear without a reload.
+  useAutoRefresh(() => load(true), 20_000);
 
   useEffect(() => {
     const t = setTimeout(load, 250);

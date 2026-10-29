@@ -17,7 +17,7 @@ export default function AdminDashboard() {
   const [range, setRange] = useState('30d');
   const [exporting, setExporting] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
-  const { data: overview, loading, refetch: refetchOverview } = useApi(() => adminService.overview(range), [range]);
+  const { data: overview, loading, refetch: refetchOverview } = useApi(() => adminService.overview(range), [range], { poll: 60_000 });
   const { data: flowData, loading: flowLoading, refetch: refetchFlow } = useApi(
     () => adminService.flowAndRevenue(range),
     [range]

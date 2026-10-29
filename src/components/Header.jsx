@@ -7,6 +7,7 @@ import { dashboardService } from '../services/dashboardService';
 import { membersService } from '../services/membersService';
 import { tl, locale } from '../i18n';
 import LangToggle from '../i18n/LangToggle';
+import { MenuButton } from '../layouts/MobileNav';
 
 const POLL_MS = 60_000;
 const PUBLIC_SITE = import.meta.env.VITE_PUBLIC_SITE_URL || 'https://smart-gym-three.vercel.app';
@@ -130,23 +131,24 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-64 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
-      <div className="h-20 w-full px-space-xl flex items-center justify-between">
+    <header className="fixed top-0 left-0 lg:left-64 right-0 h-16 sm:h-20 bg-surface-container-lowest/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
+      <div className="h-16 sm:h-20 w-full px-3 sm:px-space-xl flex items-center justify-between gap-2">
         {/* ============ LEFT: Live Occupancy ============ */}
-        <div className="flex items-center gap-space-lg">
-          <div className="flex items-center gap-space-xs px-space-sm py-space-2xs rounded bg-surface-container">
-            <span className="relative flex h-2 w-2">
+        <div className="flex items-center gap-2 sm:gap-space-lg min-w-0">
+          <MenuButton />
+          <div className="flex items-center gap-space-xs px-space-sm py-space-2xs rounded bg-surface-container min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-container" />
             </span>
-            <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
+            <span className="hidden sm:inline font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
               {tl("Gym now:")}
             </span>
             <span className="font-title-md text-title-md text-on-surface">
               {occupancy ? (occupancy.capacity ? `${occupancy.percent}%` : occupancy.current) : '—'}
             </span>
             {occupancy && (
-              <span className="font-label-md text-label-md text-primary">
+              <span className="hidden md:inline font-label-md text-label-md text-primary">
                 ({occupancy.label}{occupancy.capacity ? '' : tl(" · checked in")})
               </span>
             )}
@@ -160,7 +162,7 @@ export default function Header() {
         </div>
 
         {/* ============ RIGHT: Actions & Profile ============ */}
-        <div className="flex items-center gap-space-md">
+        <div className="flex items-center gap-2 sm:gap-space-md shrink-0">
           <LangToggle />
           {/* --- Notifications --- */}
           <div className="relative" ref={notificationsRef}>
@@ -338,8 +340,8 @@ export default function Header() {
               }`}
               type="button"
             >
-              <div className="flex flex-col text-right">
-                <span className="font-title-md text-title-md text-on-surface leading-snug">
+              <div className="hidden md:flex flex-col text-right max-w-[10rem]">
+                <span className="font-title-md text-title-md text-on-surface leading-snug truncate">
                   {displayName}
                 </span>
                 <span className="font-label-md text-label-md text-primary uppercase tracking-wider font-bold">
@@ -424,7 +426,7 @@ function DropdownPanel({ children, className = '', ...motionProps }) {
   return (
     <motion.div
       {...motionProps}
-      className={`absolute right-0 top-full mt-2 bg-surface-container-low rounded-xl shadow-2xl border border-surface-container-high overflow-hidden z-50 origin-top-right ${className}`}
+      className={`absolute right-0 top-full mt-2 max-w-[calc(100vw-1.5rem)] bg-surface-container-low rounded-xl shadow-2xl border border-surface-container-high overflow-hidden z-50 origin-top-right ${className}`}
     >
       {children}
     </motion.div>

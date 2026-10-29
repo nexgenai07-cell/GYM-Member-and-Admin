@@ -7,8 +7,27 @@ import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
 import { tl } from '../../i18n';
+import { errorMessage, fieldErrors } from '../../utils/apiError';
 
 const EASE = [0.22, 1, 0.36, 1];
+const MAX_WEIGHT_KG = 500;   // same limits as the backend (apps/workouts/views.py)
+const MAX_REPS = 100;
+
+/** Field errors for a set, before it is sent. */
+function checkSet(weight, reps) {
+  const errors = {};
+  const w = Number(weight);
+  if (weight === '' || !Number.isFinite(w) || w < 0 || w > MAX_WEIGHT_KG) {
+    errors.weight_kg = tl('Enter a weight between 0 and {0} kg.', { 0: MAX_WEIGHT_KG });
+  } else if (Math.round(w * 100) !== w * 100) {
+    errors.weight_kg = tl('Use at most 2 decimals (e.g. 22.5).');
+  }
+  const r = Number(reps);
+  if (reps === '' || !Number.isInteger(r) || r < 1 || r > MAX_REPS) {
+    errors.reps = tl('Enter whole reps between 1 and {0}.', { 0: MAX_REPS });
+  }
+  return errors;
+}
 
 const lineUp = {
   hidden: { opacity: 0, y: 18, filter: 'blur(6px)' },
@@ -78,8 +97,8 @@ export default function MachineGuide() {
     if (!selectedExercise) return;
     try {
       const result = await workoutsService.quickLogSet(selectedExercise.id, {
-        weight_kg: parseFloat(weight),
-        reps: parseInt(reps, 10),
+        weight_kg: weight,
+        reps,
         rpe: 8,
       });
 
@@ -93,7 +112,8 @@ export default function MachineGuide() {
       resetTimer();
       setTimerRunning(true);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to log set');
+      toast.error(errorMessage(e, tl('Couldn’t log the set. Please try again.')));
+      throw e;     // SetLogger shows the field errors
     }
   };
 
@@ -720,6 +740,7 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
   );
   const [reps, setReps] = useState('8');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // Sync weight when exercise changes
   useEffect(() => {
@@ -731,15 +752,22 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
   }, [recommendedWeight]);
 
   const handleSubmit = async () => {
-    if (!weight || !reps || !exercise) return;
+    if (!exercise) return;
+    const found = checkSet(weight, reps);
+    setErrors(found);
+    if (Object.keys(found).length) return;
     setLoading(true);
     try {
       await onLogSet({ weight, reps });
       setReps('8');
+    } catch (e) {
+      setErrors(fieldErrors(e));
     } finally {
       setLoading(false);
     }
   };
+  const inputCls = (bad) => `w-full bg-surface-container-lowest text-on-surface p-3 rounded border focus:outline-none font-mono ${
+    bad ? 'border-error focus:border-error' : 'border-surface-container-high focus:border-primary'}`;
 
   return (
     <motion.div
@@ -772,11 +800,18 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
               </label>
               <input
                 type="number"
+                inputMode="decimal"
+                min="0"
+                max={MAX_WEIGHT_KG}
+                step="0.5"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={(e) => { setWeight(e.target.value); setErrors((x) => ({ ...x, weight_kg: undefined })); }}
                 placeholder="0"
-                className="w-full bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
+                aria-invalid={!!errors.weight_kg}
+                aria-describedby={errors.weight_kg ? 'set-weight-err' : undefined}
+                className={inputCls(errors.weight_kg)}
               />
+              {errors.weight_kg && <p id="set-weight-err" role="alert" className="text-error text-[12px] mt-1">{errors.weight_kg}</p>}
             </div>
             <div>
               <label className="font-label-md text-[10px] text-on-surface-variant uppercase block mb-1">
@@ -784,11 +819,18 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
               </label>
               <input
                 type="number"
+                inputMode="numeric"
+                min="1"
+                max={MAX_REPS}
+                step="1"
                 value={reps}
-                onChange={(e) => setReps(e.target.value)}
+                onChange={(e) => { setReps(e.target.value); setErrors((x) => ({ ...x, reps: undefined })); }}
                 placeholder="0"
-                className="w-full bg-surface-container-lowest text-on-surface p-3 rounded border border-surface-container-high focus:outline-none focus:border-primary font-mono"
+                aria-invalid={!!errors.reps}
+                aria-describedby={errors.reps ? 'set-reps-err' : undefined}
+                className={inputCls(errors.reps)}
               />
+              {errors.reps && <p id="set-reps-err" role="alert" className="text-error text-[12px] mt-1">{errors.reps}</p>}
             </div>
           </div>
 
@@ -796,7 +838,7 @@ function SetLogger({ onLogSet, exercise, recommendedWeight }) {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSubmit}
-            disabled={!weight || !reps || loading}
+            disabled={loading}
             className="w-full py-3 rounded bg-primary-container hover:bg-secondary-container text-on-primary-container text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             type="button"
           >

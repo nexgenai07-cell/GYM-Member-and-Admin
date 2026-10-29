@@ -18,6 +18,15 @@ const CANCEL_HOURS = 24;
 const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const weekdayMon0 = (d) => (d.getDay() + 6) % 7;     // backend: 0 = Monday
 
+const STATUS_LABEL = {
+  scheduled: ['Confirmed', 'text-emerald-400'],
+  pending_payment: ['Awaiting payment', 'text-primary'],
+  completed: ['Completed', 'text-on-surface-variant'],
+  no_show: ['Missed (no-show)', 'text-amber-400'],
+};
+/** Cancel only an unpaid booking, or a confirmed one that hasn't started yet. */
+const canCancel = (s) => s.status === 'pending_payment' || (s.status === 'scheduled' && new Date(s.scheduled_at) > new Date());
+
 export default function BookingPanel({ trainer }) {
   const [days] = useState(() => Array.from({ length: DAYS_AHEAD }, (_, i) => {
     const d = new Date();
@@ -34,12 +43,16 @@ export default function BookingPanel({ trainer }) {
   const [booking, setBooking] = useState(false);
   const [paySession, setPaySession] = useState(null);
 
+  const [recentSince] = useState(() => new Date(Date.now() - 30 * 86400000));
   const { data: sessions, refetch: refetchSessions } = useApi(() => catalogService.mySessions(), [], { showError: false });
   const mine = useMemo(
     () => (Array.isArray(sessions) ? sessions : [])
-      .filter((s) => s.trainer === trainer?.id && ['scheduled', 'pending_payment'].includes(s.status))
+      // upcoming bookings plus the last 30 days, so a session the gym marked completed /
+      // no-show shows its real status instead of a Cancel button.
+      .filter((s) => s.trainer === trainer?.id && s.status !== 'cancelled'
+        && (['scheduled', 'pending_payment'].includes(s.status) || new Date(s.scheduled_at) > recentSince))
       .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
-    [sessions, trainer?.id],
+    [sessions, trainer?.id, recentSince],
   );
 
   // First load: which weekdays the trainer works and the price.
@@ -213,8 +226,8 @@ export default function BookingPanel({ trainer }) {
                   <span className="text-on-surface text-[13px] font-bold">
                     {formatGymDateTime(s.scheduled_at)}
                   </span>
-                  <span className={`text-[10px] font-bold uppercase ${s.status === 'scheduled' ? 'text-emerald-400' : 'text-primary'}`}>
-                    {s.status === 'scheduled' ? tl("Confirmed") : tl("Awaiting payment")}
+                  <span className={`text-[10px] font-bold uppercase ${(STATUS_LABEL[s.status] || STATUS_LABEL.completed)[1]}`}>
+                    {tl((STATUS_LABEL[s.status] || [s.status])[0])}
                   </span>
                 </div>
                 <div className="flex gap-1">
@@ -222,8 +235,10 @@ export default function BookingPanel({ trainer }) {
                     <button type="button" onClick={() => setPaySession(s)}
                       className="px-2 py-1 rounded bg-primary-container text-on-primary-container text-[10px] font-bold uppercase">{tl("Pay")}</button>
                   )}
-                  <button type="button" onClick={() => cancel(s)}
-                    className="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">{tl("Cancel")}</button>
+                  {canCancel(s) && (
+                    <button type="button" onClick={() => cancel(s)}
+                      className="px-2 py-1 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase hover:text-error">{tl("Cancel")}</button>
+                  )}
                 </div>
               </div>
             ))}
