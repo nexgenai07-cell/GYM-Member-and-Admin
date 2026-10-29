@@ -1,7 +1,7 @@
 // src/pages/admin/ShopCatalog.jsx
 // The member shop's catalogue: products (price, stock, photo, on sale or hidden), categories
 // and promo codes. Orders are handled on Shop Orders.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useApi } from '../../hooks/useApi';
@@ -159,6 +159,20 @@ function ProductEditor({ product, categories, onClose, onSaved }) {
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+  // SKU = the category's 3-letter prefix (fixed) + 4 digits typed here, e.g. PRO-0007.
+  const [skuNum, setSkuNum] = useState(() => (/^[A-Z]{3}-(\d{4})$/.exec(product.sku || '') || [])[1] || '');
+  const [skuHint, setSkuHint] = useState({ prefix: (product.sku || '').slice(0, 3), sku: '' });
+  useEffect(() => {
+    if (!f.category_id) return undefined;
+    let alive = true;
+    adminService.nextSku(f.category_id, f.id).then((r) => { if (alive) setSkuHint(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [f.category_id, f.id]);
+  const changeCategory = (e) => {
+    const id = e.target.value;
+    setF((p) => ({ ...p, category_id: id }));
+    if (String(id) !== String(product.category_id)) setSkuNum('');   // new prefix → next free number
+  };
 
   const save = async () => {
     setBusy(true);
@@ -170,13 +184,16 @@ function ProductEditor({ product, categories, onClose, onSaved }) {
       stock_quantity: f.stock_quantity, stock_label: f.stock_label, low_stock_threshold: f.low_stock_threshold,
       is_active: f.is_active, is_featured: f.is_featured,
     };
-    if (f.sku) body.sku = f.sku;
+    body.sku = skuNum;   // empty → the next free number in the category
     try {
       const row = await adminService.saveProduct(f.id, body);
       toast.success(f.id ? 'Product saved' : tl("{0} added — add a photo now", { 0: row.name }));
       onSaved();
       if (f.id) onClose();
-      else setF({ ...row, telemetry: row.telemetry.join('\n'), original_price: row.original_price ?? '' });
+      else {
+        setF({ ...row, telemetry: row.telemetry.join('\n'), original_price: row.original_price ?? '' });
+        setSkuNum(row.sku.slice(4));
+      }
     } catch (err) {
       setErrors(fieldErrors(err));
       toast.error(errorMessage(err, tl("Could not save the product")));
@@ -223,11 +240,20 @@ function ProductEditor({ product, categories, onClose, onSaved }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tl("Name")} error={errors.name} className="md:col-span-2"><input className={inputCls} value={f.name} onChange={set('name')} /></Field>
         <Field label={tl("Category")} error={errors.category_id}>
-          <select className={inputCls} value={f.category_id} onChange={set('category_id')}>
+          <select className={inputCls} value={f.category_id} onChange={changeCategory}>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}{c.is_active ? '' : tl(" (hidden)")}</option>)}
           </select></Field>
-        <Field label={tl("SKU")} error={errors.sku} hint={f.id ? undefined : tl("Leave empty to make one from the name.")}>
-          <input className={inputCls} value={f.sku} onChange={set('sku')} /></Field>
+        <Field label={tl("SKU")} error={errors.sku}
+          hint={tl("Fixed format: category letters + 4 digits. Leave the number empty to use the next free one ({0}).", { 0: skuHint.sku || '…' })}>
+          <div className="flex items-stretch">
+            <span aria-hidden="true"
+              className="px-3 grid place-items-center rounded-l-md border border-r-0 border-[#26262b] bg-[#131316] font-mono text-[13px] text-on-surface-variant select-none">
+              {skuHint.prefix || '???'}-
+            </span>
+            <input className={`${inputCls} rounded-l-none font-mono`} inputMode="numeric" maxLength={4} value={skuNum}
+              aria-label={tl("SKU number (4 digits)")} placeholder={(skuHint.sku || '').slice(4) || '0001'}
+              onChange={(e) => setSkuNum(e.target.value.replace(/\D/g, '').slice(0, 4))} />
+          </div></Field>
         <Field label={tl("Price (SAR, VAT included)")} error={errors.price}><input className={inputCls} inputMode="decimal" value={f.price} onChange={set('price')} /></Field>
         <Field label={tl("Was (SAR, optional)")} error={errors.original_price} hint={tl("Shows a crossed-out price.")}><input className={inputCls} inputMode="decimal" value={f.original_price} onChange={set('original_price')} /></Field>
         <Field label={tl("In stock")} error={errors.stock_quantity}><input className={inputCls} type="number" min="0" value={f.stock_quantity} onChange={set('stock_quantity')} /></Field>

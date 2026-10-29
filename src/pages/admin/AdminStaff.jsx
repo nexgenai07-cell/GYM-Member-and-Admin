@@ -1,6 +1,7 @@
 // src/pages/admin/AdminStaff.jsx
-// The team roster: roles, departments, shift hours, status. Admins and managers can sign in to
-// this portal (they're emailed a temporary password); other roles are listed for scheduling.
+// The team roster: roles, departments, shift hours, status. Admins and managers sign in to this
+// portal and coaches (trainers) to the coach portal — they're emailed a temporary password and
+// set up 2-step verification at first sign-in; other roles are listed for scheduling.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -38,6 +39,16 @@ export default function AdminStaff() {
   const list = Array.isArray(data) ? data : [];
   const isAdmin = user?.role === 'admin';
   const saved = () => { refetch(); refetchStats(); };
+  const canRemove = (s) => s.id !== user?.id && (isAdmin || !['admin', 'manager'].includes(s.role));
+  const remove = async (s) => {
+    if (!window.confirm(tl("Remove {0} from the team? If they’re also a gym member, their member account stays.", { 0: s.user_name }))) return;
+    try {
+      toast.success((await adminService.deleteStaff(s.id)).detail);
+      saved();
+    } catch (err) {
+      toast.error(errorMessage(err, tl("Could not remove")), { duration: 7000 });
+    }
+  };
 
   const tiles = [
     [tl("Team"), stats?.total], [tl("On shift now"), stats?.on_shift_now], [tl("On leave"), stats?.on_leave],
@@ -90,6 +101,7 @@ export default function AdminStaff() {
               <tr className="border-b border-[#1a1a1e] text-left text-[10px] uppercase tracking-widest text-on-surface-variant">
                 <th className="px-4 py-3">{tl("Name")}</th><th className="px-4 py-3">{tl("Role")}</th><th className="px-4 py-3">{tl("Department")}</th>
                 <th className="px-4 py-3">{tl("Shift")}</th><th className="px-4 py-3">{tl("Status")}</th><th className="px-4 py-3">{tl("Admin sign-in")}</th>
+                <th className="px-4 py-3"><span className="sr-only">{tl("Actions")}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -115,6 +127,21 @@ export default function AdminStaff() {
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${STATUS_TONE[s.status]}`}>{tl(s.status_label)}</span></td>
                   <td className="px-4 py-3 text-[12px] text-on-surface-variant">
                     {s.can_sign_in ? (s.last_login ? tl("Last {0}", { 0: new Date(s.last_login).toLocaleDateString(locale) }) : tl("Invited")) : '—'}
+                    {s.can_sign_in && (
+                      <span className={`ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${s.two_factor ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-300'}`}
+                        title={s.two_factor ? tl("2-step verification is on") : tl("Sets up 2-step verification at next sign-in")}>
+                        {s.two_factor ? tl("2FA") : tl("No 2FA yet")}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-2 py-3 text-right">
+                    {canRemove(s) && (
+                      <button type="button" title={tl("Delete")} aria-label={tl("Delete {0}", { 0: s.user_name })}
+                        onClick={(e) => { e.stopPropagation(); remove(s); }}
+                        className="p-1.5 rounded text-on-surface-variant hover:text-error hover:bg-error/10">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -161,7 +188,8 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
     try {
       const row = isNew ? await adminService.createStaff({ ...body, email: f.email }) : await adminService.updateStaff(person.id, body);
       if (row.warning) toast.error(row.warning, { duration: 8000 });
-      else if (f.password) toast.success(tl("Saved — {0} can sign in at /admin/login with the password you set (they’ll change it on first sign-in).", { 0: row.user_email }), { duration: 7000 });
+      else if (f.password) toast.success(tl("Saved — {0} can sign in at {1} with the password you set (they’ll change it on first sign-in).",
+        { 0: row.user_email, 1: row.role === 'trainer' ? '/coach/login' : '/admin/login' }), { duration: 7000 });
       else if (row.can_sign_in && (isNew || !person.can_sign_in)) toast.success(tl("Saved — sign-in details emailed to {0}", { 0: row.user_email }));
       else toast.success(isNew ? tl("{0} added", { 0: row.user_name }) : 'Saved');
       onSaved();
@@ -186,16 +214,50 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
     }
   };
 
+  const remove = async () => {
+    if (!window.confirm(tl("Remove {0} from the team? If they’re also a gym member, their member account stays.", { 0: person.user_name }))) return;
+    setBusy(true);
+    try {
+      toast.success((await adminService.deleteStaff(person.id)).detail);
+      onSaved();
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err, tl("Could not remove")), { duration: 7000 });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset2fa = async () => {
+    if (!window.confirm(tl("Turn off 2-step verification for {0}? Use this when they lost their phone. They set it up again at their next sign-in.", { 0: person.user_name }))) return;
+    setBusy(true);
+    try {
+      toast.success((await adminService.resetStaff2fa(person.id)).detail, { duration: 7000 });
+      onSaved();
+    } catch (err) {
+      toast.error(errorMessage(err, tl("Could not reset")));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const portalRole = ['admin', 'manager'].includes(f.role);
+  const signInRole = portalRole || f.role === 'trainer';     // admin console or coach portal
 
   return (
     <Drawer open title={isNew ? tl("Add staff") : person.user_name} onClose={onClose}
-      subtitle={isNew ? tl("Admins and managers get an email to sign in here.") : person.user_email}
+      subtitle={isNew ? tl("Admins and managers get an email to sign in here; coaches get one for the coach portal.") : person.user_email}
       footer={locked ? <button type="button" className={btn.ghost} onClick={onClose}>{tl("Close")}</button> : <>
-        {!isNew && portalRole && person.status !== 'suspended' && (
+        {!isNew && signInRole && person.status !== 'suspended' && (
           <button type="button" className={btn.ghost} disabled={busy} onClick={sendSignIn}>
             {person.can_sign_in ? tl("Reset password by email") : tl("Send sign-in email")}
           </button>
+        )}
+        {!isNew && person.two_factor && !isMe && (
+          <button type="button" className={btn.ghost} disabled={busy} onClick={reset2fa}>{tl("Reset 2FA")}</button>
+        )}
+        {!isNew && !isMe && (
+          <button type="button" className={btn.danger} disabled={busy} onClick={remove}>{tl("Delete")}</button>
         )}
         <div className="flex-1" />
         <button type="button" className={btn.ghost} onClick={onClose}>{tl("Cancel")}</button>
@@ -213,13 +275,14 @@ function StaffEditor({ person, me, isAdmin, onClose, onSaved }) {
         <Field label={tl("Last name")} error={errors.last_name}><input className={inputCls} value={f.last_name} onChange={set('last_name')} /></Field>
         <Field label={tl("Phone")} error={errors.phone}><SaudiPhoneInput value={f.phone} onChange={(phone) => setF((p) => ({ ...p, phone }))} /></Field>
         <Field label={tl("Role")} error={errors.role}
-          hint={portalRole ? tl("Can sign in to this admin portal.") : tl("Listed for scheduling — no admin sign-in.")}>
+          hint={portalRole ? tl("Can sign in to this admin portal.") : f.role === 'trainer' ? tl("Signs in to the coach portal (/coach).")
+            : tl("Listed for scheduling — no sign-in.")}>
           <select className={inputCls} value={f.role} disabled={isMe}
             onChange={(e) => setF((p) => ({ ...p, role: e.target.value, department: DEFAULT_DEPT[e.target.value] }))}>
             {(roles.some(([r]) => r === f.role) ? roles : ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </Field>
-        {portalRole && (
+        {signInRole && (
           <Field label={isNew ? tl("Starting password (optional)") : tl("Set a new password (optional)")} error={errors.password}
             className="md:col-span-2"
             hint={tl("Leave empty to email them a temporary password instead. Either way they choose their own password at first sign-in.")}>

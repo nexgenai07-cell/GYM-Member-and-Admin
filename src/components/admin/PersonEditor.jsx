@@ -144,6 +144,7 @@ export default function PersonEditor({ person: trainer, kind = 'trainer', api, o
       ) : (
         <p className="text-[12px] text-on-surface-variant">{tl('You can add a photo after saving.')}</p>
       )}
+      {isTrainer && f.id && api.portalAccess && <CoachAccess trainer={f} api={api} onSaved={onSaved} />}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {!f.id && (
           <Field label={tl('Email')} error={errors.email} className="md:col-span-2">
@@ -280,5 +281,51 @@ export default function PersonEditor({ person: trainer, kind = 'trainer', api, o
         </Link>
       )}
     </Drawer>
+  );
+}
+
+
+/** Lets a trainer sign in to the coach portal: email a temporary password, or set a starting one. */
+function CoachAccess({ trainer, api, onSaved }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const give = async (withPassword) => {
+    setBusy(true);
+    setError('');
+    try {
+      toast.success((await api.portalAccess(trainer.id, withPassword ? { password } : {})).detail, { duration: 7000 });
+      setPassword('');
+      onSaved();
+    } catch (err) {
+      const fe = fieldErrors(err);
+      if (fe.password) setError(fe.password);
+      else toast.error(errorMessage(err, tl('Could not give access')), { duration: 7000 });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="rounded-lg border border-[#1a1a1e] bg-[#0e0e0f] p-4 flex flex-col gap-3" aria-label={tl('Coach portal')}>
+      <div className="flex items-center justify-between gap-2">
+        <span className={labelCls}>{tl('Coach portal')}</span>
+        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${trainer.can_sign_in ? 'bg-emerald-500/15 text-emerald-400' : 'bg-[#1a1a1e] text-on-surface-variant'}`}>
+          {trainer.can_sign_in ? (trainer.last_login ? tl('Signed in before') : tl('Invited')) : tl('No access yet')}
+        </span>
+      </div>
+      <p className="text-[12px] text-on-surface-variant">
+        {tl('Coaches manage their own hours, sessions, courses and machine videos at /coach. They set their own password and 2-step verification at first sign-in.')}
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button type="button" className={btn.ghost} disabled={busy} onClick={() => give(false)}>
+          {trainer.can_sign_in ? tl('Email a new temporary password') : tl('Email sign-in details')}
+        </button>
+        <input className={`${inputCls} sm:flex-1`} type="text" autoComplete="new-password" value={password}
+          onChange={(e) => { setPassword(e.target.value); setError(''); }} placeholder={tl('…or type a starting password')}
+          aria-label={tl('Starting password')} />
+        <button type="button" className={btn.primary} disabled={busy || password.length < 8} onClick={() => give(true)}>{tl('Set')}</button>
+      </div>
+      {error && <span role="alert" className="text-[11px] text-rose-400">{error}</span>}
+    </section>
   );
 }

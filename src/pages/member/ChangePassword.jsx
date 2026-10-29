@@ -8,9 +8,9 @@ import toast from 'react-hot-toast';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { tl } from '../../i18n';
+import { homeFor, loginFor } from '../../utils/roleHome';
 
 const MIN_LENGTH = 8;   // backend: Django MinimumLengthValidator
-const STAFF_ROLES = ['admin', 'manager'];   // the roles that use the admin console
 
 const inputBase =
   'w-full bg-surface-container-low text-on-surface font-body-lg text-body-lg py-3 pl-11 pr-12 rounded-lg border border-surface-container-high focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/40 transition-all duration-300';
@@ -87,9 +87,9 @@ export default function ChangePassword({ forced = false }) {
       if (forced) {
         try {
           const me = await refreshUser();        // clears must_change_password → the portal unlocks
-          navigate(STAFF_ROLES.includes(me?.role) ? '/admin' : '/dashboard', { replace: true });
+          navigate(homeFor(me), { replace: true });
         } catch {
-          window.location.assign('/');   // password IS changed; the root sends staff to /admin, members to /dashboard
+          window.location.assign('/');   // password IS changed; the root sends each account to its portal
         }
         return;
       }
@@ -112,9 +112,9 @@ export default function ChangePassword({ forced = false }) {
   };
 
   const signOut = async () => {
-    const staff = STAFF_ROLES.includes(user?.role);
+    const where = loginFor(user);
     await logout();
-    navigate(staff ? '/admin/login' : '/login', { replace: true });
+    navigate(where, { replace: true });
   };
 
   return (
@@ -145,8 +145,9 @@ export default function ChangePassword({ forced = false }) {
                 {tl("Your password has been changed. Use the new one next time you log in.")}
               </span>
             </div>
-            <Link to="/dashboard/profile" className="font-label-md text-label-md uppercase tracking-widest text-primary hover:underline">
-              {tl("Back to profile")}
+            <Link to={homeFor(user) === '/dashboard' ? '/dashboard/profile' : homeFor(user)}
+              className="font-label-md text-label-md uppercase tracking-widest text-primary hover:underline">
+              {homeFor(user) === '/dashboard' ? tl("Back to profile") : tl("Back to dashboard")}
             </Link>
           </div>
         ) : (

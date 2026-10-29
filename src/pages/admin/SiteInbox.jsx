@@ -10,10 +10,10 @@ import { btn } from '../../components/site/siteStyles';
 import { tl, locale } from '../../i18n';
 
 const FILTERS = [
+  { id: '', label: tl("All"), icon: 'inbox', empty: tl("No messages yet. They appear here when someone uses the contact form.") },
   { id: 'new', label: tl("New"), icon: 'mark_email_unread', empty: tl("You're all caught up — no new messages.") },
   { id: 'read', label: tl("Read"), icon: 'drafts', empty: tl("No read messages.") },
   { id: 'archived', label: tl("Archived"), icon: 'archive', empty: tl("Nothing archived.") },
-  { id: '', label: tl("All"), icon: 'inbox', empty: tl("No messages yet. They appear here when someone uses the contact form.") },
 ];
 
 /** Today → time only; this year → day and month; older → full date. */
@@ -25,7 +25,7 @@ function when(iso) {
 }
 
 export default function SiteInbox() {
-  const [status, setStatus] = useState('new');
+  const [status, setStatus] = useState('');   // "All" first
   const [data, setData] = useState({ counts: {}, results: [] });
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(null);
@@ -76,7 +76,7 @@ export default function SiteInbox() {
   };
 
   const total = Object.values(data.counts).reduce((a, b) => a + b, 0);
-  const current = FILTERS.find((f) => f.id === status) || FILTERS[3];
+  const current = FILTERS.find((f) => f.id === status) || FILTERS[0];
 
   return (
     <div className="p-8 bg-background min-h-screen">

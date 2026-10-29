@@ -1,5 +1,6 @@
 // src/pages/member/Profile.jsx
-import { motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
 import { nutritionService } from '../../services/nutritionService';
@@ -13,11 +14,17 @@ import BodyScan from '../../components/profile/BodyScan';
 import CompositionChart from '../../components/profile/CompositionChart';
 import PRMilestones from '../../components/profile/PRMilestones';
 import DigitalPass from '../../components/profile/DigitalPass';
-
-const EASE = [0.22, 1, 0.36, 1];
+import SecuritySettings from '../../components/SecuritySettings';
+import { tl } from '../../i18n';
 
 export default function Profile() {
   const { user } = useAuth();
+  const [params] = useSearchParams();
+  const securityRef = useRef(null);
+  // /dashboard/profile?tab=security (e.g. from a "2-step verification was reset" notification)
+  useEffect(() => {
+    if (params.get('tab') === 'security') securityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [params]);
 
   const { data: prs, loading: prsLoading } = useApi(
     () => workoutsService.prs(),
@@ -89,6 +96,19 @@ export default function Profile() {
         </div>
         <div className="xl:col-span-5">
           <DigitalPass user={user} membership={membership} />
+        </div>
+      </div>
+
+      <div ref={securityRef} id="security" className="mt-space-xl grid grid-cols-1 xl:grid-cols-12 gap-space-xl scroll-mt-24">
+        <div className="xl:col-span-7">
+          <SecuritySettings />
+        </div>
+        <div className="xl:col-span-5 rounded-xl border border-surface-container-high bg-surface-container p-5 flex flex-col gap-2 h-fit">
+          <h2 className="text-on-surface font-bold text-[16px] flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary" aria-hidden="true">key</span>{tl('Password')}
+          </h2>
+          <p className="text-[13px] text-on-surface-variant">{tl('Use a password you don’t use anywhere else.')}</p>
+          <Link to="/dashboard/change-password" className="text-primary text-[13px] font-bold hover:underline w-fit">{tl('Change password →')}</Link>
         </div>
       </div>
     </div>

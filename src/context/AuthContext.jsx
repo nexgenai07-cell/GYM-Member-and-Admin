@@ -42,7 +42,8 @@ export function AuthProvider({ children }) {
         const isStaff = ['admin', 'manager'].includes(me?.role);
         if (prev && (prev.id !== me.id || (['admin', 'manager'].includes(prev.role) && !isStaff))) {
           toast.error(`This browser is now signed in as ${me.email}.`
-            + (isStaff ? '' : ' Sign in with a staff account to use the admin portal.'), { id: 'account-switch', duration: 8000 });
+            + (isStaff || me?.role === 'trainer' ? '' : ' Sign in with a staff account to use the admin portal.'),
+          { id: 'account-switch', duration: 8000 });
         }
         setUser(me);
         localStorage.setItem('user', JSON.stringify(me));
@@ -63,8 +64,17 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Returns the API answer. With 2-step verification it is {two_factor, ticket…} and nobody is
+  // signed in yet — the login page shows the code step, then calls finishLogin().
   const login = async (email, password) => {
     const data = await authService.login(email, password);
+    if (!data.two_factor) setUser(data.user);
+    return data;
+  };
+
+  /** After the code step: {access, refresh, user} from verify / setup confirm. */
+  const finishLogin = (data) => {
+    authService.storeSession(data);
     setUser(data.user);
     return data;
   };
@@ -88,6 +98,7 @@ export function AuthProvider({ children }) {
         user,
         loading,
         login,
+        finishLogin,
         logout,
         refreshUser,
         isAuthenticated: !!user,

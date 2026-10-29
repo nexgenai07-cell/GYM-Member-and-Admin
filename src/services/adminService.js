@@ -174,6 +174,34 @@ export const adminService = {
     return data;
   },
 
+  async trainerPortalAccess(id, body = {}) {
+    const { data } = await api.post(`/admin/trainers/${id}/portal-access/`, body);
+    return data;
+  },
+  async resetStaff2fa(id) {
+    const { data } = await api.post(`/admin/staff/${id}/reset-2fa/`);
+    return data;
+  },
+  async machineVideos(exerciseId) {
+    const { data } = await api.get(`/admin/machines/${exerciseId}/videos/`);
+    return data;
+  },
+  async addMachineVideo(exerciseId, body) {
+    const { data } = await api.post(`/admin/machines/${exerciseId}/videos/`, body);
+    return data;
+  },
+  async updateMachineVideo(id, body) {
+    const { data } = await api.patch(`/admin/machine-videos/${id}/`, body);
+    return data;
+  },
+  async deleteMachineVideo(id) {
+    await api.delete(`/admin/machine-videos/${id}/`);
+  },
+  async deleteStaff(id) {
+    const { data } = await api.delete(`/admin/staff/${id}/`);
+    return data;
+  },
+
   async sendStaffSignIn(id) {
     const { data } = await api.post(`/admin/staff/${id}/send-sign-in/`);
     return data;
@@ -251,6 +279,11 @@ export const adminService = {
   },
   async saveProduct(id, payload) {
     const { data } = id ? await api.patch(`/admin/shop/products/${id}/`, payload) : await api.post('/admin/shop/products/', payload);
+    return data;
+  },
+  /** {prefix, sku}: the category's SKU prefix and the next free number. */
+  async nextSku(categoryId, productId) {
+    const { data } = await api.get('/admin/shop/products/next-sku/', { params: { category_id: categoryId, product_id: productId || undefined } });
     return data;
   },
   async deleteProduct(id) {

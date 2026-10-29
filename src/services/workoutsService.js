@@ -44,6 +44,12 @@ export const workoutsService = {
     return data;
   },
 
+  /** A machine's videos (Basic free · Advanced · Premium); locked ones come without a link. */
+  async exerciseVideos(exerciseId) {
+    const { data } = await api.get(`/workouts/exercises/${exerciseId}/videos/`);
+    return data;
+  },
+
   async exercises(params = {}) {
     const { data } = await api.get('/workouts/exercises/', { params });
     return data;

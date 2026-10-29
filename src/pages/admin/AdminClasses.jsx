@@ -16,7 +16,8 @@ const CATEGORIES = [['strength', tl("Strength")], ['hiit', tl("HIIT")], ['combat
   ['endurance', tl("Endurance")], ['olympic', tl("Olympic lifting")], ['recovery', tl("Recovery")]];
 const LEVELS = [['all_levels', tl("All levels")], ['beginner', tl("Beginner")], ['intermediate', tl("Intermediate")], ['advanced', tl("Advanced")]];
 const NEW = { name: '', category: 'strength', level: 'all_levels', description: '', trainer_id: '', day_of_week: 0,
-  start_time: '18:00', duration_minutes: 60, capacity: 12, location: '', is_active: true };
+  start_time: '18:00', duration_minutes: 60, capacity: 12, location: '', is_active: true,
+  price_per_session: '0', full_price: '', starts_on: '', ends_on: '' };
 
 export default function AdminClasses() {
   const [showPaused, setShowPaused] = useState(false);
@@ -86,6 +87,12 @@ export default function AdminClasses() {
                             <span className="block text-[10px] text-on-surface-variant mt-0.5">
                               {c.booked}/{c.capacity}{c.waitlisted > 0 && tl(" · {0} waiting", { 0: c.waitlisted })}{!c.is_active && tl(" · paused")}
                             </span>
+                            {c.is_paid && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-300 font-bold mt-0.5">
+                                <span className="material-symbols-outlined text-[12px]" aria-hidden="true">lock</span>
+                                {tl("SAR {0}/session", { 0: Number(c.price_per_session) })}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -116,7 +123,8 @@ function Field({ label, error, children, className = '' }) {
 
 function ClassEditor({ cls, trainers, onClose, onSaved }) {
   const isNew = !cls.id;
-  const [f, setF] = useState({ ...cls, trainer_id: cls.trainer_id ?? '' });
+  const [f, setF] = useState({ ...cls, trainer_id: cls.trainer_id ?? '', full_price: cls.full_price ?? '',
+    starts_on: cls.starts_on || '', ends_on: cls.ends_on || '' });
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const { data: roster, refetch: refetchRoster } = useApi(
@@ -130,6 +138,8 @@ function ClassEditor({ cls, trainers, onClose, onSaved }) {
       name: f.name, category: f.category, level: f.level, description: f.description, trainer_id: f.trainer_id || null,
       day_of_week: Number(f.day_of_week), start_time: f.start_time, duration_minutes: f.duration_minutes,
       capacity: f.capacity, location: f.location, is_active: f.is_active,
+      price_per_session: f.price_per_session || 0, full_price: f.full_price === '' ? null : f.full_price,
+      starts_on: f.starts_on || null, ends_on: f.ends_on || null,
     };
     try {
       await (isNew ? classesService.create(body) : classesService.update(cls.id, body));
@@ -169,6 +179,7 @@ function ClassEditor({ cls, trainers, onClose, onSaved }) {
   };
 
   const people = roster?.roster || [];
+  const singles = roster?.sessions || [];
 
   return (
     <Drawer open title={isNew ? tl("Add class") : cls.name} onClose={onClose}
@@ -201,6 +212,22 @@ function ClassEditor({ cls, trainers, onClose, onSaved }) {
         <Field label={tl("Description")} error={errors.description} className="md:col-span-2">
           <textarea className={inputCls} rows={3} value={f.description} onChange={set('description')} /></Field>
       </div>
+
+      <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-[#1a1a1e] pt-4">
+        <legend className={`${labelCls} mb-2`}>{tl("Price and dates")}</legend>
+        <p className="md:col-span-2 text-[11px] text-on-surface-variant">
+          {tl("Leave the price at 0 for a free class. A paid class is locked for members until they pay — per session, or for the whole class if it has a last day.")}
+        </p>
+        <Field label={tl("Price per session (SAR)")} error={errors.price_per_session}>
+          <input className={inputCls} inputMode="decimal" value={f.price_per_session} onChange={set('price_per_session')} placeholder="0" /></Field>
+        <Field label={tl("Whole-class price (SAR, optional)")} error={errors.full_price}>
+          <input className={inputCls} inputMode="decimal" value={f.full_price} onChange={set('full_price')}
+            placeholder={tl("Empty = per-session price × sessions left")} /></Field>
+        <Field label={tl("First day (optional)")} error={errors.starts_on}>
+          <input className={inputCls} type="date" value={f.starts_on} onChange={set('starts_on')} /></Field>
+        <Field label={tl("Last day (optional)")} error={errors.ends_on}>
+          <input className={inputCls} type="date" value={f.ends_on} onChange={set('ends_on')} /></Field>
+      </fieldset>
       <label className="flex items-start gap-2 text-[13px] text-on-surface">
         <input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />
         <span>{tl("On the timetable")}<span className="block text-[11px] text-on-surface-variant">{tl("Untick to pause it: members keep their spots but can’t see or book it until you turn it back on.")}</span></span>
@@ -222,6 +249,19 @@ function ClassEditor({ cls, trainers, onClose, onSaved }) {
               <button type="button" className={btn.ghost} onClick={() => kick(p)}>{tl("Remove")}</button>
             </div>
           ))}
+          {singles.length > 0 && (
+            <>
+              <span className={`${labelCls} mt-2`}>{tl("Single sessions paid ({0})", { 0: singles.length })}</span>
+              {singles.map((s) => (
+                <div key={s.id} className="flex items-center justify-between gap-2 bg-[#0e0e0f] border border-[#1a1a1e] rounded px-3 py-2 text-[13px]">
+                  <span className="text-on-surface truncate">{s.name}</span>
+                  <span className="text-[11px] text-on-surface-variant whitespace-nowrap">
+                    {new Date(s.date).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })} · SAR {s.amount}
+                  </span>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </Drawer>

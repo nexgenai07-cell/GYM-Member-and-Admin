@@ -22,7 +22,7 @@ export default function Player() {
   const [busy, setBusy] = useState(false);
 
   // Enrollments
-  const { data: enrollments, loading: enrollmentsLoading } = useApi(
+  const { data: enrollments, loading: enrollmentsLoading, refetch: refetchEnrollments } = useApi(
     () => catalogService.enrollments(),
     []
   );
@@ -95,6 +95,7 @@ export default function Player() {
       toast.success(tl("“{0}” marked as done 🎉", { 0: m.title }));
       setSelectedId(null);   // jump to the next day
       refetchPlayer();
+      refetchEnrollments();  // the course cards at the top show the new percentage
     } catch (e) {
       toast.error(errorMessage(e, tl("Couldn’t mark this day as done.")));
     } finally {
@@ -110,6 +111,7 @@ export default function Player() {
       await catalogService.uncompleteModule(enrollment.id, m.id);
       toast.success(tl("Day marked as not done"));
       refetchPlayer();
+      refetchEnrollments();
     } catch (e) {
       toast.error(errorMessage(e, tl("Couldn’t undo that.")));
     } finally {

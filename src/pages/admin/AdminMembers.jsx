@@ -174,6 +174,12 @@ export default function AdminMembers() {
               onClick={() => window.confirm(tl("Email {0} a temporary password? Their current password stops working.", { 0: file.email })) && run(file.id, 'reset_password', {}, 'Temporary password emailed')}>
               {tl("Reset password")}
             </button>
+            {file.two_factor && (
+              <button type="button" className={btn.ghost} disabled={busy}
+                onClick={() => window.confirm(tl("Turn off 2-step verification for {0}? Use this when they lost their phone or email access.", { 0: file.full_name })) && run(file.id, 'reset_2fa', {}, tl('2-step verification turned off'))}>
+                {tl("Reset 2-step verification")}
+              </button>
+            )}
             {file.is_active
               ? <button type="button" className={btn.danger} disabled={busy} onClick={() => window.confirm(tl("Deactivate {0}? They can't log in until reactivated.", { 0: file.full_name })) && run(file.id, 'deactivate', {}, 'Deactivated')}>{tl("Deactivate")}</button>
               : <button type="button" className={btn.primary} disabled={busy} onClick={() => run(file.id, 'reactivate', {}, 'Reactivated')}>{tl("Reactivate")}</button>}

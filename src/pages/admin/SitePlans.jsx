@@ -11,7 +11,7 @@ import { tl } from '../../i18n';
 
 const NEW_PLAN = {
   name: '', display_name: '', display_name_ar: '', description: '', description_ar: '',
-  price_monthly: '', price_annual: '', features: [], features_ar: [], session_limit_minutes: null, is_active: true,
+  price_monthly: '', price_annual: '', features: [], features_ar: [], session_limit_minutes: null, video_access: 'basic', is_active: true,
 };
 
 export default function SitePlans() {
@@ -94,6 +94,10 @@ export default function SitePlans() {
                       {p.session_limit_minutes ? tl("{0} min per visit", { 0: p.session_limit_minutes }) : tl("No visit limit")}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1a1a1e] text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[13px]">smart_display</span>
+                      {VIDEO_ACCESS.find(([v]) => v === (p.video_access || 'basic'))?.[1]}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1a1a1e] text-on-surface-variant">
                       <span className="material-symbols-outlined text-[13px]">how_to_reg</span>
                       {tl(p.registrations === 1 ? "{0} signup" : "{0} signups", { 0: p.registrations })}
                     </span>
@@ -127,6 +131,13 @@ export default function SitePlans() {
   );
 }
 
+// Which Machine Guide videos the plan includes (others can still be bought one by one).
+const VIDEO_ACCESS = [
+  ['basic', tl("Basic videos only"), tl("Advanced and Premium videos are bought one by one.")],
+  ['advanced', tl("Basic + Advanced videos"), tl("Premium videos are bought one by one.")],
+  ['premium', tl("All videos (Premium)"), tl("Every machine video is included.")],
+];
+
 const lines = (list) => (list || []).join('\n');
 const toList = (text) => text.split('\n').map((s) => s.trim()).filter(Boolean);
 
@@ -150,6 +161,7 @@ function PlanEditor({ plan, onClose, onSaved }) {
       price_monthly: form.price_monthly, price_annual: form.price_annual,
       features: toList(form.featuresText), features_ar: toList(form.featuresArText),
       session_limit_minutes: form.session_limit_minutes === '' ? null : form.session_limit_minutes,
+      video_access: form.video_access || 'basic',
       is_active: form.is_active,
     };
     try {
@@ -234,6 +246,19 @@ function PlanEditor({ plan, onClose, onSaved }) {
           {err('session_limit_minutes')}
         </label>
       </div>
+      <fieldset className="flex flex-col gap-2">
+        <legend className={`${labelCls} mb-1`}>{tl("Machine Guide videos included")}</legend>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2" role="radiogroup">
+          {VIDEO_ACCESS.map(([v, label, hint]) => (
+            <button key={v} type="button" role="radio" aria-checked={(form.video_access || 'basic') === v} onClick={() => set('video_access')(v)}
+              className={`text-left rounded-lg border p-3 ${(form.video_access || 'basic') === v ? 'border-primary-container bg-primary-container/10' : 'border-[#1a1a1e] bg-[#0e0e0f]'}`}>
+              <span className="block text-on-surface text-[13px] font-bold">{label}</span>
+              <span className="block text-[11px] text-on-surface-variant">{hint}</span>
+            </button>
+          ))}
+        </div>
+        {err('video_access')}
+      </fieldset>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
           <span className={labelCls}>{tl("Features (one per line)")}</span>

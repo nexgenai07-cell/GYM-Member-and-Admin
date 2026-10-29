@@ -8,6 +8,7 @@ import { useApi } from '../../hooks/useApi';
 import { workoutsService } from '../../services/workoutsService';
 import { tl } from '../../i18n';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
+import MachineVideos from '../../components/machines/MachineVideos';
 
 const EASE = [0.22, 1, 0.36, 1];
 const MAX_WEIGHT_KG = 500;   // same limits as the backend (apps/workouts/views.py)
@@ -48,7 +49,7 @@ export default function MachineGuide() {
   const [params, setParams] = useSearchParams();
   const [scanning, setScanning] = useState(params.get('scan') === '1');
   const [qrInput, setQrInput] = useState('');
-  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [picked, setPicked] = useState(null);
   const [searching, setSearching] = useState(false);
 
   const [restSeconds, setRestSeconds] = useState(90);
@@ -59,6 +60,10 @@ export default function MachineGuide() {
     () => workoutsService.exercises(),
     []
   );
+  // Opened from a notification (/dashboard/machine-guide?exercise=<id>) until another machine is picked.
+  const exerciseParam = params.get('exercise');
+  const selectedExercise = picked
+    ?? (exerciseParam && Array.isArray(exercises) ? exercises.find((e) => String(e.id) === exerciseParam) ?? null : null);
 
   // Update rest default when exercise changes
   useEffect(() => {
@@ -124,7 +129,7 @@ export default function MachineGuide() {
     try {
       setSearching(true);
       const ex = await workoutsService.exerciseByQR(tag);
-      setSelectedExercise(ex);
+      setPicked(ex);
       setQrInput(tag);
       toast.success(tl("Found: {0}", { 0: ex.name }));
     } catch {
@@ -145,8 +150,9 @@ export default function MachineGuide() {
   }, [qrParam, lookup]);
 
   const handleSelect = (ex) => {
-    setSelectedExercise(ex);
+    setPicked(ex);
   };
+
 
   return (
     <div className="relative flex flex-col w-full gap-space-xl px-space-xl py-space-xl">
@@ -195,7 +201,7 @@ export default function MachineGuide() {
         >
           {selectedExercise ? (
             <>
-              <VideoTutorial exercise={selectedExercise} />
+              <MachineVideos key={selectedExercise.id} exercise={selectedExercise} />
               <ExecutionPhases exercise={selectedExercise} />
             </>
           ) : (
@@ -322,63 +328,6 @@ function MachineBanner({ qrInput, setQrInput, onSearch, onScan, searching }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
-  );
-}
-
-/* ============================================================
-   VIDEO TUTORIAL
-   ============================================================ */
-function VideoTutorial({ exercise }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: EASE }}
-      className="relative bg-surface-container rounded-xl overflow-hidden shadow-lg"
-    >
-      <div className="aspect-video bg-gradient-to-br from-surface-container-high to-surface-container-lowest flex items-center justify-center relative">
-        {exercise.image_url && (
-          <img
-            src={exercise.image_url}
-            alt={exercise.name}
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
-          />
-        )}
-        {exercise.video_url ? (
-          <a
-            href={exercise.video_url}
-            target="_blank"
-            rel="noreferrer"
-            className="relative flex flex-col items-center gap-3 text-primary hover:text-secondary-container transition-colors"
-          >
-            <span className="material-symbols-outlined text-[64px]">
-              play_circle
-            </span>
-            <span className="font-label-lg text-label-lg uppercase tracking-wider">
-              {tl("Watch Tutorial")}
-            </span>
-          </a>
-        ) : (
-          <div className="relative flex flex-col items-center gap-3 text-on-surface-variant/50">
-            <span className="material-symbols-outlined text-[64px]">
-              videocam_off
-            </span>
-            <span className="font-label-lg uppercase tracking-wider">
-              {tl("No Video Available")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-space-lg">
-        <span className="font-label-md text-[10px] text-primary uppercase tracking-widest font-bold">
-          {exercise.category}
-        </span>
-        <h2 className="font-headline-md text-headline-md text-on-surface uppercase mt-1">
-          {exercise.name}
-        </h2>
-      </div>
     </motion.div>
   );
 }

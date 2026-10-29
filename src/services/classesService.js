@@ -10,8 +10,9 @@ export const classesService = {
     const { data } = await api.post(`/classes/${id}/book/`);
     return data;
   },
-  async cancel(id) {
-    const { data } = await api.post(`/classes/${id}/cancel/`);
+  /** Free class: frees the weekly spot. Paid single session: pass its `date` (refunded 24 h+ ahead). */
+  async cancel(id, date) {
+    const { data } = await api.post(`/classes/${id}/cancel/`, date ? { date } : {});
     return data;
   },
 

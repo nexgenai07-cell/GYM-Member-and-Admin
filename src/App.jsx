@@ -51,6 +51,19 @@ import ShopOrders from './pages/admin/ShopOrders';
 import ShopCatalog from './pages/admin/ShopCatalog';
 import AdminNutrition from './pages/admin/AdminNutrition';
 import TrainerHours from './pages/admin/TrainerHours';
+import AdminSecurity from './pages/admin/AdminSecurity';
+
+// Coach portal
+import CoachLayout from './layouts/CoachLayout';
+import CoachDashboard from './pages/coach/CoachDashboard';
+import CoachSessions from './pages/coach/CoachSessions';
+import CoachHours from './pages/coach/CoachHours';
+import CoachCourses from './pages/coach/CoachCourses';
+import CoachStudents from './pages/coach/CoachStudents';
+import CoachClasses from './pages/coach/CoachClasses';
+import CoachVideos from './pages/coach/CoachVideos';
+import { CoachEarnings, CoachNotifications, CoachProfile, CoachReviews } from './pages/coach/CoachMore';
+import { homeFor, isCoach, isStaff } from './utils/roleHome';
 
 // Shared
 import Login from './pages/Login';
@@ -90,12 +103,8 @@ function RootRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // Admins go to /admin, members go to /dashboard
-  if (['admin', 'manager'].includes(user?.role)) {
-    return <Navigate to="/admin" replace />;
-  }
-
-  return <Navigate to="/dashboard" replace />;
+  // Admins go to /admin, coaches to /coach, members to /dashboard
+  return <Navigate to={homeFor(user)} replace />;
 }
 
 
@@ -118,8 +127,8 @@ function ProtectedRoute({ children }) {
       ? <ChangePassword forced />
       : <Navigate to={CHANGE_PASSWORD_PATH} replace />;
   }
-  // Admins and managers use the console, never the member pages.
-  if (['admin', 'manager'].includes(user?.role)) return <Navigate to="/admin" replace />;
+  // Admins and managers use the console and coaches the coach portal, never the member pages.
+  if (isStaff(user) || isCoach(user)) return <Navigate to={homeFor(user)} replace />;
 
   return children;
 }
@@ -141,10 +150,24 @@ function AdminProtectedRoute({ children }) {
     return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
   }
 
-  if (!['admin', 'manager'].includes(user?.role)) {
-    return <Navigate to="/dashboard" replace />;
+  if (!isStaff(user)) {
+    return <Navigate to={homeFor(user)} replace />;
   }
 
+  return children;
+}
+
+
+/* ============================================
+   COACH PROTECTED ROUTE
+   ============================================ */
+function CoachProtectedRoute({ children }) {
+  const { user, isAuthenticated, loading, mustChangePassword } = useAuth();
+
+  if (loading) return <AuthLoader />;
+  if (!isAuthenticated) return <Navigate to="/coach/login" replace />;
+  if (mustChangePassword) return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+  if (!isCoach(user)) return <Navigate to={homeFor(user)} replace />;
   return children;
 }
 
@@ -174,6 +197,7 @@ function App() {
       {/* ============ PUBLIC / AUTH ============ */}
       <Route path="/login" element={<Login />} />
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/coach/login" element={<AdminLogin variant="coach" />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin/forgot-password" element={<ForgotPassword staff />} />
@@ -214,7 +238,34 @@ function App() {
         <Route path="shop-orders" element={<ShopOrders />} />
         <Route path="trainer-hours" element={<TrainerHours />} />
         <Route path="facility-pricing" element={<Navigate to="/admin/facilities" replace />} />
+        <Route path="change-password" element={<ChangePassword />} />
+        <Route path="security" element={<AdminSecurity />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Route>
+
+      {/* ============ COACH PORTAL — trainers ============ */}
+      <Route
+        path="/coach/*"
+        element={
+          <CoachProtectedRoute>
+            <CoachLayout />
+          </CoachProtectedRoute>
+        }
+      >
+        <Route index element={<CoachDashboard />} />
+        <Route path="sessions" element={<CoachSessions />} />
+        <Route path="hours" element={<CoachHours />} />
+        <Route path="courses" element={<CoachCourses />} />
+        <Route path="courses/:courseId" element={<CoachCourses />} />
+        <Route path="students" element={<CoachStudents />} />
+        <Route path="classes" element={<CoachClasses />} />
+        <Route path="videos" element={<CoachVideos />} />
+        <Route path="reviews" element={<CoachReviews />} />
+        <Route path="earnings" element={<CoachEarnings />} />
+        <Route path="notifications" element={<CoachNotifications />} />
+        <Route path="profile" element={<CoachProfile />} />
+        <Route path="change-password" element={<ChangePassword />} />
+        <Route path="*" element={<Navigate to="/coach" replace />} />
       </Route>
 
       {/* ============ MEMBER — authenticated users ============ */}

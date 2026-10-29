@@ -1,11 +1,65 @@
 import api from './api';
 
 export const authService = {
+  /**
+   * Password step. Returns {access, refresh, user} — or, when 2-step verification applies,
+   * {two_factor: 'verify'|'setup', ticket, …} and nothing is stored until the code passes.
+   */
   async login(email, password) {
     const { data } = await api.post('/auth/login/', { email, password });
+    if (!data.two_factor) this.storeSession(data);
+    return data;
+  },
+
+  storeSession(data) {
     localStorage.setItem('access_token', data.access);
     localStorage.setItem('refresh_token', data.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));
+  },
+
+  // ---- 2-step verification at sign-in (ticket from login) ----
+  async verifyCode(ticket, code) {
+    const { data } = await api.post('/auth/2fa/verify/', { ticket, code });
+    this.storeSession(data);
+    return data;
+  },
+  async resendCode(ticket) {
+    const { data } = await api.post('/auth/2fa/resend/', { ticket });
+    return data;
+  },
+  async setupMethod(ticket, method) {
+    const { data } = await api.post('/auth/2fa/setup/method/', { ticket, method });
+    return data;
+  },
+  /** Turns 2FA on and signs in; the response carries backup codes (shown once). */
+  async setupConfirm(ticket, code) {
+    const { data } = await api.post('/auth/2fa/setup/confirm/', { ticket, code });
+    return data;
+  },
+
+  // ---- 2-step verification while signed in (profile → security) ----
+  async twoFactorStatus() {
+    const { data } = await api.get('/auth/2fa/');
+    return data;
+  },
+  async enableStart(password, method) {
+    const { data } = await api.post('/auth/2fa/enable/', { password, method });
+    return data;
+  },
+  async enableConfirm(ticket, code) {
+    const { data } = await api.post('/auth/2fa/enable/', { ticket, code });
+    return data;
+  },
+  async sendCurrentCode() {
+    const { data } = await api.post('/auth/2fa/send-code/');
+    return data;
+  },
+  async disableTwoFactor(password, code) {
+    const { data } = await api.post('/auth/2fa/disable/', { password, code });
+    return data;
+  },
+  async newBackupCodes(code) {
+    const { data } = await api.post('/auth/2fa/backup-codes/', { code });
     return data;
   },
 

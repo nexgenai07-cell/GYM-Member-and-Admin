@@ -5,25 +5,32 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import BrandingPanel from '../components/auth/BrandingPanel';
 import LoginForm from '../components/auth/LoginForm';
+import { TwoFactorStep } from '../components/auth/TwoFactor';
 import { tl } from '../i18n';
+import { homeFor } from '../utils/roleHome';
 
 const EASE = [0.22, 1, 0.36, 1];
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, finishLogin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [step, setStep] = useState(null);      // 2-step verification after the password
+
+  // Staff go to the console, coaches to the coach portal; a temporary password is changed first.
+  const done = (result) => {
+    toast.success(tl("Welcome back!"));
+    navigate(homeFor(result.user), { replace: true });
+  };
 
   const handleLogin = async (data) => {
     setServerError('');
     try {
       setLoading(true);
       const result = await login(data.email, data.password);
-      toast.success(tl("Welcome back!"));
-      // Staff go to the console; anyone with a temporary password changes it first.
-      if (result.user?.must_change_password) navigate('/dashboard/change-password', { replace: true });
-      else navigate(['admin', 'manager'].includes(result.user?.role) ? '/admin' : '/dashboard', { replace: true });
+      if (result.two_factor) setStep(result);
+      else done(result);
     } catch (e) {
       setServerError(e.response
         ? tl(e.response.data?.detail || 'Wrong email or password. Check both and try again.')
@@ -123,8 +130,12 @@ export default function Login() {
             </div>
           </motion.div>
 
-          {/* ✅ Pass loading to LoginForm so the button can show a spinner/disable state */}
-          <LoginForm onSubmit={handleLogin} loading={loading} serverError={serverError} />
+          {step ? (
+            <TwoFactorStep step={step} onDone={(data) => done(finishLogin(data))}
+              onRestart={(msg) => { setStep(null); setServerError(msg); }} />
+          ) : (
+            <LoginForm onSubmit={handleLogin} loading={loading} serverError={serverError} />
+          )}
         </motion.div>
       </div>
     </div>

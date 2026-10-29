@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { dashboardService } from '../../services/dashboardService';
+import { notificationsService } from '../../services/notificationsService';
 import { tl } from '../../i18n';
 import LangToggle from '../../i18n/LangToggle';
 import { MenuButton } from '../../layouts/MobileNav';
@@ -34,6 +35,7 @@ export default function AdminHeader() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(null); // 'alerts' | 'profile' | 'search'
   const [alerts, setAlerts] = useState({ total: 0, items: [] });
+  const [news, setNews] = useState([]);        // unread notifications (course purchases, reviews to do…)
   const [occ, setOcc] = useState(null);
   const [q, setQ] = useState('');
   const [results, setResults] = useState(null);
@@ -51,13 +53,15 @@ export default function AdminHeader() {
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const [a, o] = await Promise.allSettled([
+      const [a, o, n] = await Promise.allSettled([
         api.get('/admin/alerts/'),
         dashboardService.occupancy(),
+        notificationsService.list({ unread: 'true' }),
       ]);
       if (!alive) return;
       if (a.status === 'fulfilled') setAlerts(a.value.data);
       if (o.status === 'fulfilled') setOcc(o.value);
+      if (n.status === 'fulfilled') setNews(Array.isArray(n.value) ? n.value.slice(0, 10) : []);
     };
     load();
     const id = setInterval(load, POLL_MS);
@@ -108,6 +112,17 @@ export default function AdminHeader() {
     setResults(null);
     navigate(path);
   };
+
+  const openNews = async (n) => {
+    setNews((list) => list.filter((x) => x.id !== n.id));
+    try { await notificationsService.markRead(n.id); } catch { /* ignore */ }
+    if (n.action_path?.startsWith('/admin')) go(n.action_path);
+  };
+  const clearNews = async () => {
+    setNews([]);
+    try { await notificationsService.markAllRead(); } catch { /* ignore */ }
+  };
+  const bellCount = alerts.total + news.length;
 
   const handleLogout = async () => {
     close();
@@ -241,7 +256,7 @@ export default function AdminHeader() {
             <button
               type="button"
               onClick={() => setOpen(open === 'alerts' ? null : 'alerts')}
-              aria-label={tl('Alerts ({0})', { 0: alerts.total })}
+              aria-label={tl('Alerts ({0})', { 0: bellCount })}
               aria-expanded={open === 'alerts'}
               aria-haspopup="dialog"
               className="relative w-9 h-9 rounded-lg bg-[#0e0e0f] border border-[#1a1a1e] flex items-center justify-center hover:bg-[#1a1a1e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
@@ -249,15 +264,33 @@ export default function AdminHeader() {
               <span className="material-symbols-outlined text-on-surface-variant text-[20px]" aria-hidden="true">
                 notifications
               </span>
-              {alerts.total > 0 && (
+              {bellCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold flex items-center justify-center tabular-nums">
-                  {alerts.total > 99 ? '99+' : alerts.total}
+                  {bellCount > 99 ? '99+' : bellCount}
                 </span>
               )}
             </button>
             <AnimatePresence>
               {open === 'alerts' && (
                 <Panel className="w-96" label={tl('Needs attention')} reduce={reduce}>
+                  {news.length > 0 && (
+                    <div className="border-b border-[#1a1a1e]">
+                      <div className="px-4 py-3 flex items-center justify-between">
+                        <span className="text-[13px] text-on-surface font-bold uppercase tracking-wider">{tl('New')}</span>
+                        <button type="button" onClick={clearNews} className="text-[11px] text-primary font-bold hover:underline">{tl('Mark all read')}</button>
+                      </div>
+                      {news.map((n) => (
+                        <button key={n.id} type="button" onClick={() => openNews(n)}
+                          className="w-full flex items-start gap-3 px-4 py-2.5 hover:bg-[#1a1a1e] text-left">
+                          <span className="material-symbols-outlined text-[18px] text-primary mt-0.5" aria-hidden="true">{n.icon}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[13px] text-on-surface font-bold truncate">{n.title}</span>
+                            <span className="block text-[12px] text-on-surface-variant line-clamp-2">{n.message}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="px-4 py-3 border-b border-[#1a1a1e] text-[13px] text-on-surface font-bold uppercase tracking-wider">
                     {tl('Needs attention')}
                   </div>
@@ -338,7 +371,8 @@ export default function AdminHeader() {
                   </div>
                   <div className="p-2">
                     <MenuItem icon="settings" label={tl('System settings')} onClick={() => go('/admin/settings')} />
-                    <MenuItem icon="lock_reset" label={tl('Change password')} onClick={() => go('/dashboard/change-password')} />
+                    <MenuItem icon="lock_reset" label={tl('Change password')} onClick={() => go('/admin/change-password')} />
+                    <MenuItem icon="shield_lock" label={tl('2-step verification')} onClick={() => go('/admin/security')} />
                     <MenuItem
                       icon="public"
                       label={tl('Open public website')}

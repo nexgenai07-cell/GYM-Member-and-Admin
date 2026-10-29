@@ -1,7 +1,7 @@
 // src/pages/admin/AdminMachines.jsx
 // Machines members can scan. Each machine's QR holds a member-portal link
 // (/dashboard/machine-guide?qr=TAG); print it and stick it on the machine.
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import BrandedQR from '../../components/BrandedQR';
 import { useApi } from '../../hooks/useApi';
@@ -11,6 +11,7 @@ import { btn, inputCls, labelCls } from '../../components/site/siteStyles';
 import { errorMessage, fieldErrors } from '../../utils/apiError';
 import { machineQrLink } from '../../utils/machineQr';
 import { tl } from '../../i18n';
+import { VideoEditor } from '../coach/CoachVideos';
 
 const STATUS = [['', tl("All")], ['active', tl("Active")], ['offline', tl("Offline")], ['untagged', tl("No QR")]];
 const NEW = {
@@ -219,7 +220,7 @@ function MachineEditor({ machine, options, onClose, onSaved }) {
           <input className={inputCls} inputMode="decimal" value={f.recommended_weight_kg} onChange={set('recommended_weight_kg')} /></Field>
         <Field label={tl("Target intensity")} error={errors.target_intensity}><input className={inputCls} value={f.target_intensity} onChange={set('target_intensity')} placeholder={tl("RPE 8")} /></Field>
         <Field label={tl("Tempo")} error={errors.cadence}><input className={inputCls} value={f.cadence} onChange={set('cadence')} placeholder="3-0-1-0" /></Field>
-        <Field label={tl("Video link")} error={errors.video_url}><input className={inputCls} value={f.video_url} onChange={set('video_url')} placeholder="https://…" /></Field>
+        <Field label={tl("Walkthrough video link (free)")} error={errors.video_url}><input className={inputCls} value={f.video_url} onChange={set('video_url')} placeholder="https://…" /></Field>
         <Field label={tl("Image link")} error={errors.image_url}><input className={inputCls} value={f.image_url} onChange={set('image_url')} placeholder="https://…" /></Field>
       </div>
       <div className="flex flex-col gap-2 text-[13px] text-on-surface">
@@ -227,7 +228,50 @@ function MachineEditor({ machine, options, onClose, onSaved }) {
         <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={!!f.is_active} onChange={set('is_active')} />
           <span>{tl("In service")}<span className="block text-[11px] text-on-surface-variant">{tl("When off, scanning its QR says the machine is unavailable.")}</span></span></label>
       </div>
+      {!isNew && <MachineVideos machine={machine} />}
     </Drawer>
+  );
+}
+
+/** Coaches' videos for this machine (Basic free · Advanced · Premium): the gym can add, edit, hide or delete them. */
+function MachineVideos({ machine }) {
+  const [list, setList] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const load = useCallback(() => {
+    adminService.machineVideos(machine.id).then(setList).catch(() => setList([]));
+  }, [machine.id]);
+  useEffect(() => { load(); }, [load]);
+  const api = {
+    add: (body) => adminService.addMachineVideo(machine.id, body),
+    update: (id, body) => adminService.updateMachineVideo(id, body),
+    remove: (id) => adminService.deleteMachineVideo(id),
+  };
+  return (
+    <section className="flex flex-col gap-2 border-t border-[#1a1a1e] pt-4" aria-label={tl("Videos")}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
+          {tl("Videos ({0})", { 0: list?.length ?? 0 })}
+        </span>
+        <button type="button" className={btn.ghost}
+          onClick={() => setEditing({ tier: 'basic', title: '', video_url: '', duration_minutes: 5, price: '', description: '', is_active: true })}>
+          {tl("+ Add video")}
+        </button>
+      </div>
+      <p className="text-[11px] text-on-surface-variant">{tl("Coaches add these from the coach portal. Basic is free; Advanced and Premium are in some plans or bought by members.")}</p>
+      {list === null ? <div className="h-12 bg-[#0e0e0f] rounded animate-pulse" /> : list.length === 0 ? (
+        <p className="text-[12px] text-on-surface-variant">{tl("No videos yet.")}</p>
+      ) : list.map((v) => (
+        <button key={v.id} type="button" onClick={() => setEditing({ ...v, price: v.tier === 'basic' ? '' : v.price })}
+          className={`text-left rounded-lg border border-[#1a1a1e] bg-[#0e0e0f] px-3 py-2 flex flex-wrap items-center gap-2 hover:border-primary-container/60 ${v.is_active ? '' : 'opacity-60'}`}>
+          <span className="text-on-surface text-[13px] font-bold flex-1 min-w-0 truncate">{v.title}</span>
+          <span className="text-[11px] text-on-surface-variant">{v.coach}</span>
+          <span className="text-[10px] uppercase font-bold text-primary">{tl(v.tier_label)}</span>
+          <span className="text-[11px] text-on-surface">{v.tier === 'basic' ? tl("Free") : `SAR ${v.price} · ${tl("{0} sold", { 0: v.purchases })}`}</span>
+          {!v.is_active && <span className="text-[10px] uppercase text-rose-400">{tl("Hidden")}</span>}
+        </button>
+      ))}
+      {editing && <VideoEditor video={editing} fixedMachine={machine.id} api={api} onClose={() => setEditing(null)} onSaved={load} />}
+    </section>
   );
 }
 
