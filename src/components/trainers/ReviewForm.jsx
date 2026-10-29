@@ -1,5 +1,4 @@
 // src/components/trainers/ReviewForm.jsx
-// Leave (or edit) a 1–5 star review for a coach you've trained with.
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { catalogService } from '../../services/catalogService';
@@ -18,8 +17,11 @@ export default function ReviewForm({ trainer, onSaved }) {
 
   if (!trainer.can_review) {
     return trainer.review_hint ? (
-      <p className="text-[13px] text-on-surface-variant rounded-xl bg-surface-container-low p-4 flex gap-2">
-        <span className="material-symbols-outlined text-[18px]">info</span>{tl(trainer.review_hint)}
+      <p className="text-[13px] text-on-surface-variant rounded-xl bg-surface-container-low p-4 flex gap-2 items-start">
+        <span className="material-symbols-outlined text-[18px] shrink-0" aria-hidden="true">
+          info
+        </span>
+        <span>{tl(trainer.review_hint)}</span>
       </p>
     ) : null;
   }
@@ -45,33 +47,98 @@ export default function ReviewForm({ trainer, onSaved }) {
   };
 
   const shown = hover || rating;
+
   return (
-    <form onSubmit={submit} noValidate className="rounded-xl bg-surface-container border border-surface-container-high p-4 flex flex-col gap-3">
-      <h3 className="text-on-surface font-bold">{mine ? tl('Your review') : tl('Rate your coach')}</h3>
-      <div>
-        <div className="flex gap-1" role="radiogroup" aria-label={tl('Rating')} onMouseLeave={() => setHover(0)}>
+    <form
+      onSubmit={submit}
+      noValidate
+      className="rounded-xl bg-surface-container border border-surface-container-high p-4 flex flex-col gap-3"
+      aria-labelledby="review-form-title"
+    >
+      <h3 id="review-form-title" className="text-on-surface font-bold">
+        {mine ? tl('Your review') : tl('Rate your coach')}
+      </h3>
+
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="sr-only">{tl('Rating')}</legend>
+        <div
+          className="flex gap-1"
+          role="radiogroup"
+          aria-label={tl('Rating')}
+          onMouseLeave={() => setHover(0)}
+        >
           {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={tl('{0} stars', { 0: n })}
-              onMouseEnter={() => setHover(n)} onClick={() => { setRating(n); setErrors((x) => ({ ...x, rating: '' })); }}
-              className="p-0.5">
-              <span className={`material-symbols-outlined text-[28px] ${n <= shown ? 'text-amber-400' : 'text-on-surface-variant/40'}`}
-                style={{ fontVariationSettings: n <= shown ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={rating === n}
+              aria-label={tl('{0} stars', { 0: n })}
+              onMouseEnter={() => setHover(n)}
+              onFocus={() => setHover(n)}
+              onBlur={() => setHover(0)}
+              onClick={() => {
+                setRating(n);
+                setErrors((x) => ({ ...x, rating: '' }));
+              }}
+              className="p-0.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+            >
+              <span
+                className={`material-symbols-outlined text-[28px] ${
+                  n <= shown ? 'text-amber-400' : 'text-on-surface-variant/40'
+                }`}
+                style={{ fontVariationSettings: n <= shown ? "'FILL' 1" : "'FILL' 0" }}
+                aria-hidden="true"
+              >
+                star
+              </span>
             </button>
           ))}
         </div>
-        {errors.rating && <p role="alert" className="text-[12px] text-error mt-1">{errors.rating}</p>}
-      </div>
+        {errors.rating && (
+          <p role="alert" className="text-[12px] text-error mt-1">
+            {errors.rating}
+          </p>
+        )}
+      </fieldset>
+
       <div>
-        <textarea rows={3} value={comment} maxLength={MAX + 50} onChange={(e) => { setComment(e.target.value); setErrors((x) => ({ ...x, comment: '' })); }}
-          placeholder={tl('What was training with them like? (optional)')} aria-invalid={!!errors.comment}
-          className={`w-full bg-surface-container-low text-on-surface px-3 py-2 rounded-lg border text-[14px] focus:outline-none ${errors.comment ? 'border-error' : 'border-surface-container-high focus:border-primary'}`} />
-        <div className="flex justify-between text-[11px] mt-1">
-          <span className="text-error" role="alert">{errors.comment}</span>
-          <span className={comment.length > MAX ? 'text-error' : 'text-on-surface-variant'}>{comment.length}/{MAX}</span>
+        <label htmlFor="review-comment" className="sr-only">
+          {tl('Your review')}
+        </label>
+        <textarea
+          id="review-comment"
+          rows={3}
+          value={comment}
+          maxLength={MAX + 50}
+          onChange={(e) => {
+            setComment(e.target.value);
+            setErrors((x) => ({ ...x, comment: '' }));
+          }}
+          placeholder={tl('What was training with them like? (optional)')}
+          aria-invalid={!!errors.comment}
+          aria-describedby="review-comment-help"
+          className={`w-full bg-surface-container-low text-on-surface px-3 py-2 rounded-lg border text-[14px] focus:outline-none ${
+            errors.comment
+              ? 'border-error'
+              : 'border-surface-container-high focus:border-primary'
+          }`}
+        />
+        <div id="review-comment-help" className="flex justify-between text-[11px] mt-1">
+          <span className="text-error" role="alert">
+            {errors.comment}
+          </span>
+          <span className={comment.length > MAX ? 'text-error' : 'text-on-surface-variant'} aria-hidden="true">
+            {comment.length}/{MAX}
+          </span>
         </div>
       </div>
-      <button type="submit" disabled={busy}
-        className="w-fit px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-bold text-[13px] disabled:opacity-60">
+
+      <button
+        type="submit"
+        disabled={busy}
+        className="w-fit px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-bold text-[13px] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+      >
         {busy ? tl('Saving…') : mine ? tl('Update review') : tl('Post review')}
       </button>
     </form>
